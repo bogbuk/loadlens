@@ -6,6 +6,7 @@
 /.ai/
 .prod.env
 package-lock.json
+!backend/package-lock.json
 .DS_Store
 /docs/*
 !docs/daily-reports/
