@@ -2,7 +2,6 @@
 /node_modules/
 /dist/
 /.local_dev.env
-/CLAUDE.md
 /.ai/
 .prod.env
 package-lock.json
