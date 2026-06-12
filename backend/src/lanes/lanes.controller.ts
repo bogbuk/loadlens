@@ -8,6 +8,16 @@ import { LanesService } from './lanes.service';
 export class LanesController {
   constructor(private readonly service: LanesService) {}
 
+  // Список топ-lane'ов + сводка — для живого дашборда на /.
+  @Get()
+  async list(@Query('limit') limit?: string) {
+    const [summary, lanes] = await Promise.all([
+      this.service.overview(),
+      this.service.topLanes(limit ? parseInt(limit, 10) : 50),
+    ]);
+    return { summary, lanes };
+  }
+
   @Get(':origin/:dest')
   lane(
     @Param('origin') origin: string,

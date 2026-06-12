@@ -3,26 +3,136 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LoadLens API</title>
+  <title>LoadLens — живая статистика по lane'ам</title>
   <style>
-    body { font: 15px/1.5 system-ui, sans-serif; max-width: 720px; margin: 48px auto; padding: 0 16px; color: #1a1a1a; }
-    code { background: #f4f4f5; padding: 2px 6px; border-radius: 4px; }
-    h1 { margin-bottom: 4px; } .muted { color: #71717a; }
-    li { margin: 4px 0; }
+    :root { --blue:#1d4ed8; --ink:#0f1720; --mut:#64748b; --line:#e2e8f0; --bg:#f8fafc; }
+    * { box-sizing: border-box; }
+    body { font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink);
+           max-width: 960px; margin: 0 auto; padding: 32px 16px 64px; background: #fff; }
+    header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    h1 { margin: 0; font-size: 24px; } h1 b { color: var(--blue); }
+    .sub { color: var(--mut); font-size: 13px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 20px 0; }
+    .card { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; background: var(--bg); }
+    .card b { display: block; font-size: 26px; line-height: 1.1; }
+    .card span { color: var(--mut); font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    th { color: var(--mut); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .3px; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .lane { font-weight: 600; }
+    .eq { display: inline-block; min-width: 22px; padding: 1px 6px; border-radius: 6px; background: #eef2ff; color: var(--blue); font-size: 12px; font-weight: 700; }
+    .rpm { font-weight: 700; }
+    .rpm.lo { color: #991b1b; } .rpm.mid { color: #854d0e; } .rpm.hi { color: #166534; }
+    .muted { color: var(--mut); }
+    .empty { margin-top: 28px; padding: 24px; border: 1px dashed var(--line); border-radius: 12px; color: var(--mut); text-align: center; }
+    .foot { margin-top: 24px; color: var(--mut); font-size: 12px; }
+    a { color: var(--blue); text-decoration: none; }
   </style>
 </head>
 <body>
-  <h1>LoadLens</h1>
-  <p class="muted">Crowd-база грузов и API для расширения. Сервис работает.</p>
-  <h3>API <code>/api/v1</code></h3>
-  <ul>
-    <li><code>POST /loads</code> — ingest грузов (расширение)</li>
-    <li><code>GET /lanes/:origin/:dest?equipment=</code> — медиана RPM по lane</li>
-    <li><code>GET /markets/:market/strength</code> — сила рынка</li>
-    <li><code>GET /geo/distance?from=&amp;to=</code> — дорожные мили</li>
-    <li><code>GET /rates</code> — цена дизеля (EIA)</li>
-    <li><code>POST /auth/register|login|refresh</code>, <code>GET /auth/me</code></li>
-  </ul>
-  <p class="muted">Health: <code>/healthz</code></p>
+  <header>
+    <h1>Load<b>Lens</b> · lane stats</h1>
+    <span class="sub" id="updated">загрузка…</span>
+  </header>
+  <p class="sub">Живая статистика рынка по lane'ам. Данные копятся через Chrome-расширение (DAT One / Truckstop).
+    Окно — 7 дней. Ставка = запрос брокера, не цена сделки.</p>
+
+  <div class="cards" id="cards"></div>
+  <div id="content"></div>
+
+  <div class="foot">API: <a href="/api/v1/lanes">/api/v1/lanes</a> · health: <a href="/healthz">/healthz</a> · обновляется каждые 30с</div>
+
+  <script>
+    const API = '/api/v1';
+    const $ = (id) => document.getElementById(id);
+
+    const money = (n) => n == null ? '—' : '$' + Number(n).toFixed(2);
+    const num = (n) => n == null ? '—' : Number(n).toLocaleString('en-US');
+    function ago(iso) {
+      if (!iso) return '—';
+      const ms = Date.now() - new Date(iso).getTime();
+      const m = Math.round(ms / 60000);
+      if (m < 1) return 'только что';
+      if (m < 60) return m + ' мин назад';
+      const h = Math.round(m / 60);
+      if (h < 24) return h + ' ч назад';
+      return Math.round(h / 24) + ' дн назад';
+    }
+    function rpmClass(v) { return v == null ? '' : v < 1.8 ? 'lo' : v < 2.25 ? 'mid' : 'hi'; }
+
+    function card(value, label) {
+      const d = document.createElement('div'); d.className = 'card';
+      const b = document.createElement('b'); b.textContent = value;
+      const s = document.createElement('span'); s.textContent = label;
+      d.append(b, s); return d;
+    }
+
+    function renderCards(s) {
+      const c = $('cards'); c.textContent = '';
+      c.append(
+        card(num(s.loads), 'грузов за неделю'),
+        card(num(s.lanes), 'уникальных lane'),
+        card(num(s.markets), 'рынков отправления'),
+        card(money(s.medianRpm) + (s.medianRpm != null ? '/mi' : ''), 'медиана RPM (рынок)')
+      );
+    }
+
+    function renderLanes(lanes) {
+      const wrap = $('content'); wrap.textContent = '';
+      if (!lanes || !lanes.length) {
+        const e = document.createElement('div'); e.className = 'empty';
+        e.textContent = 'Пока нет данных. Открой DAT One / Truckstop с установленным расширением и полистай выдачу — lane’ы появятся здесь.';
+        wrap.appendChild(e); return;
+      }
+      const table = document.createElement('table');
+      const thead = document.createElement('thead');
+      const hr = document.createElement('tr');
+      [['Lane', ''], ['Eq', ''], ['Грузов', 'num'], ['Медиана', 'num'], ['Коридор p25–p75', 'num'], ['Свежесть', 'num']]
+        .forEach(([t, cls]) => { const th = document.createElement('th'); th.textContent = t; if (cls) th.className = cls; hr.appendChild(th); });
+      thead.appendChild(hr); table.appendChild(thead);
+
+      const tb = document.createElement('tbody');
+      lanes.forEach((l) => {
+        const tr = document.createElement('tr');
+        const lane = document.createElement('td'); lane.className = 'lane';
+        lane.textContent = l.originMarket + ' → ' + l.destMarket; tr.appendChild(lane);
+
+        const eq = document.createElement('td');
+        const chip = document.createElement('span'); chip.className = 'eq'; chip.textContent = l.equipment;
+        eq.appendChild(chip); tr.appendChild(eq);
+
+        const n = document.createElement('td'); n.className = 'num'; n.textContent = num(l.n); tr.appendChild(n);
+
+        const med = document.createElement('td'); med.className = 'num';
+        const sp = document.createElement('span'); sp.className = 'rpm ' + rpmClass(l.medianRpm);
+        sp.textContent = l.medianRpm != null ? money(l.medianRpm) + '/mi' : '—';
+        med.appendChild(sp); tr.appendChild(med);
+
+        const range = document.createElement('td'); range.className = 'num muted';
+        range.textContent = (l.p25 != null && l.p75 != null) ? money(l.p25) + '–' + money(l.p75) : '—';
+        tr.appendChild(range);
+
+        const fresh = document.createElement('td'); fresh.className = 'num muted'; fresh.textContent = ago(l.lastSeen);
+        tr.appendChild(fresh);
+
+        tb.appendChild(tr);
+      });
+      table.appendChild(tb); wrap.appendChild(table);
+    }
+
+    async function refresh() {
+      try {
+        const data = await fetch(`${API}/lanes`).then((r) => r.json());
+        renderCards(data.summary || { loads: 0, lanes: 0, markets: 0, medianRpm: null });
+        renderLanes(data.lanes || []);
+        $('updated').textContent = 'обновлено ' + new Date().toLocaleTimeString('ru-RU');
+      } catch (e) {
+        $('updated').textContent = 'ошибка загрузки';
+      }
+    }
+    refresh();
+    setInterval(refresh, 30000);
+  </script>
 </body>
 </html>
