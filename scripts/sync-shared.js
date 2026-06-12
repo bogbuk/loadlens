@@ -27,4 +27,10 @@ const seedJs = BANNER +
   "if (typeof module !== 'undefined' && module.exports) module.exports = LLSEED;\n";
 fs.writeFileSync(path.join(VENDOR, "markets.seed.js"), seedJs);
 
-console.log(`synced ${FILES.length + 1} files -> extension/vendor/`);
+// Копия seed внутрь backend/shared/ — нужна в Docker-образе (контекст сборки = backend/,
+// shared/ из корня репо туда не попадает). Коммитится, читается seed.ts в рантайме.
+const BACKEND_SHARED = path.join(ROOT, "backend", "shared");
+fs.mkdirSync(BACKEND_SHARED, { recursive: true });
+fs.writeFileSync(path.join(BACKEND_SHARED, "markets.seed.json"), seed);
+
+console.log(`synced ${FILES.length + 1} files -> extension/vendor/ + backend/shared/markets.seed.json`);
