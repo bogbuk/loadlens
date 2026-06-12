@@ -28,10 +28,15 @@ Status: done
 - [x] e2e-smoke: ingest→lane median $2.90, market seed, geo OSRM 684mi, rates, JWT register
 - [ ] commit & push (ожидает подтверждения пользователя)
 
+## Деплой (готово, кроме DNS)
+- [x] Coolify: project LoadLens + Postgres loadlens-db + app loadlens-backend, автодеплой по push в `main`.
+- [x] Сборка зелёная, контейнер running, `Nest application successfully started`, БД подключена.
+- [x] Проверено через Traefik (Host-заголовок): `/healthz` ok, `/markets`, `/rates` отвечают.
+- [ ] **Cloudflare DNS** `loadlens.krait.studio` A → `46.4.25.36` (proxied, SSL Full) — только так
+      домен станет публично доступен (Traefik-маршрут уже зарегистрирован). Делает владелец Cloudflare.
+- Координаты деплоя — в памяти проекта `loadlens-coolify-deploy`.
+
 ## Открытые задачи перед продакшеном
 - Снять реальные DOM-селекторы DAT One / Truckstop с живой залогиненной сессии,
   обновить `extension/adapters/*_SELECTORS` и фикстуры в `__fixtures__/`.
-- Деплой на Coolify (отдельный app + Postgres + домен `loadlens.krait.studio`),
-  Base Directory = `/`, Dockerfile = `backend/Dockerfile`. Env: `DATABASE_URL`, `JWT_SECRET`,
-  `ADMIN_KEY`, опц. `EIA_API_KEY`, `OSRM_URL`.
 - Заявки в DAT Developer Portal / Truckstop Marketplace (легальный путь).
