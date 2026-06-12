@@ -16,6 +16,9 @@ SaaS Chrome-расширение поверх **DAT One** и **Truckstop**: по
 бейджи + панель, `chrome.storage`) + NestJS/Sequelize/Postgres бэкенд (крауд-база ставок по lane,
 JWT-аккаунты, Pro-план).
 
+**Живой дашборд:** [loadlens.krait.studio](https://loadlens.krait.studio) — статистика по lane'ам
+(медиана RPM, объём, коридор p25–p75), наполняется по мере работы расширения. API: `/api/v1`.
+
 ## Структура
 
 | Каталог | Что |
