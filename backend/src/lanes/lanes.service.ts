@@ -54,7 +54,7 @@ export class LanesService {
   async overview(): Promise<{ loads: number; lanes: number; markets: number; medianRpm: number | null }> {
     const rows = await this.sequelize.query<any>(
       `SELECT count(*)::int AS loads,
-         count(DISTINCT group_key)::int AS lanes,
+         count(DISTINCT (origin_market || '>' || dest_market || '|' || equipment))::int AS lanes,
          count(DISTINCT origin_market)::int AS markets,
          percentile_cont(0.5) WITHIN GROUP (ORDER BY rpm_cents) AS median
        FROM loads
