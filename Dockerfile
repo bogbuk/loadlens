@@ -1,6 +1,5 @@
-# ВАЖНО: контекст сборки = КОРЕНЬ репозитория (dat.com/), не backend/.
-# Нужно, чтобы в образ попал общий shared/ (markets.seed.json и т.п.).
-# В Coolify: Base Directory = / , Dockerfile Location = backend/Dockerfile.
+# Канонический Dockerfile для деплоя (Coolify: Base Directory = /, Build Pack = dockerfile).
+# Контекст сборки — корень репо, чтобы в образ попали и backend/, и общий shared/.
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY backend/package*.json ./
