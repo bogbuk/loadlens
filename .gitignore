@@ -1,0 +1,14 @@
+/.idea/
+/node_modules/
+/dist/
+/.local_dev.env
+/CLAUDE.md
+/.ai/
+.prod.env
+package-lock.json
+.DS_Store
+/docs/
+backend/node_modules/
+backend/dist/
+backend/.env
+*.log

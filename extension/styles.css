@@ -1,0 +1,55 @@
+/* LoadLens — бейджи на строках грузов + плавающая панель. Префикс ll- во избежание коллизий. */
+
+/* ----- бейджи в строке ----- */
+.ll-badge {
+  display: inline-flex; gap: 4px; align-items: center;
+  margin-left: 6px; vertical-align: middle; font: 600 11px/1 -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+.ll-chip {
+  padding: 2px 6px; border-radius: 6px; white-space: nowrap;
+  border: 1px solid transparent;
+}
+.ll-profit { background: #eef2ff; color: #1e3a8a; }
+.ll-badge.ll-green .ll-profit { background: #dcfce7; color: #166534; }
+.ll-badge.ll-amber .ll-profit { background: #fef9c3; color: #854d0e; }
+.ll-badge.ll-red   .ll-profit { background: #fee2e2; color: #991b1b; }
+.ll-badge.ll-unknown .ll-profit { background: #f1f5f9; color: #64748b; }
+
+.ll-hos { font-weight: 800; }
+.ll-hos.ll-green { background: #dcfce7; color: #166534; }
+.ll-hos.ll-amber { background: #fef9c3; color: #854d0e; }
+.ll-hos.ll-red   { background: #fee2e2; color: #991b1b; }
+
+/* ----- плавающая панель ----- */
+#ll-panel {
+  position: fixed; right: 16px; bottom: 16px; width: 320px; max-height: 70vh; overflow: auto;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; z-index: 2147483646;
+  box-shadow: 0 10px 30px rgba(15,23,42,.18); font: 13px/1.45 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #0f1720;
+}
+#ll-panel .hd {
+  display: flex; justify-content: space-between; align-items: center;
+  background: linear-gradient(180deg,#1d4ed8,#1e3a8a); color: #fff; padding: 10px 12px; border-radius: 14px 14px 0 0;
+}
+#ll-panel .hd .logo { font-weight: 800; } #ll-panel .hd .logo b { color: #bcd0ff; }
+#ll-panel .hd button { background: rgba(255,255,255,.18); color: #fff; border: 0; width: 24px; height: 24px; border-radius: 7px; cursor: pointer; font-size: 16px; }
+#ll-panel .bd { padding: 10px 12px; }
+#ll-panel .row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #eef1f4; }
+#ll-panel .row .k { color: #6b7785; }
+#ll-panel h4 { margin: 10px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .3px; color: #1e3a8a; }
+#ll-panel .ll-cfg { font-size: 12px; color: #475569; margin: 8px 0; }
+#ll-panel .ll-cfg input { border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 5px; font: inherit; }
+#ll-panel .chain { padding: 6px 8px; margin: 5px 0; border-radius: 9px; background: #f8fafc; border-left: 3px solid #94a3b8; }
+#ll-panel .chain.ll-green { border-left-color: #16a34a; }
+#ll-panel .chain.ll-amber { border-left-color: #d97706; }
+#ll-panel .chain.ll-red   { border-left-color: #dc2626; }
+#ll-panel .chain .route { font-weight: 700; font-size: 12.5px; }
+#ll-panel .chain .meta { color: #64748b; font-size: 11.5px; margin-top: 2px; }
+#ll-panel .deal { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12.5px; }
+#ll-panel .deal .p { font-weight: 700; color: #166534; }
+#ll-panel .note { color: #9aa6b2; font-size: 11px; margin-top: 8px; }
+
+#ll-fab {
+  position: fixed; right: 16px; bottom: 16px; z-index: 2147483646;
+  background: #1d4ed8; color: #fff; border: 0; padding: 10px 14px; border-radius: 99px; cursor: pointer;
+  font: 700 13px -apple-system, "Segoe UI", Roboto, Arial, sans-serif; box-shadow: 0 8px 20px rgba(29,78,216,.35);
+}

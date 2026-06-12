@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LoadLens API</title>
+  <style>
+    body { font: 15px/1.5 system-ui, sans-serif; max-width: 720px; margin: 48px auto; padding: 0 16px; color: #1a1a1a; }
+    code { background: #f4f4f5; padding: 2px 6px; border-radius: 4px; }
+    h1 { margin-bottom: 4px; } .muted { color: #71717a; }
+    li { margin: 4px 0; }
+  </style>
+</head>
+<body>
+  <h1>LoadLens</h1>
+  <p class="muted">Crowd-база грузов и API для расширения. Сервис работает.</p>
+  <h3>API <code>/api/v1</code></h3>
+  <ul>
+    <li><code>POST /loads</code> — ingest грузов (расширение)</li>
+    <li><code>GET /lanes/:origin/:dest?equipment=</code> — медиана RPM по lane</li>
+    <li><code>GET /markets/:market/strength</code> — сила рынка</li>
+    <li><code>GET /geo/distance?from=&amp;to=</code> — дорожные мили</li>
+    <li><code>GET /rates</code> — цена дизеля (EIA)</li>
+    <li><code>POST /auth/register|login|refresh</code>, <code>GET /auth/me</code></li>
+  </ul>
+  <p class="muted">Health: <code>/healthz</code></p>
+</body>
+</html>

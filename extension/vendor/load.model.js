@@ -1,0 +1,108 @@
+/* AUTO-GENERATED копия из /shared — НЕ РЕДАКТИРОВАТЬ. Источник правды: shared/. Пересобрать: npm run sync:shared */
+/* LoadLens — unified Load model + нормализаторы.
+   Zero-dep CommonJS: грузится и в браузере (global LLMODEL), и в Node (require), и в тестах.
+   Прямой аналог PriceLens row {id,title,price,groupKey,metric,unit,attrs}, где metric=RPM. */
+const LLMODEL = (() => {
+  "use strict";
+
+  // equipment: нормализуем длинные имена бордов к одному коду (V/R/F/...).
+  const EQUIP = {
+    van: "V", "dry van": "V", v: "V",
+    reefer: "R", r: "R", refrigerated: "R",
+    flatbed: "F", f: "F", fb: "F",
+    "step deck": "SD", stepdeck: "SD", sd: "SD",
+    "power only": "PO", po: "PO",
+    hotshot: "HS", hs: "HS",
+  };
+  function normEquipment(raw) {
+    if (!raw) return "?";
+    const k = String(raw).trim().toLowerCase();
+    return EQUIP[k] || String(raw).trim().toUpperCase().slice(0, 3);
+  }
+
+  // rate: "$2,150" -> 2150, "$2150.00" -> 2150, "Call"/"" -> null
+  function parseRate(raw) {
+    if (raw == null) return null;
+    const m = String(raw).replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
+    if (!m) return null;
+    const n = Math.round(parseFloat(m[1]));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+
+  // miles: "542" / "542 mi" -> 542; пусто/"-" -> null
+  function parseMiles(raw) {
+    if (raw == null) return null;
+    const m = String(raw).replace(/,/g, "").match(/(\d+)/);
+    return m ? parseInt(m[1], 10) : null;
+  }
+
+  // age публикации в минутах: "15m"->15, "2h"->120, "1d"->1440, "Now"/"-"->0
+  function parseAge(raw) {
+    if (raw == null) return null;
+    const s = String(raw).trim().toLowerCase();
+    if (/now|just/.test(s)) return 0;
+    const m = s.match(/(\d+)\s*([mhd])/);
+    if (!m) { const n = parseInt(s, 10); return Number.isFinite(n) ? n : null; }
+    const v = parseInt(m[1], 10);
+    return m[2] === "m" ? v : m[2] === "h" ? v * 60 : v * 1440;
+  }
+
+  // weight в lbs: "44,000" / "44000 lbs" -> 44000
+  function parseWeight(raw) { return parseMiles(raw); }
+
+  // нормализованный ключ рынка: "Chicago","IL" -> "CHICAGO_IL".
+  // Город приводим к UPPER без диакритики/пунктуации; штат — 2 буквы.
+  function marketKey(city, state) {
+    const c = String(city || "").trim().toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    const s = String(state || "").trim().toUpperCase().slice(0, 2);
+    if (!c) return s || "?";
+    return s ? `${c}_${s}` : c;
+  }
+
+  function laneKey(board, originMarket, destMarket, equipment) {
+    return `${board}|${originMarket}>${destMarket}|${equipment}`;
+  }
+
+  // Собрать unified Load из сырых строковых полей адаптера. Возвращает null, если нет гео.
+  function buildLoad(raw, board) {
+    const originCity = (raw.originCity || "").trim();
+    const originState = (raw.originState || "").trim();
+    const destCity = (raw.destCity || "").trim();
+    const destState = (raw.destState || "").trim();
+    if (!originCity && !originState) return null;
+    if (!destCity && !destState) return null;
+
+    const equipment = normEquipment(raw.equipment);
+    const originMarket = marketKey(originCity, originState);
+    const destMarket = marketKey(destCity, destState);
+    const rate = parseRate(raw.rate);
+    const loadedMiles = parseMiles(raw.loadedMiles);
+    const deadheadMiles = parseMiles(raw.deadheadMiles);
+
+    return {
+      board,
+      loadId: String(raw.loadId || `${originMarket}>${destMarket}|${rate || "x"}|${loadedMiles || "x"}`),
+      originCity, originState, destCity, destState,
+      originMarket, destMarket,
+      equipment,
+      rate,
+      loadedMiles,
+      deadheadMiles,
+      weight: parseWeight(raw.weight),
+      lengthFt: parseMiles(raw.lengthFt),
+      postedAge: parseAge(raw.postedAge),
+      brokerMc: raw.brokerMc ? String(raw.brokerMc).trim() : null,
+      brokerName: raw.brokerName ? String(raw.brokerName).trim() : null,
+      contact: raw.contact ? String(raw.contact).trim() : null, // PII — НЕ уходит на сервер
+      groupKey: laneKey(board, originMarket, destMarket, equipment),
+    };
+  }
+
+  return {
+    normEquipment, parseRate, parseMiles, parseAge, parseWeight,
+    marketKey, laneKey, buildLoad,
+  };
+})();
+
+if (typeof module !== "undefined" && module.exports) module.exports = LLMODEL;
+if (typeof globalThis !== "undefined") globalThis.LLMODEL = LLMODEL;

@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "LoadLens — скоринг грузов для DAT One / Truckstop",
+  "version": "0.1.0",
+  "description": "Показывает выгодность каждого груза ($/милю с учётом deadhead, топлива и рынка lane), HOS-выполнимость и строит get-out цепочки, чтобы водитель не простаивал.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://*.dat.com/*",
+    "https://*.truckstop.com/*",
+    "https://loadlens.krait.studio/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "LoadLens"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.dat.com/*", "https://*.truckstop.com/*"],
+      "js": [
+        "vendor/load.model.js",
+        "vendor/scoring.js",
+        "vendor/planner.js",
+        "vendor/markets.seed.js",
+        "api.js",
+        "adapters/adapters.js",
+        "adapters/dat.adapter.js",
+        "adapters/truckstop.adapter.js",
+        "geo.js",
+        "hos.js",
+        "content.js"
+      ],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
