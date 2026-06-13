@@ -98,6 +98,28 @@ Env в Coolify: `DATABASE_URL`, `JWT_SECRET`, `ADMIN_KEY`, `PORT`. Опц. `EIA_
 > Build-логи failed-деплоя Coolify отдаёт ТОЛЬКО в веб-UI (не в CLI/REST) — для диагностики сборки
 > сразу открывать страницу деплоя в UI.
 
+## Партнёрство с бордами (два трека)
+
+Чтобы уйти от правового риска DOM-парсинга (DAT ToS §1.2 запрещает browser extension для извлечения
+Product Data; прецедент DAT v. Convoy) — два независимых трека партнёрства с DAT (аналогично Truckstop):
+
+1. **Solutions Integrations Partner (приоритет, про данные).** Официальный доступ к DAT Developer
+   Portal (API: Load Board, RateView, BookNow). Это легальный источник грузов/ставок вместо парсинга:
+   добавляется `LLADAPT`-совместимый «API-адаптер», отдающий тот же unified `Load`; DOM-адаптеры
+   остаются как fallback для пользователей без API-доступа. Минусы: setup fee (~$500–1000),
+   сертификация, обычно требует активной подписки DAT у конечного пользователя. Truckstop-аналог —
+   Marketplace partner program (там уже LoadHunter — прецедент приёма надстроек).
+2. **Affiliate Program (вторично, про деньги).** Реферальная комиссия за привод клиентов в DAT
+   (Load Board / Factoring). НЕ даёт доступа к API/данным. Для LoadLens — побочный канал: расширение
+   работает только поверх залогиненной сессии DAT → каждый пользователь = активный подписчик DAT,
+   так что нарратив «помогаем подписчикам извлечь больше из подписки + приводим новых» honest.
+   Подавать как `Carrier`, программа `Load Board Affiliate`. На pre-launch цифры клиентов не завышать
+   (DAT сверяет mutual customers).
+
+Архитектура от этого не меняется: слой site-adapters (`extension/adapters/`) остаётся ядром, API-адаптер
+— это просто второй источник того же `Load`. Crowdsourced-база ставок строится только на данных,
+видимых пользователю в его сессии (это и для ToS чисто, и для affiliate-нарратива удобно).
+
 ## Домен (FMCSA / freight)
 
 - **HOS:** 11h driving, 14h on-duty window, 30min break, 70h/8d или 60h/7d, split sleeper.
