@@ -29,6 +29,7 @@
         "api.js",
         "adapters/adapters.js",
         "adapters/dat.adapter.js",
+        "adapters/dat.graphql.js",
         "adapters/truckstop.adapter.js",
         "geo.js",
         "hos.js",
@@ -36,6 +37,12 @@
       ],
       "css": ["styles.css"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*.dat.com/*"],
+      "js": ["inject.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
     }
   ]
 }

@@ -13,6 +13,7 @@
   let hosState = (typeof LLHOS !== "undefined") ? LLHOS.fresh() : { remainingDrive: 660, remainingOnDuty: 840, remainingCycle: 4200 };
   let currentMarket = null; // рынок водителя для планировщика (по умолчанию — самый частый origin в выдаче)
 
+  let gqlLoads = [];              // грузы из перехваченного ответа DAT FindLoads (inject.js)
   const laneCache = new Map();    // "O>D|E" -> {medianRpm|null}  (из backend)
   const marketCache = new Map();  // market -> strength 0..1
   const laneRequested = new Set();
@@ -165,14 +166,16 @@
   }
 
   function render() {
-    const all = collectLoads();
-    const loads = uniqueLoads(all);
+    const domAll = collectLoads();                 // DOM-строки (для построчных бейджей; нужны реальные селекторы)
+    const domLoads = uniqueLoads(domAll);
+    // Источник для панели/скоринга/крауд-базы: GraphQL-перехват (точные данные DAT) приоритетнее DOM.
+    const loads = gqlLoads.length ? gqlLoads : domLoads;
     queueSync(loads);
     fetchLanes(loads);
     fetchMarkets(uniqueMarkets(loads));
 
     clearBadges();
-    all.forEach(badgeFor);
+    domAll.forEach(badgeFor);                       // бейджи вешаем только на реальные DOM-строки (есть _row)
 
     if (panelCollapsed) {
       const p = document.getElementById("ll-panel"); if (p) p.remove();
@@ -240,6 +243,18 @@
         schedule();
       });
     } catch { /* нет API */ }
+
+    // приём перехваченных ответов DAT FindLoads из MAIN-world inject.js
+    window.addEventListener("message", (e) => {
+      if (e.source !== window) return;
+      const d = e.data;
+      if (!d || d.source !== "loadlens" || d.type !== "dat-findloads") return;
+      if (typeof DAT_GQL !== "undefined") {
+        const parsed = DAT_GQL.parseFindLoads(d.payload);
+        if (parsed.length) { gqlLoads = parsed; schedule(); }
+      }
+    });
+
     render();
     const obs = new MutationObserver(() => schedule());
     obs.observe(document.body, { childList: true, subtree: true });

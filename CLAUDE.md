@@ -19,10 +19,16 @@ NestJS/Sequelize/Postgres (крауд-база ставок по lane, JWT-ак�
 
 ```
 extension/                  MV3-расширение (грузит vendor/* → api → adapters → geo/hos → content)
-  adapters/                 site-adapters: dat.adapter.js, truckstop.adapter.js (+ adapters.js реестр)
-    *_SELECTORS             ★ DOM-селекторы — ЗАГЛУШКИ. Снять с живой залогиненной сессии,
-    __fixtures__/           обновить + фикстуры для adapters.test.js
-  content.js                MutationObserver → parseRow → 2 бейджа на строку → панель цепочек → server-sync
+  inject.js                 ★ MAIN-world перехватчик: патчит fetch/XHR, ловит ответы DAT FindLoads
+                            (one-web-bff/graphql), шлёт их content.js через postMessage. Своих запросов к DAT НЕ шлём.
+  adapters/
+    dat.graphql.js (DAT_GQL) ОСНОВНОЙ путь DAT: parseFindLoads(json)→Load[] по реальной GraphQL-схеме
+                            (FreightSearchV4FindLoadsResult). Богатые поля: rate+basis, trip/DH miles,
+                            equipmentType, brokerMc, creditScore, daysToPay (broker-trust). Фикстура — синтетика.
+    dat.adapter.js          DOM-адаптер DAT (fallback / построчные бейджи); *_SELECTORS — ★ ЗАГЛУШКИ
+    truckstop.adapter.js    DOM-адаптер Truckstop; *_SELECTORS — ★ ЗАГЛУШКИ
+    adapters.js             реестр adapterFor(host); __fixtures__/ — фикстуры для тестов
+  content.js                источник: gqlLoads (перехват, приоритет) → панель/скоринг/sync; DOM → построчные бейджи
   api.js (LLAPI)            JWT-клиент + sanitizeLoad (PII-фильтр) + sendLoads/getLane/getMarket/getDistance
   geo.js, hos.js            обёртки: дистанции (backend+haversine), HOS-состояние водителя
   popup.*                   настройки водителя (cost/mile, HOS-часы) + аккаунт
@@ -54,12 +60,18 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
 - **shared/ — единственный источник правды** для `load.model`/`scoring`/`planner`/`markets.seed`.
   После правки — `npm run sync:shared` (иначе расширение и backend разойдутся). vendor/ и
   backend/shared/ — автокопии, руками не редактировать.
-- **DOM-селекторы бордов — заглушки** в `*_SELECTORS`. Реальные снять с живой залогиненной сессии
-  DAT One/Truckstop через DevTools, обновить селекторы + HTML-фикстуры. Логика parseRow от
-  селекторов отвязана — меняется только карта.
-- **ToS/PII:** не персистим/не перепродаём rate-данные DAT/Truckstop «как есть» — наружу только
-  агрегат (median по lane). PII (контакты/телефоны/имена) режется в `LLAPI.sanitizeLoad` ДО отправки;
-  whitelist полей Load — явный список. Прецедент DAT v. Convoy.
+- **Два источника данных DAT.** (1) ОСНОВНОЙ — перехват собственных GraphQL-ответов приложения DAT
+  (`inject.js` → `DAT_GQL.parseFindLoads`): надёжно, не зависит от вёрстки, поля точные. (2) Fallback —
+  DOM-парсинг (`dat.adapter.js`, селекторы-заглушки). Для Truckstop пока только DOM-путь.
+  При смене GraphQL-схемы DAT — обновить `DAT_GQL` + фикстуру `__fixtures__/dat-findloads.json`.
+- **DOM-селекторы — заглушки** в `*_SELECTORS` (нужны для построчных бейджей). Снять с живой сессии.
+- **ToS/PII — критично.** **Мы НЕ инициируем запросов к API DAT** — `inject.js` только наблюдает
+  ответы, которые приложение DAT уже загрузило в сессии пользователя (как DOM-overlay у LoadConnect/
+  LoadHunter; это и есть граница «читаем то, что пользователь видит»). Автоматический вызов их
+  GraphQL/REST с сессионным токеном — путь Convoy, делать НЕЛЬЗЯ без Integrations-партнёрства.
+  Наружу через наш API — только агрегат (median по lane), не дамп. PII (email/phone/контакты) режется
+  в `LLAPI.sanitizeLoad` ДО отправки; `brokerMc`/`creditScore`/`daysToPay` — бизнес-данные, не PII.
+  **Живые DAT-токены в чат/файлы не вставлять и не использовать для скрейпинга.** Прецедент DAT v. Convoy.
 - **HOS-правила** (11h/14h/30min/70h-8d, split sleeper) живут в `shared/hos-calculator.js` +
   упрощённая мультисменная forward-модель в `planner.stepHos`. Обязательный сон не штрафует ранг.
 - **Скоринг:** trueRpm = rate/(loaded+deadhead); бейдж red/amber/green по break-even (cost/mile,

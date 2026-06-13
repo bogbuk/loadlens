@@ -1,0 +1,75 @@
+{
+  "_comment": "Синтетический ответ DAT FindLoads (freightSearchV4) — форма реальная, данные ВЫДУМАНЫ (без реальных PII). Структура снята с datone.web FindLoadResultV4Fields. Для теста dat.graphql.test.js.",
+  "data": {
+    "freightSearchV4": {
+      "__typename": "FreightSearchV4Query",
+      "findLoads": {
+        "__typename": "FreightSearchV4FindLoadsSuccess",
+        "searchId": "synthetic-search-1",
+        "resultCounts": { "__typename": "x", "total": 2, "loadBoard": 2, "similar": 1, "preferred": 0, "blocked": 0 },
+        "results": [
+          {
+            "__typename": "FreightSearchV4FindLoadsResult",
+            "resultId": "r-1",
+            "isActive": true,
+            "assetInfo": {
+              "postingId": "POST-AAA-1",
+              "equipmentType": "FLATBED",
+              "origin": { "city": "Chicago", "stateProv": "IL", "latitude": 41.88, "longitude": -87.63 },
+              "destination": { "city": "Atlanta", "stateProv": "GA", "latitude": 33.75, "longitude": -84.39 },
+              "capacity": { "fullPartial": "FULL", "maximumLengthFeet": 48, "maximumWeightPounds": 44000 }
+            },
+            "tripLength": { "miles": 716, "method": "PCMILER" },
+            "originDeadheadMiles": { "miles": 22, "method": "PCMILER" },
+            "destinationDeadheadMiles": { "miles": 0, "method": "PCMILER" },
+            "estimatedRatePerMile": 2.71,
+            "isFactorable": true,
+            "isNegotiable": true,
+            "isFromPrivateNetwork": false,
+            "rateInfo": {
+              "bookable": null,
+              "nonBookable": { "rateUsd": 1950, "basis": "FLAT" }
+            },
+            "posterDotIds": { "dotNumber": "1234567", "brokerMcNumber": "MC-555000", "carrierMcNumber": null },
+            "posterInfo": {
+              "companyName": "Acme Freight Brokers",
+              "city": "Dallas", "state": "TX",
+              "contact": { "email": "ops@example-broker.test", "phone": { "countryCode": "1", "number": "5551234567" } },
+              "credit": { "creditScore": 92, "daysToPay": 28, "asOf": "2026-06-10" }
+            }
+          },
+          {
+            "__typename": "FreightSearchV4FindLoadsResult",
+            "resultId": "r-2",
+            "isActive": true,
+            "assetInfo": {
+              "postingId": "POST-BBB-2",
+              "equipmentType": "VAN",
+              "origin": { "city": "Chicago", "stateProv": "IL", "latitude": 41.88, "longitude": -87.63 },
+              "destination": { "city": "Dallas", "stateProv": "TX", "latitude": 32.78, "longitude": -96.80 },
+              "capacity": { "fullPartial": "FULL", "maximumLengthFeet": 53, "maximumWeightPounds": 42000 }
+            },
+            "tripLength": { "miles": 925, "method": "PCMILER" },
+            "originDeadheadMiles": { "miles": 0, "method": "PCMILER" },
+            "estimatedRatePerMile": 1.95,
+            "isFactorable": false,
+            "isNegotiable": true,
+            "isFromPrivateNetwork": true,
+            "rateInfo": {
+              "bookable": { "rate": { "rateUsd": 1.95, "basis": "PER_MILE" }, "bookingMethod": "BOOK_NOW", "bookingUrl": "https://example.test/book" },
+              "nonBookable": null
+            },
+            "posterDotIds": { "dotNumber": "7654321", "brokerMcNumber": "MC-777111", "carrierMcNumber": null },
+            "posterInfo": {
+              "companyName": "Lone Star Logistics",
+              "city": "Houston", "state": "TX",
+              "contact": { "email": "dispatch@example-ls.test", "phone": { "countryCode": "1", "number": "5559876543" } },
+              "credit": { "creditScore": 78, "daysToPay": 35, "asOf": "2026-06-11" }
+            }
+          }
+        ],
+        "similarResults": []
+      }
+    }
+  }
+}
