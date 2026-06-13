@@ -36,7 +36,8 @@
       document.querySelectorAll(DAT_SELECTORS.row).forEach((row) => {
         const rid = resultIdOf(row);
         const load = rid && byId.get(rid);
-        if (load) pairs.push({ row, load, anchor: row.querySelector(DAT_SELECTORS.cells) || row });
+        // якорь = сам контейнер строки: бейдж вешаем абсолютным оверлеем, не в грид ячеек
+        if (load) pairs.push({ row, load, anchor: row });
       });
       return pairs;
     },

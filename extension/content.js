@@ -89,8 +89,9 @@
     const profit = LLSCORE.profitBadge(load, { costPerMile, dieselPrice, laneMedian });
     const hos = hosBadge(load);
 
+    anchorEl.classList.add("ll-anchored");          // position:relative для оверлея
     const host = document.createElement("span");
-    host.className = "ll-badge ll-" + profit.level;
+    host.className = "ll-badge ll-overlay ll-" + profit.level;
     host.appendChild(chip(profitText(profit), "ll-profit"));
     host.appendChild(chip("HOS " + hosIcon(hos), "ll-hos ll-" + hos));
     anchorEl.appendChild(host);
