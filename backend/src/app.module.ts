@@ -10,6 +10,8 @@ import { LanesModule } from './lanes/lanes.module';
 import { MarketsModule } from './markets/markets.module';
 import { LaneDistance } from './geo/lane-distance.model';
 import { GeoModule } from './geo/geo.module';
+import { BrokerReport } from './brokers/broker-report.model';
+import { BrokersModule } from './brokers/brokers.module';
 import { RatesModule } from './rates/rates.module';
 import { User } from './users/user.model';
 import { UsersModule } from './users/users.module';
@@ -21,7 +23,7 @@ import { HealthController } from './health/health.controller';
     SequelizeModule.forRoot({
       dialect: 'postgres',
       uri: process.env.DATABASE_URL,
-      models: [Load, LaneDistance, User],
+      models: [Load, LaneDistance, BrokerReport, User],
       autoLoadModels: true,
       synchronize: true,
       logging: false,
@@ -38,6 +40,7 @@ import { HealthController } from './health/health.controller';
     LanesModule,
     MarketsModule,
     GeoModule,
+    BrokersModule,
     RatesModule,
     UsersModule,
     AuthModule,

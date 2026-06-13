@@ -16,8 +16,10 @@
   let gqlLoads = [];              // грузы из перехваченного ответа DAT FindLoads (inject.js)
   const laneCache = new Map();    // "O>D|E" -> {medianRpm|null}  (из backend)
   const marketCache = new Map();  // market -> strength 0..1
+  const repCache = new Map();     // brokerMc -> reputation (crowd)
   const laneRequested = new Set();
   const marketRequested = new Set();
+  const repRequested = new Set();
 
   // ---------- сбор строк ----------
   // Источник грузов для панели/скоринга/sync: DAT — GraphQL-перехват (gqlLoads), Truckstop — DOM (collect).
@@ -74,6 +76,19 @@
       }).catch(() => {});
     });
   }
+  function fetchBrokerReps(loads) {
+    if (typeof LLAPI === "undefined") return;
+    const mcs = [...new Set(loads.map((l) => l.brokerMc).filter(Boolean))];
+    mcs.forEach((mc) => {
+      if (repRequested.has(mc)) return;
+      repRequested.add(mc);
+      LLAPI.getBrokerReputation(mc).then((r) => { if (r) { repCache.set(String(mc), r); schedule(); } }).catch(() => {});
+    });
+  }
+  function refreshRep(mc) {              // после отправки отзыва — перезапросить
+    repRequested.delete(mc);
+    if (typeof LLAPI !== "undefined") LLAPI.getBrokerReputation(mc).then((r) => { if (r) { repCache.set(String(mc), r); schedule(); } }).catch(() => {});
+  }
   function strengthOf(market) {
     if (marketCache.has(market)) return marketCache.get(market);
     const seed = globalThis.LLSEED && LLSEED.markets[market];
@@ -96,6 +111,8 @@
     host.appendChild(chip("HOS " + hosIcon(hos), "ll-hos ll-" + hos));
     const broker = LLSCORE.brokerBadge(load);
     if (broker.level !== "unknown") host.appendChild(chip(brokerText(broker), "ll-broker ll-" + broker.level));
+    // crowd-репутация: кликабельный чип (показывает агрегат + открывает меню отзыва)
+    if (load.brokerMc) host.appendChild(crowdChip(load.brokerMc));
     anchorEl.appendChild(host);
   }
   function brokerText(b) {
@@ -105,6 +122,60 @@
     const tag = b.level === "good" ? "🛡 надёжный" : b.level === "ok" ? "брокер ок" : "⚠ риск";
     return tag + (parts.length ? " · " + parts.join(" · ") : "");
   }
+
+  const CROWD_CLS = { good: "ll-good", mixed: "ll-ok", bad: "ll-risk", thin: "ll-thin", none: "ll-thin" };
+  function crowdText(rep) {
+    if (!rep || !rep.n) return "👥 +отзыв";
+    if (rep.level === "bad") {
+      const why = rep.doubleBrokered ? `${rep.doubleBrokered}× double-brokered` : `${rep.flaked}× флейк`;
+      return `👥 ⚠ ${why} (${rep.n})`;
+    }
+    if (rep.level === "good") return `👥 ${rep.paid + rep.noIssue}/${rep.n} ок`;
+    if (rep.level === "thin") return `👥 ${rep.n} отзыв.`;
+    return `👥 смешанно (${rep.n})`;
+  }
+  function crowdChip(mc) {
+    const rep = repCache.get(String(mc));
+    const c = chip(crowdText(rep), "ll-broker ll-crowd " + (rep ? CROWD_CLS[rep.level] : "ll-thin"));
+    c.style.cursor = "pointer";
+    c.title = "Crowdsourced репутация брокера. Нажми, чтобы оставить отзыв.";
+    c.addEventListener("click", (e) => { e.stopPropagation(); e.preventDefault(); openReportMenu(mc, e.clientX, e.clientY); });
+    return c;
+  }
+
+  // ---------- меню отзыва о брокере ----------
+  const REPORT_OPTS = [
+    { o: "paid", t: "✅ Заплатил" },
+    { o: "no_issue", t: "👍 Без проблем" },
+    { o: "slow", t: "🐢 Платит медленно" },
+    { o: "flaked", t: "🚫 Слил/отменил" },
+    { o: "double_brokered", t: "⛔ Double-broker" },
+  ];
+  function openReportMenu(mc, x, y) {
+    closeReportMenu();
+    const m = document.createElement("div");
+    m.id = "ll-report-menu";
+    m.style.left = Math.min(x, window.innerWidth - 200) + "px";
+    m.style.top = Math.min(y, window.innerHeight - 220) + "px";
+    const title = document.createElement("div");
+    title.className = "hd"; title.textContent = "Отзыв о брокере " + mc;
+    m.appendChild(title);
+    REPORT_OPTS.forEach(({ o, t }) => {
+      const b = document.createElement("button");
+      b.className = "ll-rep-opt"; b.textContent = t;
+      b.onclick = async () => {
+        m.querySelectorAll("button").forEach((x) => (x.disabled = true));
+        title.textContent = "Отправка…";
+        const ok = typeof LLAPI !== "undefined" && await LLAPI.reportBroker(String(mc), o);
+        closeReportMenu();
+        if (ok) refreshRep(String(mc));
+      };
+      m.appendChild(b);
+    });
+    document.body.appendChild(m);
+    setTimeout(() => document.addEventListener("click", closeReportMenu, { once: true }), 0);
+  }
+  function closeReportMenu() { const m = document.getElementById("ll-report-menu"); if (m) m.remove(); }
   function chip(text, cls) { const s = document.createElement("span"); s.className = "ll-chip " + cls; s.textContent = text; return s; }
   function profitText(p) {
     if (p.level === "unknown") return "— нет ставки";
@@ -170,6 +241,7 @@
     queueSync(loads);
     fetchLanes(loads);
     fetchMarkets(uniqueMarkets(loads));
+    fetchBrokerReps(loads);
 
     clearBadges();
     // построчные бейджи: матчим видимые DOM-строки с грузами (DAT — по resultId, TS — parseRow)

@@ -51,6 +51,25 @@ const LLAPI = (() => {
     } catch { return null; }
   }
 
+  async function getBrokerReputation(mc) {
+    try {
+      const res = await fetch(`${BASE}/brokers/${encodeURIComponent(mc)}/reputation`);
+      return res.ok ? res.json() : null;
+    } catch { return null; }
+  }
+
+  async function reportBroker(brokerMc, outcome, note) {
+    try {
+      const cid = await clientId();
+      const res = await fetch(`${BASE}/brokers/reports`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId: cid, brokerMc, outcome, note: note || undefined }),
+      });
+      return res.ok;
+    } catch { return false; }
+  }
+
   async function getMarket(market) {
     try {
       const res = await fetch(`${BASE}/markets/${encodeURIComponent(market)}/strength`);
@@ -135,7 +154,7 @@ const LLAPI = (() => {
   }
 
   return { sanitizeLoad, clientId, sendLoads, getLane, getMarket, getDistance, getDiesel,
-           register, login, logout, getMe };
+           getBrokerReputation, reportBroker, register, login, logout, getMe };
 })();
 
 if (typeof module !== "undefined" && module.exports) { module.exports = LLAPI; }
