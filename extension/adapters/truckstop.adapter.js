@@ -47,6 +47,24 @@
         contact: t(TRUCKSTOP_SELECTORS.contact),
       }, "truckstop");
     },
+
+    // У Truckstop нет GraphQL-перехвата → данные и якорь бейджа берём из DOM (parseRow на каждую строку).
+    collect() {
+      const out = [];
+      document.querySelectorAll(TRUCKSTOP_SELECTORS.row).forEach((row) => {
+        const load = this.parseRow(row);
+        if (load) out.push(load);
+      });
+      return out;
+    },
+    anchor() {
+      const pairs = [];
+      document.querySelectorAll(TRUCKSTOP_SELECTORS.row).forEach((row) => {
+        const load = this.parseRow(row);
+        if (load) pairs.push({ row, load, anchor: row });
+      });
+      return pairs;
+    },
   };
 
   LLADAPT.register(TRUCKSTOP_ADAPTER);

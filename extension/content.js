@@ -20,19 +20,11 @@
   const marketRequested = new Set();
 
   // ---------- сбор строк ----------
-  function collectLoads() {
-    const seen = new Map();
-    document.querySelectorAll(adapter.rowSelector).forEach((row) => {
-      const load = safeParse(row);
-      if (!load) return;
-      load._row = row;
-      seen.set(load.loadId + "@" + rowIndex(row), load);
-    });
-    return [...seen.values()];
+  // Источник грузов для панели/скоринга/sync: DAT — GraphQL-перехват (gqlLoads), Truckstop — DOM (collect).
+  function currentLoads() {
+    if (gqlLoads.length) return gqlLoads;
+    try { return adapter.collect ? uniqueLoads(adapter.collect()) : []; } catch { return []; }
   }
-  function safeParse(row) { try { return adapter.parseRow(row); } catch { return null; } }
-  let _ri = 0;
-  function rowIndex(row) { if (!row.__lli) row.__lli = ++_ri; return row.__lli; }
 
   // уникальные грузы (без дублей строк) для статистики/планировщика
   function uniqueLoads(loads) {
@@ -91,9 +83,8 @@
   // ---------- бейджи ----------
   function clearBadges() { document.querySelectorAll(".ll-badge").forEach((b) => b.remove()); }
 
-  function badgeFor(load) {
-    const row = load._row;
-    if (!row) return;
+  function badgeRow(anchorEl, load) {
+    if (!anchorEl) return;
     const laneMedian = laneCache.has(laneKeyOf(load)) ? laneCache.get(laneKeyOf(load)) : null;
     const profit = LLSCORE.profitBadge(load, { costPerMile, dieselPrice, laneMedian });
     const hos = hosBadge(load);
@@ -102,8 +93,7 @@
     host.className = "ll-badge ll-" + profit.level;
     host.appendChild(chip(profitText(profit), "ll-profit"));
     host.appendChild(chip("HOS " + hosIcon(hos), "ll-hos ll-" + hos));
-    // вешаем в конец строки (или в первую ячейку)
-    (row.querySelector("td, .col-rate, span") || row).appendChild(host);
+    anchorEl.appendChild(host);
   }
   function chip(text, cls) { const s = document.createElement("span"); s.className = "ll-chip " + cls; s.textContent = text; return s; }
   function profitText(p) {
@@ -166,16 +156,14 @@
   }
 
   function render() {
-    const domAll = collectLoads();                 // DOM-строки (для построчных бейджей; нужны реальные селекторы)
-    const domLoads = uniqueLoads(domAll);
-    // Источник для панели/скоринга/крауд-базы: GraphQL-перехват (точные данные DAT) приоритетнее DOM.
-    const loads = gqlLoads.length ? gqlLoads : domLoads;
+    const loads = currentLoads();                   // DAT: gqlLoads (перехват) · Truckstop: DOM
     queueSync(loads);
     fetchLanes(loads);
     fetchMarkets(uniqueMarkets(loads));
 
     clearBadges();
-    domAll.forEach(badgeFor);                       // бейджи вешаем только на реальные DOM-строки (есть _row)
+    // построчные бейджи: матчим видимые DOM-строки с грузами (DAT — по resultId, TS — parseRow)
+    (adapter.anchor ? adapter.anchor(loads) : []).forEach((p) => badgeRow(p.anchor || p.row, p.load));
 
     if (panelCollapsed) {
       const p = document.getElementById("ll-panel"); if (p) p.remove();

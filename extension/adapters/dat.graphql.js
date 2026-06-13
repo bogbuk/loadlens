@@ -52,6 +52,7 @@ const DAT_GQL = (() => {
     }, "dat");
     if (!load) return null;
 
+    load.resultId = result.resultId ?? null;   // ключ матчинга с DOM-строкой (id="table-row-<resultId>")
     // broker-trust + рыночные подсказки (не PII): остаются для скоринга/бейджей
     load.estimatedRatePerMile = result.estimatedRatePerMile ?? null;
     load.creditScore = credit.creditScore ?? null;

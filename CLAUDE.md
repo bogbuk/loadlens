@@ -64,7 +64,9 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   (`inject.js` → `DAT_GQL.parseFindLoads`): надёжно, не зависит от вёрстки, поля точные. (2) Fallback —
   DOM-парсинг (`dat.adapter.js`, селекторы-заглушки). Для Truckstop пока только DOM-путь.
   При смене GraphQL-схемы DAT — обновить `DAT_GQL` + фикстуру `__fixtures__/dat-findloads.json`.
-- **DOM-селекторы — заглушки** в `*_SELECTORS` (нужны для построчных бейджей). Снять с живой сессии.
+- **DOM-якоря бейджей.** DAT — РЕАЛЬНЫЕ (сняты 2026-06-13): строка `div.row-container[id^="table-row-<resultId>"]`,
+  где `<resultId>` совпадает с `resultId` из FindLoads → `dat.adapter.anchor(loads)` матчит строку↔груз
+  по resultId (ячейки не парсим). Truckstop — `*_SELECTORS` всё ещё ЗАГЛУШКИ, снять с живой сессии.
 - **ToS/PII — критично.** **Мы НЕ инициируем запросов к API DAT** — `inject.js` только наблюдает
   ответы, которые приложение DAT уже загрузило в сессии пользователя (как DOM-overlay у LoadConnect/
   LoadHunter; это и есть граница «читаем то, что пользователь видит»). Автоматический вызов их
