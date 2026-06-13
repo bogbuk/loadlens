@@ -38,6 +38,7 @@ backend/src/                NestJS, synchronize:true (миграций нет)
   lanes/                    GET /lanes/:o/:d — median RPM по lane (чистый SQL-агрегат)
   markets/                  GET /markets/:m/strength — сила рынка (крауд-плотность + seed-фолбэк)
   geo/                      GET /geo/distance — OSRM-прокси + кэш lane_distances + haversine
+  brokers/                  POST /brokers/reports (crowd-отзыв, upsert client_id+mc) + GET /brokers/:mc/reputation
   rates/                    GET /rates — дизель EIA (фолбэк $3.95 без EIA_API_KEY)
   auth/ users/              register/login/refresh/me, PATCH /admin/users/:email/plan (X-Admin-Key)
   shared/markets.seed.json  ★ копия seed для Docker-контекста backend/ (генерит sync:shared)
@@ -79,6 +80,10 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
 - **Broker-trust бейдж** (`LLSCORE.brokerBadge`): good/ok/risk по `creditScore` (≥90 good, <75 risk)
   + `daysToPay` (≤30 ok, >40 risk). Данные из GraphQL-перехвата DAT (CS/DTP). Третий чип в полосе
   под строкой. Это carrier-сторона фрод-защиты (дифференциатор из исследования).
+- **Crowd-репутация брокеров** (`backend/brokers`): отзывы пользователей по MC (paid/no_issue/slow/
+  flaked/double_brokered), upsert по `client_id+mc` (один вердикт на юзера → нет накрутки), агрегат
+  `deriveLevel` → good/mixed/bad/thin. Чётвертый (clickable) чип в полосе + меню отзыва. MC нормализуем
+  к цифрам (`normalizeMc`). Поверх DAT-кредита — это network-effect moat.
 - **Скоринг:** trueRpm = rate/(loaded+deadhead); бейдж red/amber/green по break-even (cost/mile,
   дефолт $1.80) и медиане lane. `metric` груза = RPM (аналог цены в PriceLens).
 - Backend: `synchronize:true` (миграций нет, MVP). Новые колонки — идемпотентный
