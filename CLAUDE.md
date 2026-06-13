@@ -76,6 +76,9 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   **Живые DAT-токены в чат/файлы не вставлять и не использовать для скрейпинга.** Прецедент DAT v. Convoy.
 - **HOS-правила** (11h/14h/30min/70h-8d, split sleeper) живут в `shared/hos-calculator.js` +
   упрощённая мультисменная forward-модель в `planner.stepHos`. Обязательный сон не штрафует ранг.
+- **Broker-trust бейдж** (`LLSCORE.brokerBadge`): good/ok/risk по `creditScore` (≥90 good, <75 risk)
+  + `daysToPay` (≤30 ok, >40 risk). Данные из GraphQL-перехвата DAT (CS/DTP). Третий чип в полосе
+  под строкой. Это carrier-сторона фрод-защиты (дифференциатор из исследования).
 - **Скоринг:** trueRpm = rate/(loaded+deadhead); бейдж red/amber/green по break-even (cost/mile,
   дефолт $1.80) и медиане lane. `metric` груза = RPM (аналог цены в PriceLens).
 - Backend: `synchronize:true` (миграций нет, MVP). Новые колонки — идемпотентный

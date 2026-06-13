@@ -94,7 +94,16 @@
     host.className = "ll-badge ll-rowstrip ll-" + profit.level;
     host.appendChild(chip(profitText(profit), "ll-profit"));
     host.appendChild(chip("HOS " + hosIcon(hos), "ll-hos ll-" + hos));
+    const broker = LLSCORE.brokerBadge(load);
+    if (broker.level !== "unknown") host.appendChild(chip(brokerText(broker), "ll-broker ll-" + broker.level));
     anchorEl.appendChild(host);
+  }
+  function brokerText(b) {
+    const parts = [];
+    if (b.creditScore != null) parts.push(b.creditScore + " CS");
+    if (b.daysToPay != null) parts.push(b.daysToPay + " DTP");
+    const tag = b.level === "good" ? "🛡 надёжный" : b.level === "ok" ? "брокер ок" : "⚠ риск";
+    return tag + (parts.length ? " · " + parts.join(" · ") : "");
   }
   function chip(text, cls) { const s = document.createElement("span"); s.className = "ll-chip " + cls; s.textContent = text; return s; }
   function profitText(p) {

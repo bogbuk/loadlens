@@ -54,7 +54,21 @@ const LLSCORE = (() => {
     return { level, netRpm: nr, trueRpm: tr, laneMedian, breakeven };
   }
 
-  return { DEFAULTS, fuelCost, tollsCost, trueRpm, netRpm, profitBadge };
+  // Broker-trust бейдж по DAT-данным: creditScore (0..100, выше=лучше) + daysToPay (ниже=лучше).
+  // Это carrier-сторона фрод-защиты (исследование: фрод = baseline-боль, инструменты защищают брокера).
+  // -> { level: 'good'|'ok'|'risk'|'unknown', creditScore, daysToPay }
+  function brokerBadge(load, opts = {}) {
+    const o = { creditMin: 90, creditRisk: 75, dtpOk: 30, dtpRisk: 40, ...opts };
+    const cs = load.creditScore == null ? null : Number(load.creditScore);
+    const dtp = load.daysToPay == null ? null : Number(load.daysToPay);
+    if (cs == null && dtp == null) return { level: "unknown", creditScore: null, daysToPay: null };
+    let level = "good";
+    if ((cs != null && cs < o.creditRisk) || (dtp != null && dtp > o.dtpRisk)) level = "risk";
+    else if ((cs != null && cs < o.creditMin) || (dtp != null && dtp > o.dtpOk)) level = "ok";
+    return { level, creditScore: cs, daysToPay: dtp };
+  }
+
+  return { DEFAULTS, fuelCost, tollsCost, trueRpm, netRpm, profitBadge, brokerBadge };
 })();
 
 if (typeof module !== "undefined" && module.exports) module.exports = LLSCORE;

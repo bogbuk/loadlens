@@ -39,3 +39,21 @@ test("profitBadge: unknown когда нет ставки/миль", () => {
   const b = LLSCORE.profitBadge({ rate: null, loadedMiles: 0, deadheadMiles: 0 }, {});
   assert.strictEqual(b.level, "unknown");
 });
+
+test("brokerBadge: good при высоком credit и быстрой оплате", () => {
+  assert.strictEqual(LLSCORE.brokerBadge({ creditScore: 97, daysToPay: 19 }).level, "good");
+});
+
+test("brokerBadge: ok при среднем credit / умеренной оплате", () => {
+  assert.strictEqual(LLSCORE.brokerBadge({ creditScore: 82, daysToPay: 28 }).level, "ok");
+  assert.strictEqual(LLSCORE.brokerBadge({ creditScore: 95, daysToPay: 35 }).level, "ok");
+});
+
+test("brokerBadge: risk при низком credit или медленной оплате", () => {
+  assert.strictEqual(LLSCORE.brokerBadge({ creditScore: 70, daysToPay: 25 }).level, "risk");
+  assert.strictEqual(LLSCORE.brokerBadge({ creditScore: 92, daysToPay: 45 }).level, "risk");
+});
+
+test("brokerBadge: unknown когда нет данных брокера", () => {
+  assert.strictEqual(LLSCORE.brokerBadge({}).level, "unknown");
+});
