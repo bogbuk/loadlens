@@ -1,4 +1,4 @@
-import { rpmCents } from './loads.service';
+import { rpmCents, LoadsService } from './loads.service';
 
 describe('rpmCents', () => {
   it('считает центы/милю из rate и груженых+deadhead миль', () => {
@@ -16,5 +16,25 @@ describe('rpmCents', () => {
     expect(rpmCents(null, 1000, 0)).toBeNull();
     expect(rpmCents(2000, 0, 0)).toBeNull();
     expect(rpmCents(2000, null, null)).toBeNull();
+  });
+});
+
+describe('LoadsService.byOrigin', () => {
+  it('маппит строки в CrowdLoad без PII и ограничивает limit', async () => {
+    const findAll = jest.fn().mockResolvedValueOnce([
+      { board: 'dat', loadId: 'L1', originMarket: 'CHICAGO_IL', destMarket: 'ATLANTA_GA',
+        equipment: 'F', groupKey: 'dat|CHICAGO_IL>ATLANTA_GA|F', rate: 2000, loadedMiles: 716,
+        deadheadMiles: 20, weight: 44000, brokerMc: 'MC-1', brokerName: 'Acme' },
+    ]);
+    const svc = new LoadsService({ findAll } as any);
+    const res = await svc.byOrigin('CHICAGO_IL', 'F', 999);
+    expect(res[0]).toEqual({
+      board: 'dat', loadId: 'L1', originMarket: 'CHICAGO_IL', destMarket: 'ATLANTA_GA',
+      equipment: 'F', groupKey: 'dat|CHICAGO_IL>ATLANTA_GA|F', rate: 2000, loadedMiles: 716,
+      deadheadMiles: 20, weight: 44000, brokerMc: 'MC-1', brokerName: 'Acme',
+    });
+    expect(res[0]).not.toHaveProperty('contact');
+    expect(findAll.mock.calls[0][0].limit).toBe(300); // clamp 999 -> 300
+    expect(findAll.mock.calls[0][0].where.equipment).toBe('F');
   });
 });

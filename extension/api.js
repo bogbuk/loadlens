@@ -51,6 +51,15 @@ const LLAPI = (() => {
     } catch { return null; }
   }
 
+  // крауд-грузы из рынка отправления — для onward-плеч планировщика цепочек
+  async function getLoadsByOrigin(market, equipment) {
+    try {
+      const q = equipment ? `&equipment=${encodeURIComponent(equipment)}` : "";
+      const res = await fetch(`${BASE}/loads?origin=${encodeURIComponent(market)}${q}`);
+      return res.ok ? res.json() : [];
+    } catch { return []; }
+  }
+
   async function getBrokerReputation(mc) {
     try {
       const res = await fetch(`${BASE}/brokers/${encodeURIComponent(mc)}/reputation`);
@@ -154,7 +163,7 @@ const LLAPI = (() => {
   }
 
   return { sanitizeLoad, clientId, sendLoads, getLane, getMarket, getDistance, getDiesel,
-           getBrokerReputation, reportBroker, register, login, logout, getMe };
+           getLoadsByOrigin, getBrokerReputation, reportBroker, register, login, logout, getMe };
 })();
 
 if (typeof module !== "undefined" && module.exports) { module.exports = LLAPI; }

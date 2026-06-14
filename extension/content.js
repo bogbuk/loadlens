@@ -17,9 +17,11 @@
   const laneCache = new Map();    // "O>D|E" -> {medianRpm|null}  (из backend)
   const marketCache = new Map();  // market -> strength 0..1
   const repCache = new Map();     // brokerMc -> reputation (crowd)
+  const crowdCache = new Map();   // market -> CrowdLoad[] (onward-плечи из бэкенда)
   const laneRequested = new Set();
   const marketRequested = new Set();
   const repRequested = new Set();
+  const crowdRequested = new Set();
 
   // ---------- сбор строк ----------
   // Источник грузов для панели/скоринга/sync: DAT — GraphQL-перехват (gqlLoads), Truckstop — DOM (collect).
@@ -88,6 +90,24 @@
   function refreshRep(mc) {              // после отправки отзыва — перезапросить
     repRequested.delete(mc);
     if (typeof LLAPI !== "undefined") LLAPI.getBrokerReputation(mc).then((r) => { if (r) { repCache.set(String(mc), r); schedule(); } }).catch(() => {});
+  }
+  // подтянуть крауд-грузы из рынков назначения — это origin'ы следующих плеч цепочки
+  function fetchCrowdLoads(markets) {
+    if (typeof LLAPI === "undefined") return;
+    markets.slice(0, 25).forEach((m) => {            // bound: не больше 25 запросов
+      if (crowdRequested.has(m)) return;
+      crowdRequested.add(m);
+      LLAPI.getLoadsByOrigin(m).then((rows) => {
+        if (rows && rows.length) { crowdCache.set(m, rows); schedule(); }
+      }).catch(() => {});
+    });
+  }
+  // пул для планировщика: видимые грузы + крауд onward-плечи (дедуп по loadId)
+  function chainPool(visible) {
+    const byId = new Map();
+    visible.forEach((l) => byId.set(l.loadId, l));
+    crowdCache.forEach((rows) => rows.forEach((l) => { if (!byId.has(l.loadId)) byId.set(l.loadId, l); }));
+    return [...byId.values()];
   }
   function strengthOf(market) {
     if (marketCache.has(market)) return marketCache.get(market);
@@ -200,14 +220,12 @@
   }
 
   // ---------- планировщик цепочек ----------
-  function buildChains(loads) {
-    if (typeof LLPLAN === "undefined") return [];
-    const start = currentMarket || topOriginMarket(loads);
-    if (!start) return [];
+  function buildChains(pool, start) {
+    if (typeof LLPLAN === "undefined" || !start) return [];
     return LLPLAN.plan({
       start: { market: start },
       hosState,
-      loads,
+      loads: pool,
       distance: (a, b) => LLGEO.sync(a, b),
       marketStrength: strengthOf,
       dieselPrice, costPerMile, maxLegs: 3, topN: 5,
@@ -250,6 +268,7 @@
     fetchLanes(loads);
     fetchMarkets(uniqueMarkets(loads));
     fetchBrokerReps(loads);
+    fetchCrowdLoads([...new Set(loads.map((l) => l.destMarket))]); // origin'ы следующих плеч
 
     clearBadges();
     // построчные бейджи: матчим видимые DOM-строки с грузами (DAT — по resultId, TS — parseRow)
@@ -263,7 +282,7 @@
     const fab = document.getElementById("ll-fab"); if (fab) fab.remove();
 
     const start = currentMarket || topOriginMarket(loads);
-    const chains = buildChains(loads).filter((c) => c.legs.length >= 1);
+    const chains = buildChains(chainPool(loads), start).filter((c) => c.legs.length >= 1);
     const deals = loads.map((l) => ({ l, b: LLSCORE.profitBadge(l, { costPerMile, dieselPrice, laneMedian: laneCache.get(laneKeyOf(l)) }) }))
       .filter((d) => d.b.level === "green").slice(0, 5);
 

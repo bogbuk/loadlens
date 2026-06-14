@@ -14,6 +14,8 @@ NestJS/Sequelize/Postgres (крауд-база ставок по lane, JWT-ак�
 2. **HOS-бейдж** — успеет ли водитель легально (11h/14h/30min/70h-8d). Движок — `shared/hos-calculator.js`.
 3. **«Get-out» планировщик цепочек** (hero) — 2–3 груза вперёд по силе рынка назначения, чтобы
    выехать из «мёртвых» рынков (берёт даже невыгодный груз ради дороги в сильный рынок).
+   Onward-плечи берутся из крауд-базы (`GET /loads?origin=<destMarket>`), а не из текущей выдачи —
+   поэтому цепочки многоплечевые даже когда видна одна выдача из одного рынка. Своих вызовов к DAT нет.
 
 ## Структура
 
@@ -34,7 +36,7 @@ extension/                  MV3-расширение (грузит vendor/* → 
   popup.*                   настройки водителя (cost/mile, HOS-часы) + аккаунт
   vendor/                   ★ АВТОКОПИИ из shared/ (load.model, scoring, planner, markets.seed). `npm run sync:shared`
 backend/src/                NestJS, synchronize:true (миграций нет)
-  loads/                    POST /loads — ingest+upsert по (board, load_id)
+  loads/                    POST /loads — ingest+upsert; GET /loads?origin=&equipment= — крауд-грузы рынка (onward-плечи цепочек, без PII)
   lanes/                    GET /lanes/:o/:d — median RPM по lane (чистый SQL-агрегат)
   markets/                  GET /markets/:m/strength — сила рынка (крауд-плотность + seed-фолбэк)
   geo/                      GET /geo/distance — OSRM-прокси + кэш lane_distances + haversine
