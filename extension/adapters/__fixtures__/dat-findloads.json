@@ -26,6 +26,9 @@
             "isFactorable": true,
             "isNegotiable": true,
             "isFromPrivateNetwork": false,
+            "comments": "Tarp required. Load by 14:00. No-touch.",
+            "availability": { "earliestWhen": "2026-06-14", "latestWhen": "2026-06-15" },
+            "integrations": { "bookNow": false },
             "rateInfo": {
               "bookable": null,
               "nonBookable": { "rateUsd": 1950, "basis": "FLAT" }

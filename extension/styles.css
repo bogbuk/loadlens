@@ -40,6 +40,32 @@
 .ll-flag.ll-red   { background: #fee2e2; color: #991b1b; }
 .ll-flag.ll-amber { background: #fef9c3; color: #854d0e; }
 
+.ll-detail-chip { background: #eef2ff; color: #1e3a8a; user-select: none; }
+
+/* карточка детали груза */
+#ll-detail {
+  position: fixed; right: 16px; top: 16px; width: 360px; max-height: 88vh; overflow: auto;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; z-index: 2147483647;
+  box-shadow: 0 16px 40px rgba(15,23,42,.28); font: 13px/1.5 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #0f1720;
+}
+#ll-detail .hd {
+  display: flex; justify-content: space-between; align-items: center;
+  background: linear-gradient(180deg,#1d4ed8,#1e3a8a); color: #fff; padding: 11px 14px; border-radius: 14px 14px 0 0;
+  font-weight: 800; font-size: 14px;
+}
+#ll-detail .hd button { background: rgba(255,255,255,.18); color: #fff; border: 0; width: 26px; height: 26px; border-radius: 7px; cursor: pointer; font-size: 18px; line-height: 1; }
+#ll-detail .bd { padding: 10px 14px 14px; }
+#ll-detail .drow { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px dashed #eef1f4; }
+#ll-detail .drow .k { color: #6b7785; min-width: 72px; flex-shrink: 0; }
+#ll-detail .drow .v { font-weight: 600; word-break: break-word; }
+#ll-detail .drow .v a { color: #1d4ed8; text-decoration: none; }
+#ll-detail .comments, #ll-detail .flags { font-weight: 400; white-space: pre-wrap; color: #334155; }
+#ll-detail .flags { color: #991b1b; }
+#ll-detail .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+#ll-detail .btn { border: 1px solid #e2e8f0; background: #f5f7f9; color: #0f1720; padding: 8px 12px; border-radius: 9px; cursor: pointer; font: 600 13px inherit; text-decoration: none; }
+#ll-detail .btn:hover { background: #eef1f4; }
+#ll-detail .btn.primary { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+
 /* меню отзыва о брокере */
 #ll-report-menu {
   position: fixed; z-index: 2147483647; min-width: 190px;

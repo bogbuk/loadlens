@@ -33,6 +33,7 @@ const DAT_GQL = (() => {
     const poster = result.posterInfo || {};
     const dot = result.posterDotIds || {};
     const credit = poster.credit || {};
+    const ri = result.rateInfo || {};
     const contact = poster.contact || {};
     const phone = contact.phone || {};
 
@@ -60,6 +61,18 @@ const DAT_GQL = (() => {
     load.isFactorable = !!result.isFactorable;
     load.isNegotiable = !!result.isNegotiable;
     load.fromPrivateNetwork = !!result.isFromPrivateNetwork;
+
+    // поля для карточки детали (локально; contact-PII не уходит на сервер — sanitizeLoad его не берёт)
+    const bk = ri.bookable || {};
+    load.rateBasis = (bk.rate && bk.rate.basis) || (ri.nonBookable && ri.nonBookable.basis) || null;
+    load.bookingUrl = bk.bookingUrl || null;
+    load.bookNow = !!(result.integrations && result.integrations.bookNow);
+    load.comments = result.comments || null;
+    load.availability = result.availability
+      ? { earliest: result.availability.earliestWhen || null, latest: result.availability.latestWhen || null }
+      : null;
+    load.contactEmail = contact.email || null;
+    load.contactPhone = phone.number != null ? String(phone.number) : null;
     return load;
   }
 

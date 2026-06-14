@@ -141,7 +141,14 @@
     if (broker.level !== "unknown") host.appendChild(chip(brokerText(broker), "ll-broker ll-" + broker.level));
     // crowd-репутация: кликабельный чип (показывает агрегат + открывает меню отзыва)
     if (load.brokerMc) host.appendChild(crowdChip(load.brokerMc));
+    host.appendChild(detailChip(load));
     anchorEl.appendChild(host);
+  }
+  function detailChip(load) {
+    const c = chip("ⓘ детали", "ll-detail-chip");
+    c.style.cursor = "pointer";
+    c.addEventListener("click", (e) => { e.stopPropagation(); e.preventDefault(); openLoadDetail(load); });
+    return c;
   }
   function brokerText(b) {
     const parts = [];
@@ -204,6 +211,86 @@
     setTimeout(() => document.addEventListener("click", closeReportMenu, { once: true }), 0);
   }
   function closeReportMenu() { const m = document.getElementById("ll-report-menu"); if (m) m.remove(); }
+
+  // ---------- карточка детали груза ----------
+  function closeLoadDetail() { const d = document.getElementById("ll-detail"); if (d) d.remove(); }
+  function drow(label, valueEl) {
+    const r = document.createElement("div"); r.className = "drow";
+    const k = document.createElement("span"); k.className = "k"; k.textContent = label;
+    const v = document.createElement("span"); v.className = "v";
+    if (typeof valueEl === "string") v.textContent = valueEl; else if (valueEl) v.appendChild(valueEl);
+    r.append(k, v); return r;
+  }
+  function openLoadDetail(load) {
+    closeLoadDetail();
+    const laneMedian = laneCache.has(laneKeyOf(load)) ? laneCache.get(laneKeyOf(load)) : null;
+    const profit = LLSCORE.profitBadge(load, { costPerMile, dieselPrice, laneMedian });
+    const hos = hosBadge(load);
+    const broker = LLSCORE.brokerBadge(load);
+    const rep = repCache.get(String(load.brokerMc));
+    const flags = LLSCORE.redFlags(load, { laneMedian, reputation: rep });
+    const trueRpm = LLSCORE.trueRpm(load.rate, load.loadedMiles, load.deadheadMiles);
+
+    const d = document.createElement("div");
+    d.id = "ll-detail";
+    const hd = document.createElement("div"); hd.className = "hd";
+    const ttl = document.createElement("span");
+    ttl.textContent = `${load.originMarket} → ${load.destMarket} · ${load.equipment}`;
+    const x = document.createElement("button"); x.textContent = "×"; x.onclick = closeLoadDetail;
+    hd.append(ttl, x);
+    const bd = document.createElement("div"); bd.className = "bd";
+
+    bd.appendChild(drow("Ставка", load.rate != null
+      ? `$${load.rate.toLocaleString("en-US")}${load.rateBasis ? " (" + load.rateBasis + ")" : ""}` : "—"));
+    bd.appendChild(drow("RPM", [
+      trueRpm != null ? `true $${trueRpm.toFixed(2)}` : null,
+      profit.netRpm != null ? `net $${profit.netRpm.toFixed(2)}` : null,
+      load.estimatedRatePerMile != null ? `DAT est $${Number(load.estimatedRatePerMile).toFixed(2)}` : null,
+      laneMedian != null ? `рынок $${laneMedian.toFixed(2)}` : null,
+    ].filter(Boolean).join(" · ") || "—"));
+    bd.appendChild(drow("Мили", `${load.loadedMiles ?? "—"} груж · ${load.deadheadMiles ?? 0} DH`));
+    if (load.weight) bd.appendChild(drow("Вес", `${load.weight.toLocaleString("en-US")} lbs`));
+    if (load.availability) bd.appendChild(drow("Когда", `${load.availability.earliest || "?"} – ${load.availability.latest || "?"}`));
+
+    bd.appendChild(drow("Оценка", `${profitText(profit)} · HOS ${hosIcon(hos)}${flags.length ? " · 🚩 " + (LLSCORE.redFlagLevel(flags) === "high" ? "риск" : "проверь") : ""}`));
+    if (flags.length) { const f = document.createElement("div"); f.className = "flags"; f.textContent = flags.map((x) => "• " + x.label).join("\n"); bd.appendChild(f); }
+
+    const brokerLine = [load.brokerName, load.brokerMc ? "MC " + load.brokerMc : null,
+      broker.creditScore != null ? broker.creditScore + " CS" : null,
+      broker.daysToPay != null ? broker.daysToPay + " DTP" : null,
+      rep && rep.n ? "crowd: " + crowdText(rep).replace("👥 ", "") : null].filter(Boolean).join(" · ");
+    bd.appendChild(drow("Брокер", brokerLine || "—"));
+
+    if (load.contactPhone) { const a = document.createElement("a"); a.href = "tel:" + load.contactPhone; a.textContent = load.contactPhone; bd.appendChild(drow("Телефон", a)); }
+    if (load.contactEmail) { const a = document.createElement("a"); a.href = "mailto:" + load.contactEmail; a.textContent = load.contactEmail; bd.appendChild(drow("Email", a)); }
+    if (load.comments) { const c = document.createElement("div"); c.className = "comments"; c.textContent = load.comments; bd.appendChild(drow("Заметки", c)); }
+
+    // действия
+    const act = document.createElement("div"); act.className = "actions";
+    if (load.bookingUrl) {
+      const b = document.createElement("a"); b.href = load.bookingUrl; b.target = "_blank"; b.rel = "noopener";
+      b.className = "btn primary"; b.textContent = load.bookNow ? "Book Now ↗" : "Открыть ↗";
+      act.appendChild(b);
+    }
+    const copyBtn = document.createElement("button"); copyBtn.className = "btn"; copyBtn.textContent = "Копировать";
+    copyBtn.onclick = () => {
+      const txt = `${load.originMarket} → ${load.destMarket} ${load.equipment}\n` +
+        `Rate: $${load.rate ?? "?"} ${load.rateBasis || ""} | ${load.loadedMiles ?? "?"}mi +${load.deadheadMiles ?? 0}DH\n` +
+        `Broker: ${load.brokerName || "?"} MC ${load.brokerMc || "?"} | ${load.creditScore ?? "?"} CS ${load.daysToPay ?? "?"} DTP\n` +
+        (load.contactPhone ? `Tel: ${load.contactPhone}\n` : "") + (load.comments ? `Notes: ${load.comments}` : "");
+      try { navigator.clipboard.writeText(txt); copyBtn.textContent = "Скопировано ✓"; setTimeout(() => (copyBtn.textContent = "Копировать"), 1200); } catch { /* нет доступа */ }
+    };
+    act.appendChild(copyBtn);
+    if (load.brokerMc) {
+      const r = document.createElement("button"); r.className = "btn"; r.textContent = "Отзыв о брокере";
+      r.onclick = (e) => openReportMenu(String(load.brokerMc), e.clientX, e.clientY);
+      act.appendChild(r);
+    }
+    bd.appendChild(act);
+
+    d.append(hd, bd);
+    document.body.appendChild(d);
+  }
   function chip(text, cls) { const s = document.createElement("span"); s.className = "ll-chip " + cls; s.textContent = text; return s; }
   function profitText(p) {
     if (p.level === "unknown") return "— нет ставки";

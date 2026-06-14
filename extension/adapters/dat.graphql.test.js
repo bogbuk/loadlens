@@ -53,6 +53,19 @@ test("sanitizeLoad режет PII и НЕ шлёт contact, но шлёт broker
   assert.strictEqual(clean.originMarket, "CHICAGO_IL");
 });
 
+test("поля детали: comments, availability, rateBasis, контакты, bookingUrl/bookNow", () => {
+  const [a, b] = DAT_GQL.parseFindLoads(fixture);
+  assert.strictEqual(a.comments, "Tarp required. Load by 14:00. No-touch.");
+  assert.deepStrictEqual(a.availability, { earliest: "2026-06-14", latest: "2026-06-15" });
+  assert.strictEqual(a.rateBasis, "FLAT");
+  assert.strictEqual(a.contactEmail, "ops@example-broker.test");
+  assert.strictEqual(a.contactPhone, "5551234567");
+  assert.strictEqual(a.bookNow, false);
+  // load 2 — bookable PER_MILE с bookingUrl
+  assert.strictEqual(b.rateBasis, "PER_MILE");
+  assert.strictEqual(b.bookingUrl, "https://example.test/book");
+});
+
 test("isFindLoadsResponse распознаёт ответ; мусор → []", () => {
   assert.strictEqual(DAT_GQL.isFindLoadsResponse(fixture), true);
   assert.strictEqual(DAT_GQL.isFindLoadsResponse({ data: {} }), false);
