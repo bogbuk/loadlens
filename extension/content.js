@@ -107,6 +107,14 @@
     // полоса под строкой: full-width, ничего не перекрывает (строка просто чуть выше)
     const host = document.createElement("div");
     host.className = "ll-badge ll-rowstrip ll-" + profit.level;
+    // red-flag чип (фрод/double-broker) — первым, как самый важный сигнал
+    const flags = LLSCORE.redFlags(load, { laneMedian, reputation: repCache.get(String(load.brokerMc)) });
+    if (flags.length) {
+      const lvl = LLSCORE.redFlagLevel(flags);
+      const fc = chip(lvl === "high" ? "🚩 риск" : "🚩 проверь", "ll-flag " + (lvl === "high" ? "ll-red" : "ll-amber"));
+      fc.title = flags.map((f) => f.label).join("\n");
+      host.appendChild(fc);
+    }
     host.appendChild(chip(profitText(profit), "ll-profit"));
     host.appendChild(chip("HOS " + hosIcon(hos), "ll-hos ll-" + hos));
     const broker = LLSCORE.brokerBadge(load);

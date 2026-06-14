@@ -35,6 +35,11 @@
 .ll-broker.ll-thin { background: #f1f5f9; color: #64748b; }
 .ll-crowd { user-select: none; }
 
+/* red-flag чип (фрод/double-broker) */
+.ll-flag { font-weight: 800; }
+.ll-flag.ll-red   { background: #fee2e2; color: #991b1b; }
+.ll-flag.ll-amber { background: #fef9c3; color: #854d0e; }
+
 /* меню отзыва о брокере */
 #ll-report-menu {
   position: fixed; z-index: 2147483647; min-width: 190px;

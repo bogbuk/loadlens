@@ -87,6 +87,31 @@ test("deadhead увеличивает мили и снижает chainNetRpm", (
   assert.ok(withDh.chainNetRpm < noDh.chainNetRpm);
 });
 
+test("дедуп: два груза-близнеца по одному lane (разные loadId) схлопываются в одну строку", () => {
+  // Брокер репостит лот / DAT отдаёт дубль под другим resultId — разные loadId, та же экономика.
+  const loads = [
+    load({ id: "X1", from: "CHI", to: "DAL", rate: 2000, mi: 920 }),
+    load({ id: "X2", from: "CHI", to: "DAL", rate: 2000, mi: 920 }),
+  ];
+  const chains = LLPLAN.plan({
+    start: { market: "CHI" }, hosState: FRESH_HOS, loads,
+    distance: zeroDistance, marketStrength: strengthFn, dieselPrice: 4.0,
+  });
+  const toDal = chains.filter((c) => c.finalMarket === "DAL");
+  assert.strictEqual(toDal.length, 1); // одна видимая строка, не две
+
+  // А вот другая ставка по тому же lane — это РАЗНОЕ предложение, остаётся отдельно.
+  const distinct = LLPLAN.plan({
+    start: { market: "CHI" }, hosState: FRESH_HOS,
+    loads: [
+      load({ id: "Y1", from: "CHI", to: "DAL", rate: 2000, mi: 920 }),
+      load({ id: "Y2", from: "CHI", to: "DAL", rate: 2600, mi: 920 }),
+    ],
+    distance: zeroDistance, marketStrength: strengthFn, dieselPrice: 4.0,
+  });
+  assert.strictEqual(distinct.filter((c) => c.finalMarket === "DAL").length, 2);
+});
+
 test("детерминизм: одинаковый вход → одинаковый выход", () => {
   const loads = [
     load({ id: "A", from: "CHI", to: "DAL", rate: 2000, mi: 920 }),

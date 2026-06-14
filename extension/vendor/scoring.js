@@ -69,7 +69,34 @@ const LLSCORE = (() => {
     return { level, creditScore: cs, daysToPay: dtp };
   }
 
-  return { DEFAULTS, fuelCost, tollsCost, trueRpm, netRpm, profitBadge, brokerBadge };
+  // Red-flag эвристики фрода/double-brokering (исследование: фрод = baseline-боль).
+  // ctx = { laneMedian, reputation } (медиана RPM рынка по lane + crowd-репутация брокера).
+  // -> [{ code, sev: 'high'|'med', label }]
+  function redFlags(load, ctx = {}, opts = {}) {
+    const o = { aboveMarketX: 1.5, creditRisk: 75, ...opts };
+    const flags = [];
+    const rpm = load.estimatedRatePerMile != null
+      ? Number(load.estimatedRatePerMile)
+      : trueRpm(load.rate, load.loadedMiles, load.deadheadMiles);
+    const laneMedian = ctx.laneMedian != null ? Number(ctx.laneMedian) : null;
+    const aboveMarket = laneMedian != null && rpm != null && rpm > laneMedian * o.aboveMarketX;
+    const lowCredit = load.creditScore != null && Number(load.creditScore) < o.creditRisk;
+
+    if (aboveMarket) flags.push({ code: "rate_above_market", sev: "med",
+      label: `ставка $${rpm.toFixed(2)}/mi сильно выше рынка ($${laneMedian.toFixed(2)})` });
+    if (!load.brokerMc) flags.push({ code: "no_mc", sev: "med", label: "нет MC-номера брокера" });
+    if (aboveMarket && lowCredit) flags.push({ code: "bait_combo", sev: "high",
+      label: `приманка: ставка выше рынка + низкий credit (${load.creditScore})` });
+    if (ctx.reputation && ctx.reputation.level === "bad") flags.push({ code: "crowd_bad", sev: "high",
+      label: ctx.reputation.doubleBrokered ? "crowd: double-brokered" : "crowd: флейкал" });
+    return flags;
+  }
+
+  function redFlagLevel(flags) {
+    return flags.some((f) => f.sev === "high") ? "high" : flags.length ? "med" : "none";
+  }
+
+  return { DEFAULTS, fuelCost, tollsCost, trueRpm, netRpm, profitBadge, brokerBadge, redFlags, redFlagLevel };
 })();
 
 if (typeof module !== "undefined" && module.exports) module.exports = LLSCORE;

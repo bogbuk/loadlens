@@ -73,8 +73,10 @@ const LLPLAN = (() => {
     };
   }
 
+  // ТОЛЬКО время вождения (мин). Погрузка/разгрузка передаётся отдельно как dutyMin в stepHos,
+  // иначе она засчитывалась бы дважды и как driving (баг «HOS ! на каждом грузе»).
   function legMinutes(miles) {
-    return Math.round((miles / AVG_SPEED) * 60) + LOAD_UNLOAD_MIN;
+    return Math.round((miles / AVG_SPEED) * 60);
   }
 
   // ---- экономика плеча ----
@@ -195,10 +197,15 @@ const LLPLAN = (() => {
   function worse(a, b) { return BADGE_RANK[b] > BADGE_RANK[a] ? b : a; }
   function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
   function round2(x) { return Math.round(x * 100) / 100; }
+  // Дедуп по ВИДИМОЙ сигнатуре цепочки (путь рынков + округлённый RPM + мили), а не по loadId.
+  // На борде один груз часто публикуется несколькими записями с разными loadId (репост брокера,
+  // дубль в выдаче DAT) — по loadId они не дубли, но для пользователя это одна и та же строка.
+  // Разные ставки по одному lane дают разный RPM → остаются отдельными вариантами.
   function dedupeBySignature(list) {
     const seen = new Set(), out = [];
     for (const c of list) {
-      const sig = c.legs.map((l) => l.load.loadId).join(">");
+      const route = c.legs.map((l) => l.load.originMarket).concat(c.node).join(">");
+      const sig = `${route}|${round2(c.chainNetRpm)}|${Math.round(c.totalMiles)}`;
       if (seen.has(sig)) continue;
       seen.add(sig); out.push(c);
     }

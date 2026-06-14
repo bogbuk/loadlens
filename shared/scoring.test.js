@@ -57,3 +57,30 @@ test("brokerBadge: risk при низком credit или медленной о�
 test("brokerBadge: unknown когда нет данных брокера", () => {
   assert.strictEqual(LLSCORE.brokerBadge({}).level, "unknown");
 });
+
+test("redFlags: ставка сильно выше рынка → med", () => {
+  const f = LLSCORE.redFlags({ brokerMc: "MC1", estimatedRatePerMile: 3.6, creditScore: 95 }, { laneMedian: 2.2 });
+  assert.ok(f.some((x) => x.code === "rate_above_market" && x.sev === "med"));
+});
+
+test("redFlags: приманка (высокая ставка + низкий credit) → high", () => {
+  const f = LLSCORE.redFlags({ brokerMc: "MC1", estimatedRatePerMile: 3.8, creditScore: 60 }, { laneMedian: 2.2 });
+  assert.ok(f.some((x) => x.code === "bait_combo" && x.sev === "high"));
+  assert.strictEqual(LLSCORE.redFlagLevel(f), "high");
+});
+
+test("redFlags: нет MC → med", () => {
+  const f = LLSCORE.redFlags({ brokerMc: null, creditScore: 95 }, {});
+  assert.ok(f.some((x) => x.code === "no_mc"));
+});
+
+test("redFlags: crowd-репутация bad → high", () => {
+  const f = LLSCORE.redFlags({ brokerMc: "MC1" }, { reputation: { level: "bad", doubleBrokered: 2 } });
+  assert.ok(f.some((x) => x.code === "crowd_bad" && x.sev === "high"));
+});
+
+test("redFlags: чистый груз → нет флагов", () => {
+  const f = LLSCORE.redFlags({ brokerMc: "MC1", estimatedRatePerMile: 2.3, creditScore: 95 }, { laneMedian: 2.2 });
+  assert.strictEqual(f.length, 0);
+  assert.strictEqual(LLSCORE.redFlagLevel(f), "none");
+});
