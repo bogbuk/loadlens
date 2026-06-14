@@ -1,41 +1,37 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const PLCSV = require("./csv.js");
+const LLCSV = require("./csv.js");
 
-test("BOM + заголовок + строки через ;", () => {
-  const csv = PLCSV.buildCsv(
-    [{ listingId: "1", title: "Audi Q5", groupKey: "Audi Q5|2020", metric: 29450, unit: "EUR", attrs: { year: 2020 } }],
-    ["year"],
-  );
+const LOAD = {
+  board: "dat", loadId: "POST-1", originMarket: "CHICAGO_IL", destMarket: "ATLANTA_GA",
+  equipment: "F", rate: 1950, rateBasis: "FLAT", loadedMiles: 716, deadheadMiles: 22,
+  brokerName: "Acme Freight", brokerMc: "MC-555000", creditScore: 92, daysToPay: 28,
+  isFactorable: true, comments: "Tarp required",
+};
+
+test("BOM + заголовок + строка через ; ", () => {
+  const csv = LLCSV.buildLoadsCsv([LOAD]);
   assert.ok(csv.startsWith("﻿"));
   const lines = csv.slice(1).split("\r\n");
-  assert.strictEqual(lines[0], "listing_id;title;group_key;metric_eur;unit;year");
-  assert.strictEqual(lines[1], "1;Audi Q5;Audi Q5|2020;29450;EUR;2020");
+  assert.strictEqual(lines[0], LLCSV.HEAD.join(";"));
+  // true_rpm = 1950 / (716+22) = 2.64
+  assert.ok(lines[1].includes("dat;POST-1;CHICAGO_IL;ATLANTA_GA;F;1950;FLAT;716;22;2.64;Acme Freight;MC-555000;92;28;yes;Tarp required"));
 });
 
-test("экранирование ; кавычек и перевода строки (RFC 4180)", () => {
-  const csv = PLCSV.buildCsv(
-    [{ listingId: "2", title: 'BMW; "X5"\nдвухтопливный', groupKey: "BMW X5", metric: 1, unit: "EUR", attrs: {} }],
-    [],
-  );
+test("formula injection: ячейка с = нейтрализуется ведущим '", () => {
+  const csv = LLCSV.buildLoadsCsv([{ ...LOAD, brokerName: "=cmd|'/c calc'!A1" }]);
   const line = csv.slice(1).split("\r\n")[1];
-  assert.strictEqual(line, '2;"BMW; ""X5""\nдвухтопливный";BMW X5;1;EUR');
+  assert.ok(line.includes(";'=cmd|'/c calc'!A1;"));
 });
 
-test("formula injection: ячейка с =,+,-,@ нейтрализуется ведущим '", () => {
-  const csv = PLCSV.buildCsv(
-    [{ listingId: "4", title: "=cmd|'/c calc'!A1", groupKey: "+1", metric: "-5", unit: "@x", attrs: {} }],
-    [],
-  );
+test("экранирование ; кавычек и переноса (RFC 4180)", () => {
+  const csv = LLCSV.buildLoadsCsv([{ ...LOAD, comments: 'note; with "quote"\nи перенос' }]);
+  const cell = LLCSV.cell('note; with "quote"\nи перенос');
+  assert.strictEqual(cell, '"note; with ""quote""\nи перенос"');
+});
+
+test("пустые поля → пустые ячейки, rpm пуст без миль", () => {
+  const csv = LLCSV.buildLoadsCsv([{ board: "dat", loadId: "X", originMarket: "A", destMarket: "B", equipment: "V" }]);
   const line = csv.slice(1).split("\r\n")[1];
-  // нет ; внутри -> без кавычек, только ведущий ' нейтрализует формулу
-  assert.strictEqual(line, `4;'=cmd|'/c calc'!A1;'+1;'-5;'@x`);
-});
-
-test("пустые attrs -> пустая ячейка", () => {
-  const csv = PLCSV.buildCsv(
-    [{ listingId: "3", title: "T", groupKey: "G", metric: 5, unit: "EUR", attrs: {} }],
-    ["year", "mileage"],
-  );
-  assert.strictEqual(csv.slice(1).split("\r\n")[1], "3;T;G;5;EUR;;");
+  assert.strictEqual(line, "dat;X;A;B;V;;;;;;;;;;;");
 });

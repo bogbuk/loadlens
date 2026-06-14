@@ -107,6 +107,10 @@
 #ll-panel .chain .meta { color: #64748b; font-size: 11.5px; margin-top: 2px; }
 #ll-panel .deal { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12.5px; }
 #ll-panel .deal .p { font-weight: 700; color: #166534; }
+#ll-panel .ll-ft { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+#ll-panel .ll-ft button { border: 1px solid #e2e8f0; background: #f5f7f9; font-weight: 600; padding: 7px 12px; border-radius: 9px; cursor: pointer; font: inherit; color: #0f1720; }
+#ll-panel .ll-ft button:hover { background: #eef1f4; }
+#ll-panel .ll-ft .pro-tag { font-size: 10.5px; font-weight: 800; padding: 2px 7px; border-radius: 99px; background: #1d4ed8; color: #fff; }
 #ll-panel .note { color: #9aa6b2; font-size: 11px; margin-top: 8px; }
 
 #ll-fab {

@@ -33,6 +33,7 @@
         "adapters/truckstop.adapter.js",
         "geo.js",
         "hos.js",
+        "csv.js",
         "content.js"
       ],
       "css": ["styles.css"],

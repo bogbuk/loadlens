@@ -392,12 +392,33 @@
       (deals.length ? "<h4>Выгодные сейчас</h4>" + deals.map((d) =>
         `<div class="deal"><span class="m">${esc(d.l.originMarket)} → ${esc(d.l.destMarket)} ${esc(d.l.equipment)}</span>` +
         `<span class="p">$${d.b.netRpm.toFixed(2)}/mi</span></div>`).join("") : "") +
+      '<div class="ll-ft"><button data-act="csv" title="Экспорт видимых грузов в CSV">⬇ CSV</button>' +
+      '<span class="pro-tag">Pro</span></div>' +
       '<div class="note">Скоринг учитывает deadhead, топливо и медиану рынка по lane. Ставка с борда — запрос брокера. HOS-бейдж — выполнимость по часам водителя.</div>';
 
     const cpm = bd.querySelector("#ll-cpm");
     if (cpm) cpm.onchange = () => { const v = parseFloat(cpm.value); if (v > 0) { costPerMile = v; render(); } };
     const st = bd.querySelector("#ll-start");
     if (st) st.onchange = () => { currentMarket = st.value.trim().toUpperCase() || null; render(); };
+    const csvBtn = bd.querySelector('[data-act="csv"]');
+    if (csvBtn) csvBtn.onclick = () => exportCsv(loads);
+  }
+
+  // Pro-экспорт CSV видимых грузов (гейт через LLAPI.getMe().plan, как в PriceLens).
+  async function exportCsv(loads) {
+    const me = typeof LLAPI !== "undefined" ? await LLAPI.getMe() : null;
+    if (!me || me.plan !== "pro") {
+      alert("Экспорт CSV доступен в Pro. Войдите в аккаунт в попапе LoadLens (иконка расширения).");
+      return;
+    }
+    if (!loads.length) { alert("Нет грузов для экспорта."); return; }
+    const csv = LLCSV.buildLoadsCsv(loads);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `loadlens_${adapter.board}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
   }
 
   function chainRow(c) {

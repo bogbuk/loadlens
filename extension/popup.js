@@ -49,7 +49,7 @@ function accForm(err) {
     '<input id="acc-pass" type="password" placeholder="пароль (мин. 8)" autocomplete="current-password">' +
     '<div class="err">' + escA(err || "") + "</div>" +
     '<div class="btns"><button id="acc-in">Войти</button><button id="acc-reg">Регистрация</button></div>' +
-    '<div class="note">Pro открывает полные 3-плечевые get-out цепочки.</div></div>';
+    '<div class="note">Pro: полные 3-плечевые get-out цепочки + CSV-экспорт грузов.</div></div>';
   const go = (fn) => async () => {
     const email = document.getElementById("acc-email").value.trim();
     const pass = document.getElementById("acc-pass").value;
