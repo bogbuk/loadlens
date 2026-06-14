@@ -213,6 +213,12 @@
   function closeReportMenu() { const m = document.getElementById("ll-report-menu"); if (m) m.remove(); }
 
   // ---------- карточка детали груза ----------
+  // bookingUrl приходит от брокера — допускаем только http/https (иначе javascript:/data: = XSS).
+  function safeHttpUrl(raw) {
+    if (!raw) return null;
+    try { const u = new URL(String(raw)); return (u.protocol === "http:" || u.protocol === "https:") ? u.href : null; }
+    catch { return null; }
+  }
   function closeLoadDetail() { const d = document.getElementById("ll-detail"); if (d) d.remove(); }
   function drow(label, valueEl) {
     const r = document.createElement("div"); r.className = "drow";
@@ -267,8 +273,9 @@
 
     // действия
     const act = document.createElement("div"); act.className = "actions";
-    if (load.bookingUrl) {
-      const b = document.createElement("a"); b.href = load.bookingUrl; b.target = "_blank"; b.rel = "noopener";
+    const bookUrl = safeHttpUrl(load.bookingUrl);   // bookingUrl от брокера — пускаем только http/https
+    if (bookUrl) {
+      const b = document.createElement("a"); b.href = bookUrl; b.target = "_blank"; b.rel = "noopener noreferrer";
       b.className = "btn primary"; b.textContent = load.bookNow ? "Book Now ↗" : "Открыть ↗";
       act.appendChild(b);
     }
