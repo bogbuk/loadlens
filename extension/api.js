@@ -207,9 +207,17 @@ const LLAPI = (() => {
     return { ok: true };
   }
 
+  // Удаление аккаунта (hard-delete на сервере; водители уходят каскадом). Затем локальный logout.
+  async function deleteAccount() {
+    const res = await authedFetch("/users/me", { method: "DELETE" });
+    if (!res || !res.ok) throw new Error(res ? `ошибка ${res.status}` : "нужен вход в аккаунт");
+    await logout();
+    return { ok: true };
+  }
+
   return { sanitizeLoad, clientId, sendLoads, getLane, getMarket, getDistance, getDiesel,
            getLoadsByOrigin, getBrokerReputation, reportBroker, register, login, logout, getMe,
-           getDrivers, createDriver, updateDriver, deleteDriver };
+           getDrivers, createDriver, updateDriver, deleteDriver, deleteAccount };
 })();
 
 if (typeof module !== "undefined" && module.exports) { module.exports = LLAPI; }

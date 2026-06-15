@@ -40,8 +40,14 @@ function accRow(user) {
   accEl.innerHTML = '<div class="acc"><div class="who"><span>' + escA(user.email) +
     '</span><span class="plan ' + (user.plan === "pro" ? "pro" : "") + '">' +
     (user.plan === "pro" ? "PRO" : "FREE") + "</span></div>" +
-    '<button id="acc-out">Выйти</button></div>';
-  document.getElementById("acc-out").onclick = async () => { await LLAPI.logout(); accForm(); };
+    '<button id="acc-out">Выйти</button>' +
+    '<button id="acc-del" class="danger">Удалить аккаунт</button></div>';
+  document.getElementById("acc-out").onclick = async () => { await LLAPI.logout(); accForm(); renderFleet(null); };
+  document.getElementById("acc-del").onclick = async () => {
+    if (!confirm("Удалить аккаунт безвозвратно? Профиль и все водители будут удалены. Активную подписку DAT/Truckstop это не отменяет.")) return;
+    try { await LLAPI.deleteAccount(); accForm("Аккаунт удалён."); renderFleet(null); }
+    catch (e) { accForm(e.message); }
+  };
 }
 function accForm(err) {
   accEl.innerHTML = '<div class="acc"><h4>Аккаунт</h4>' +
