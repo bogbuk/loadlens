@@ -13,11 +13,11 @@ const LLDRV = (() => {
     const fb = fallback || {};
     const fbCpm = fb.costPerMile != null ? fb.costPerMile : DEFAULT_CPM;
     if (!activeDriver) {
-      return { market: fb.market || null, hos: fb.hos || { ...FRESH }, equipment: null, costPerMile: fbCpm };
+      return { market: fb.market || null, hos: fb.hos ? { ...fb.hos } : { ...FRESH }, equipment: null, costPerMile: fbCpm };
     }
     return {
       market: activeDriver.currentMarket || fb.market || null,
-      hos: activeDriver.hos || fb.hos || { ...FRESH },
+      hos: activeDriver.hos ? { ...activeDriver.hos } : (fb.hos ? { ...fb.hos } : { ...FRESH }),
       equipment: activeDriver.equipment || null,
       costPerMile: activeDriver.costPerMile != null ? activeDriver.costPerMile : fbCpm,
     };

@@ -9,8 +9,11 @@
 
   let panelCollapsed = false;
   let dieselPrice = 3.95;
-  let costPerMile = 1.80;
-  let hosState = (typeof LLHOS !== "undefined") ? LLHOS.fresh() : { remainingDrive: 660, remainingOnDuty: 840, remainingCycle: 4200 };
+  let baseCostPerMile = 1.80; // «базовая» (диспетчерская) настройка; не мутируется водителем
+  let costPerMile = 1.80;     // текущий (resolveDriverContext → applyDriverContext)
+  const _freshHos = (typeof LLHOS !== "undefined") ? LLHOS.fresh() : { remainingDrive: 660, remainingOnDuty: 840, remainingCycle: 4200 };
+  let baseHos = { ..._freshHos }; // «базовый» HOS (диспетчерские часы из storage/popup)
+  let hosState = { ..._freshHos }; // текущий (resolveDriverContext → applyDriverContext)
   let currentMarket = null; // рынок водителя для планировщика (по умолчанию — самый частый origin в выдаче)
   let drivers = [];              // парк диспетчера (LLAPI.getDrivers; пусто, если не залогинен)
   let activeDriver = null;       // выбранный водитель (LLDRV.pickActive)
@@ -338,17 +341,16 @@
   }
 
   // Применить активного водителя к параметрам планировщика/скоринга (или аноним-фолбэк).
+  // Всегда читает из СТАБИЛЬНЫХ базовых настроек (baseHos/baseCostPerMile), чтобы переключение
+  // между водителями с explicit-cost и без не накапливало грязь от предыдущего водителя.
   function applyDriverContext(loads) {
     const fallbackMarket = currentMarket || topOriginMarket(loads);
     const ctx = (typeof LLDRV !== "undefined")
-      ? LLDRV.resolveDriverContext(activeDriver, { market: fallbackMarket, hos: hosState, costPerMile })
-      : { market: fallbackMarket, hos: hosState, equipment: null, costPerMile };
-    if (activeDriver) {
-      // При активном водителе его hos/costPerMile НАМЕРЕННО переопределяют ручные настройки
-      // попапа (#ll-cpm, ll_hos из storage.onChanged) — это ожидаемое поведение, не баг.
-      hosState = ctx.hos;
-      costPerMile = ctx.costPerMile;
-    }
+      ? LLDRV.resolveDriverContext(activeDriver, { market: fallbackMarket, hos: baseHos, costPerMile: baseCostPerMile })
+      : { market: fallbackMarket, hos: baseHos, equipment: null, costPerMile: baseCostPerMile };
+    // ВСЕГДА присваиваем: аноним → base-значения; водитель → его значения (или base, если null).
+    hosState = ctx.hos;
+    costPerMile = ctx.costPerMile;
     activeEquipment = ctx.equipment;
     return ctx.market;
   }
@@ -431,7 +433,7 @@
       render();
     };
     const cpm = bd.querySelector("#ll-cpm");
-    if (cpm) cpm.onchange = () => { const v = parseFloat(cpm.value); if (v > 0) { costPerMile = v; render(); } };
+    if (cpm) cpm.onchange = () => { const v = parseFloat(cpm.value); if (v > 0) { baseCostPerMile = v; render(); } };
     const st = bd.querySelector("#ll-start");
     if (st) st.onchange = () => { currentMarket = st.value.trim().toUpperCase() || null; render(); };
     const csvBtn = bd.querySelector('[data-act="csv"]');
@@ -480,7 +482,8 @@
       try { dieselPrice = await LLAPI.getDiesel(); } catch { /* фолбэк */ }
     }
     if (typeof LLHOS !== "undefined") { try { hosState = await LLHOS.load(); } catch { /* fresh */ } }
-    try { const { ll_cpm } = await chrome.storage.local.get("ll_cpm"); if (ll_cpm > 0) costPerMile = ll_cpm; } catch { /* дефолт */ }
+    baseHos = { ...hosState }; // зафиксировать базу после загрузки из storage
+    try { const { ll_cpm } = await chrome.storage.local.get("ll_cpm"); if (ll_cpm > 0) { costPerMile = ll_cpm; baseCostPerMile = ll_cpm; } } catch { /* дефолт */ }
     // парк водителей диспетчера (если залогинен); активный — per-device выбор
     if (typeof LLAPI !== "undefined" && typeof LLDRV !== "undefined") {
       try {
@@ -491,8 +494,8 @@
     // живое применение настроек из попапа без перезагрузки страницы
     try {
       chrome.storage.onChanged.addListener((ch) => {
-        if (ch.ll_cpm && ch.ll_cpm.newValue > 0) costPerMile = ch.ll_cpm.newValue;
-        if (ch.ll_hos && ch.ll_hos.newValue) hosState = ch.ll_hos.newValue;
+        if (ch.ll_cpm && ch.ll_cpm.newValue > 0) baseCostPerMile = ch.ll_cpm.newValue; // обновляем базу; render→applyDriverContext применит
+        if (ch.ll_hos && ch.ll_hos.newValue) baseHos = ch.ll_hos.newValue;              // аналогично для HOS
         schedule();
       });
     } catch { /* нет API */ }

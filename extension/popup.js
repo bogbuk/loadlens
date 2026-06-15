@@ -78,6 +78,27 @@ async function renderFleet(me) {
     };
     fleetEl.querySelector(`[data-mkt="${d.id}"]`).onchange = (e) => saveField(d.id, "currentMarket", e.target.value.trim().toUpperCase());
     fleetEl.querySelector(`[data-eq="${d.id}"]`).onchange = (e) => saveField(d.id, "equipment", e.target.value || null);
+    fleetEl.querySelector(`[data-cpm="${d.id}"]`).onchange = (e) => {
+      const v = parseFloat(e.target.value);
+      saveField(d.id, "costPerMile", isNaN(v) ? null : v);
+    };
+    const saveHos = async () => {
+      const driveH = parseFloat(fleetEl.querySelector(`[data-drive="${d.id}"]`).value);
+      const dutyH  = parseFloat(fleetEl.querySelector(`[data-duty="${d.id}"]`).value);
+      const cycleH = parseFloat(fleetEl.querySelector(`[data-cycle="${d.id}"]`).value);
+      try {
+        await LLAPI.updateDriver(d.id, {
+          hos: {
+            remainingDrive:  Math.round(driveH * 60),
+            remainingOnDuty: Math.round(dutyH  * 60),
+            remainingCycle:  Math.round(cycleH * 60),
+          },
+        });
+      } catch (e) { alert(e.message); }
+    };
+    fleetEl.querySelector(`[data-drive="${d.id}"]`).onchange = saveHos;
+    fleetEl.querySelector(`[data-duty="${d.id}"]`).onchange = saveHos;
+    fleetEl.querySelector(`[data-cycle="${d.id}"]`).onchange = saveHos;
   });
   document.getElementById("drv-add").onclick = addDriver;
 }
@@ -86,10 +107,22 @@ function driverRow(d) {
   const opts = ['<option value="">—</option>'].concat(EQUIP.map((e) =>
     `<option value="${e}"${d.equipment === e ? " selected" : ""}>${e}</option>`)).join("");
   const eid = escA(d.id);
-  return `<div class="row"><span class="k">${escA(d.name || "")}</span>` +
+  const h = d.hos || {};
+  const driveH = h.remainingDrive != null ? round1(h.remainingDrive / 60) : "";
+  const dutyH  = h.remainingOnDuty != null ? round1(h.remainingOnDuty / 60) : "";
+  const cycleH = h.remainingCycle != null ? round1(h.remainingCycle / 60) : "";
+  return `<div style="border-bottom:1px solid #eee;padding-bottom:4px;margin-bottom:4px">` +
+    `<div class="row"><span class="k">${escA(d.name || "")}</span>` +
     `<span><input data-mkt="${eid}" type="text" value="${escA(d.currentMarket || "")}" placeholder="CHICAGO_IL" style="width:96px">` +
     `<select data-eq="${eid}">${opts}</select>` +
-    `<button data-del="${eid}" title="Удалить" style="width:auto;margin:0 0 0 4px;padding:4px 8px">✕</button></span></div>`;
+    `<button data-del="${eid}" title="Удалить" style="width:auto;margin:0 0 0 4px;padding:4px 8px">✕</button></span></div>` +
+    `<div class="row" style="font-size:11px">` +
+    `<span class="k" style="min-width:0">$/mi</span>` +
+    `<span><input data-cpm="${eid}" type="number" step="0.05" min="0" value="${escA(d.costPerMile ?? "")}" placeholder="общий" style="width:44px">` +
+    `<span style="margin-left:4px">Drive</span><input data-drive="${eid}" type="number" step="0.5" min="0" max="11" value="${driveH}" style="width:34px">` +
+    `<span style="margin-left:2px">Duty</span><input data-duty="${eid}" type="number" step="0.5" min="0" max="14" value="${dutyH}" style="width:34px">` +
+    `<span style="margin-left:2px">Cyc</span><input data-cycle="${eid}" type="number" step="1" min="0" max="70" value="${cycleH}" style="width:34px"></span>` +
+    `</div></div>`;
 }
 
 async function saveField(id, field, value) {
