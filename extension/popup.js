@@ -59,5 +59,46 @@ function accForm(err) {
   document.getElementById("acc-reg").onclick = go(LLAPI.register);
 }
 
+// ---- парк водителей (виден залогиненному диспетчеру) ----
+const fleetEl = document.getElementById("fleet");
+const EQUIP = ["V", "R", "F", "SD", "PO"];
+
+async function renderFleet() {
+  const me = await LLAPI.getMe().catch(() => null);
+  if (!me) { fleetEl.innerHTML = '<h4>Парк водителей</h4><div class="note">Войдите в аккаунт, чтобы вести своих водителей.</div>'; return; }
+  let list = [];
+  try { list = await LLAPI.getDrivers(); } catch { list = []; }
+  fleetEl.innerHTML = '<h4>Парк водителей</h4>' +
+    (list.length ? list.map(driverRow).join("") : '<div class="note">Пока нет водителей. Добавьте первого.</div>') +
+    '<button id="drv-add">+ Добавить водителя</button>';
+  list.forEach((d) => {
+    fleetEl.querySelector(`[data-del="${d.id}"]`).onclick = async () => { await LLAPI.deleteDriver(d.id); renderFleet(); };
+    fleetEl.querySelector(`[data-mkt="${d.id}"]`).onchange = (e) => saveField(d.id, "currentMarket", e.target.value.trim().toUpperCase());
+    fleetEl.querySelector(`[data-eq="${d.id}"]`).onchange = (e) => saveField(d.id, "equipment", e.target.value || null);
+  });
+  document.getElementById("drv-add").onclick = addDriver;
+}
+
+function driverRow(d) {
+  const opts = ['<option value="">—</option>'].concat(EQUIP.map((e) =>
+    `<option value="${e}"${d.equipment === e ? " selected" : ""}>${e}</option>`)).join("");
+  const eid = escA(d.id);
+  return `<div class="row"><span class="k">${escA(d.name)}</span>` +
+    `<span><input data-mkt="${eid}" type="text" value="${escA(d.currentMarket || "")}" placeholder="CHICAGO_IL" style="width:96px">` +
+    `<select data-eq="${eid}">${opts}</select>` +
+    `<button data-del="${eid}" title="Удалить" style="width:auto;margin:0 0 0 4px;padding:4px 8px">✕</button></span></div>`;
+}
+
+async function saveField(id, field, value) {
+  try { await LLAPI.updateDriver(id, { [field]: value }); } catch (e) { alert(e.message); }
+}
+
+async function addDriver() {
+  const name = prompt("Имя водителя:");
+  if (!name || !name.trim()) return;
+  try { await LLAPI.createDriver({ name: name.trim() }); renderFleet(); }
+  catch (e) { alert(e.message); }
+}
+
 renderSettings();
-LLAPI.getMe().then((u) => (u ? accRow(u) : accForm())).catch(() => accForm());
+LLAPI.getMe().then((u) => (u ? accRow(u) : accForm())).catch(() => accForm()).finally(renderFleet);
