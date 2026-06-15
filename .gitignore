@@ -10,6 +10,7 @@ package-lock.json
 /docs/*
 !docs/daily-reports/
 !docs/superpowers/
+!docs/store-listing.md
 backend/node_modules/
 backend/dist/
 backend/.env
