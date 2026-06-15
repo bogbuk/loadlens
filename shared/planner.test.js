@@ -123,3 +123,36 @@ test("детерминизм: одинаковый вход → одинаков
   };
   assert.deepStrictEqual(LLPLAN.plan(opts), LLPLAN.plan(opts));
 });
+
+test("finalize отдаёт totalDriveMin = сумма driveMin по плечам", () => {
+  const loads = [
+    load({ id: "A", from: "CHI", to: "DAL", rate: 2000, mi: 920 }),
+    load({ id: "B", from: "DAL", to: "LA", rate: 1900, mi: 1400 }),
+  ];
+  const chains = LLPLAN.plan({
+    start: { market: "CHI" }, hosState: FRESH_HOS, loads,
+    distance: zeroDistance, marketStrength: strengthFn, maxLegs: 3,
+  });
+  const two = chains.find((c) => c.legs.length === 2);
+  assert.ok(two, "должна быть двухплечевая цепочка");
+  const sum = two.legs.reduce((s, l) => s + l.driveMin, 0);
+  assert.strictEqual(two.totalDriveMin, sum);
+  assert.ok(two.totalDriveMin > 0);
+});
+
+test("horizon: days >= 0.5 и perDay = round(totalNet/days)", () => {
+  const chain = {
+    legs: [{ driveMin: 660 }, { driveMin: 660 }], // 2 плеча
+    totalDriveMin: 1320, totalIdleMin: 600, totalNet: 3000,
+  };
+  const h = LLPLAN.horizon(chain);
+  // elapsed = 1320 drive + 600 idle + 2*120 loadUnload = 2160 мин = 1.5 дня
+  assert.strictEqual(h.days, 1.5);
+  assert.strictEqual(h.perDay, Math.round(3000 / 1.5)); // 2000
+});
+
+test("horizon: пустая/нулевая цепочка не делит на ноль", () => {
+  const h = LLPLAN.horizon({ legs: [], totalDriveMin: 0, totalIdleMin: 0, totalNet: 0 });
+  assert.strictEqual(h.days, 0.5);
+  assert.strictEqual(h.perDay, 0);
+});

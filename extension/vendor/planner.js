@@ -186,11 +186,23 @@ const LLPLAN = (() => {
       chainNetRpm: round2(c.chainNetRpm),
       rank: round2(c.rank),
       totalMiles: Math.round(c.totalMiles),
+      totalDriveMin: c.legs.reduce((s, l) => s + l.driveMin, 0),
       totalNet: Math.round(c.totalRev - c.totalCost),
       totalIdleMin: c.totalIdleMin,
       finalMarket: c.node,
       hosBadge: c.worstBadge,
     };
+  }
+
+  // Грубая оценка горизонта цепочки в днях и дохода в день — для сводки в UI.
+  // elapsed = чистое вождение + вынужденный HOS-сон (idle) + погрузка/разгрузка (2ч × плечи).
+  // Делим на сутки; пол-дня — минимальная гранулярность. Чистая функция (для теста/UI).
+  function horizon(chain) {
+    const legs = (chain.legs && chain.legs.length) || 0;
+    const elapsedMin = (chain.totalDriveMin || 0) + (chain.totalIdleMin || 0) + legs * LOAD_UNLOAD_MIN;
+    const days = Math.max(0.5, Math.round((elapsedMin / (60 * 24)) * 2) / 2);
+    const perDay = Math.round((chain.totalNet || 0) / days);
+    return { days, perDay };
   }
 
   // ---- утилиты ----
@@ -213,7 +225,7 @@ const LLPLAN = (() => {
     return out;
   }
 
-  return { plan, stepHos, legMinutes, legEconomics, DEFAULTS, HOS };
+  return { plan, stepHos, legMinutes, legEconomics, horizon, DEFAULTS, HOS };
 })();
 
 if (typeof module !== "undefined" && module.exports) module.exports = LLPLAN;
