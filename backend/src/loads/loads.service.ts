@@ -9,7 +9,7 @@ const CROWD_WINDOW_HOURS = 72;
 // форма груза для планировщика цепочек (без PII: contact/credit не отдаём)
 export interface CrowdLoad {
   board: string; loadId: string; originMarket: string; destMarket: string;
-  equipment: string; groupKey: string;
+  equipment: string; groupKey: string; lastSeen: Date;
   rate: number | null; loadedMiles: number | null; deadheadMiles: number | null;
   weight: number | null; brokerMc: string | null; brokerName: string | null;
 }
@@ -58,7 +58,7 @@ export class LoadsService {
     return rows.map((r) => ({
       board: r.board, loadId: r.loadId,
       originMarket: r.originMarket, destMarket: r.destMarket,
-      equipment: r.equipment, groupKey: r.groupKey,
+      equipment: r.equipment, groupKey: r.groupKey, lastSeen: r.lastSeen,
       rate: r.rate, loadedMiles: r.loadedMiles, deadheadMiles: r.deadheadMiles,
       weight: r.weight, brokerMc: r.brokerMc, brokerName: r.brokerName,
     }));

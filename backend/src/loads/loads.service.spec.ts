@@ -21,16 +21,19 @@ describe('rpmCents', () => {
 
 describe('LoadsService.byOrigin', () => {
   it('маппит строки в CrowdLoad без PII и ограничивает limit', async () => {
+    const mockLastSeen = new Date('2026-06-15T10:00:00Z');
     const findAll = jest.fn().mockResolvedValueOnce([
       { board: 'dat', loadId: 'L1', originMarket: 'CHICAGO_IL', destMarket: 'ATLANTA_GA',
-        equipment: 'F', groupKey: 'dat|CHICAGO_IL>ATLANTA_GA|F', rate: 2000, loadedMiles: 716,
+        equipment: 'F', groupKey: 'dat|CHICAGO_IL>ATLANTA_GA|F', lastSeen: mockLastSeen,
+        rate: 2000, loadedMiles: 716,
         deadheadMiles: 20, weight: 44000, brokerMc: 'MC-1', brokerName: 'Acme' },
     ]);
     const svc = new LoadsService({ findAll } as any);
     const res = await svc.byOrigin('CHICAGO_IL', 'F', 999);
     expect(res[0]).toEqual({
       board: 'dat', loadId: 'L1', originMarket: 'CHICAGO_IL', destMarket: 'ATLANTA_GA',
-      equipment: 'F', groupKey: 'dat|CHICAGO_IL>ATLANTA_GA|F', rate: 2000, loadedMiles: 716,
+      equipment: 'F', groupKey: 'dat|CHICAGO_IL>ATLANTA_GA|F', lastSeen: mockLastSeen,
+      rate: 2000, loadedMiles: 716,
       deadheadMiles: 20, weight: 44000, brokerMc: 'MC-1', brokerName: 'Acme',
     });
     expect(res[0]).not.toHaveProperty('contact');
