@@ -156,3 +156,10 @@ test("horizon: пустая/нулевая цепочка не делит на �
   assert.strictEqual(h.days, 0.5);
   assert.strictEqual(h.perDay, 0);
 });
+
+test("horizon: неточное время округляется до получаса", () => {
+  // elapsed = 2000 drive + 0 idle + 1*120 = 2120 мин = 1.4722 дня → snap до 1.5
+  const h = LLPLAN.horizon({ legs: [{ driveMin: 2000 }], totalDriveMin: 2000, totalIdleMin: 0, totalNet: 1500 });
+  assert.strictEqual(h.days, 1.5);
+  assert.strictEqual(h.perDay, 1000);
+});
