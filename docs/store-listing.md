@@ -85,7 +85,7 @@ get-out chain planner and driver fleet matching.
 - Shared with third parties: No. Data goes only to the LoadLens backend.
 - Sold: No.
 - Encrypted in transit: Yes (HTTPS).
-- Deletion: on request (добавить in-app delete перед публикацией — App Store/Play требуют, для Web Store желательно).
+- Deletion: in-app («Удалить аккаунт» в попапе → `DELETE /api/v1/users/me`, hard-delete + каскад водителей); также по email.
 
 ## Screenshots (1280×800, до 5; заголовок крупно + строка под ним; фон #1d4ed8)
 

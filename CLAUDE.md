@@ -44,7 +44,7 @@ backend/src/                NestJS, synchronize:true (миграций нет)
   brokers/                  POST /brokers/reports (crowd-отзыв, upsert client_id+mc) + GET /brokers/:mc/reputation
   drivers/                  GET/POST/PATCH/DELETE /drivers — парк водителей диспетчера (JwtAuthGuard, скоуп userId, каскад от users)
   rates/                    GET /rates — дизель EIA (фолбэк $3.95 без EIA_API_KEY)
-  auth/ users/              register/login/refresh/me, PATCH /admin/users/:email/plan (X-Admin-Key)
+  auth/ users/              register/login/refresh/me, DELETE /users/me (hard-delete + каскад водителей), PATCH /admin/users/:email/plan
   shared/markets.seed.json  ★ копия seed для Docker-контекста backend/ (генерит sync:shared)
 shared/                     КАНОН: load.model.js, scoring.js, planner.js, markets.seed.json, hos-calculator.js
 ```
