@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LoadLens — Privacy Policy</title>
+  <style>
+    :root { --blue:#1d4ed8; --ink:#0f1720; --mut:#64748b; --line:#e2e8f0; --bg:#f8fafc; }
+    * { box-sizing: border-box; }
+    body { font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink);
+           max-width: 760px; margin: 0 auto; padding: 40px 20px 80px; background: #fff; }
+    header { border-bottom: 1px solid var(--line); padding-bottom: 16px; margin-bottom: 28px; }
+    h1 { margin: 0 0 4px; font-size: 28px; } h1 b { color: var(--blue); }
+    h2 { font-size: 19px; margin: 32px 0 10px; }
+    h3 { font-size: 16px; margin: 20px 0 6px; }
+    .sub { color: var(--mut); font-size: 14px; }
+    p, li { color: var(--ink); }
+    ul { padding-left: 22px; }
+    li { margin: 6px 0; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+    th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--mut); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .3px; }
+    code { background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; font-size: 13px; }
+    a { color: var(--blue); text-decoration: none; }
+    .foot { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--mut); font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Load<b>Lens</b> — Privacy Policy</h1>
+    <p class="sub">Last updated: June 15, 2026</p>
+  </header>
+
+  <p>LoadLens is a Chrome extension that overlays the freight load boards <strong>DAT One</strong> and
+    <strong>Truckstop</strong> that you are already logged into, and scores each load's profitability
+    (revenue-per-mile after deadhead, fuel and the lane market median) together with an Hours-of-Service
+    feasibility badge. This policy explains exactly what data the extension handles, why, and what we do
+    and do not do with it.</p>
+
+  <h2>1. Data we process</h2>
+
+  <h3>Stored locally on your device (chrome.storage.local)</h3>
+  <ul>
+    <li><strong>Anonymous client ID</strong> — a random UUID generated on first run, so the backend can
+      aggregate anonymized lane rate statistics without requiring an account. It contains no personal
+      information and is not linked to your identity.</li>
+    <li><strong>Account session</strong> — if you choose to sign in, your authentication token (JWT),
+      email and current plan are cached locally.</li>
+    <li><strong>Local settings</strong> — driver cost-per-mile, Hours-of-Service hours, the active-driver
+      selection and a cached diesel price.</li>
+  </ul>
+
+  <h3>Sent to our backend (<code>loadlens.krait.studio</code>)</h3>
+  <table>
+    <thead>
+      <tr><th>Data</th><th>Purpose</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Aggregated load attributes — origin/destination market, equipment type, posted rate, loaded
+          and deadhead miles, weight, broker MC number</td>
+        <td>Building anonymized per-lane rate medians and market-strength signals shared back to all users.
+          Broker/dispatcher contact details (phone numbers, emails, names matching contact patterns) are
+          stripped on the device before sending.</td>
+      </tr>
+      <tr>
+        <td>Account email and password</td>
+        <td>Optional sign-in for Pro features. Passwords are transmitted over HTTPS and stored only as a
+          salted hash on the server; they are never stored in the extension.</td>
+      </tr>
+      <tr>
+        <td>Driver profiles you create — name, home market, equipment, HOS hours, cost-per-mile, status</td>
+        <td>Stored under your account so your fleet settings power load scoring across devices.</td>
+      </tr>
+      <tr>
+        <td>Broker reputation reports you submit (MC number + outcome such as paid / slow / flaked)</td>
+        <td>Crowd-sourced broker reliability shown to other users. One verdict per user per broker.</td>
+      </tr>
+      <tr>
+        <td>Anonymous client ID</td>
+        <td>Deduplicating crowd submissions without an account.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2. What we do NOT collect</h2>
+  <ul>
+    <li>We do <strong>not</strong> collect your browsing history. The extension runs only on
+      <code>dat.com</code> and <code>truckstop.com</code> pages and on our own API.</li>
+    <li>We do <strong>not</strong> log your clicks, keystrokes, mouse movement or scrolling.</li>
+    <li>We do <strong>not</strong> collect broker or dispatcher personal contact details — these are
+      filtered out on your device before any data leaves the browser.</li>
+    <li>We do <strong>not</strong> initiate requests to DAT or Truckstop APIs. The extension only reads
+      data that the load board has already loaded into your own logged-in session.</li>
+    <li>We do <strong>not</strong> collect health, payment-card or precise-location data.</li>
+  </ul>
+
+  <h2>3. How we use the data</h2>
+  <p>Data is used solely to operate the extension's single purpose: scoring the loads you see and showing
+    market and broker context. Load attributes are aggregated into anonymized lane statistics; individual
+    postings are not republished.</p>
+
+  <h2>4. Data sharing</h2>
+  <ul>
+    <li>We do <strong>not</strong> sell or transfer your data to third parties.</li>
+    <li>We do <strong>not</strong> use or transfer your data for any purpose unrelated to the extension's
+      single purpose.</li>
+    <li>We do <strong>not</strong> use your data to determine creditworthiness or for lending purposes.</li>
+  </ul>
+  <p>Data is processed only by LoadLens and our hosting infrastructure required to run the service.</p>
+
+  <h2>5. Data retention and deletion</h2>
+  <p>Locally stored data can be cleared at any time by removing the extension or clearing its storage.
+    To delete your account and the driver profiles and reports associated with it, contact us at the
+    address below and we will remove them.</p>
+
+  <h2>6. Security</h2>
+  <p>All communication between the extension and our backend uses HTTPS. Account passwords are stored only
+    as salted hashes. Authentication uses short-lived access tokens with refresh rotation.</p>
+
+  <h2>7. Changes to this policy</h2>
+  <p>If this policy changes materially, we will update the date above and reflect the change in the
+    extension's Chrome Web Store listing.</p>
+
+  <h2>8. Contact</h2>
+  <p>Questions or data-deletion requests: <a href="mailto:bogbuk@gmail.com">bogbuk@gmail.com</a></p>
+
+  <div class="foot">LoadLens · <a href="/">dashboard</a> · <a href="/healthz">health</a></div>
+</body>
+</html>
