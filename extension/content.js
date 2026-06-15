@@ -12,6 +12,9 @@
   let costPerMile = 1.80;
   let hosState = (typeof LLHOS !== "undefined") ? LLHOS.fresh() : { remainingDrive: 660, remainingOnDuty: 840, remainingCycle: 4200 };
   let currentMarket = null; // рынок водителя для планировщика (по умолчанию — самый частый origin в выдаче)
+  let drivers = [];              // парк диспетчера (LLAPI.getDrivers; пусто, если не залогинен)
+  let activeDriver = null;       // выбранный водитель (LLDRV.pickActive)
+  let activeEquipment = null;    // фильтр прицепа активного водителя (null = без фильтра)
 
   let gqlLoads = [];              // грузы из перехваченного ответа DAT FindLoads (inject.js)
   const laneCache = new Map();    // "O>D|E" -> {medianRpm|null}  (из backend)
@@ -322,6 +325,7 @@
       loads: pool,
       distance: (a, b) => LLGEO.sync(a, b),
       marketStrength: strengthOf,
+      equipment: activeEquipment || undefined,
       dieselPrice, costPerMile, maxLegs: 3, topN: 5,
     });
   }
@@ -331,6 +335,20 @@
     let best = null, n = -1;
     for (const m in c) if (c[m] > n) { n = c[m]; best = m; }
     return best;
+  }
+
+  // Применить активного водителя к параметрам планировщика/скоринга (или аноним-фолбэк).
+  function applyDriverContext(loads) {
+    const fallbackMarket = currentMarket || topOriginMarket(loads);
+    const ctx = (typeof LLDRV !== "undefined")
+      ? LLDRV.resolveDriverContext(activeDriver, { market: fallbackMarket, hos: hosState, costPerMile })
+      : { market: fallbackMarket, hos: hosState, equipment: null, costPerMile };
+    if (activeDriver) {                       // водитель переопределяет аноним-настройки
+      hosState = ctx.hos;
+      costPerMile = ctx.costPerMile;
+    }
+    activeEquipment = ctx.equipment;
+    return ctx.market;
   }
 
   // ---------- панель ----------
@@ -375,7 +393,7 @@
     }
     const fab = document.getElementById("ll-fab"); if (fab) fab.remove();
 
-    const start = currentMarket || topOriginMarket(loads);
+    const start = applyDriverContext(loads);
     const chains = buildChains(chainPool(loads), start).filter((c) => c.legs.length >= 1);
     const deals = loads.map((l) => ({ l, b: LLSCORE.profitBadge(l, { costPerMile, dieselPrice, laneMedian: laneCache.get(laneKeyOf(l)) }) }))
       .filter((d) => d.b.level === "green").slice(0, 5);
@@ -383,6 +401,11 @@
     const p = buildPanel();
     const bd = p.querySelector(".bd");
     bd.innerHTML =
+      (drivers.length ? `<div class="ll-driver"><span class="k">Водитель</span>` +
+        `<select id="ll-driver">` + drivers.map((d) =>
+          `<option value="${esc(d.id)}"${activeDriver && d.id === activeDriver.id ? " selected" : ""}>` +
+          `${esc(d.name)}${d.currentMarket ? " · " + esc(d.currentMarket) : ""}${d.equipment ? " · " + esc(d.equipment) : ""}</option>`).join("") +
+        `</select></div>` : "") +
       row("Грузов в выдаче", String(loads.length)) +
       row("Рынок старта", start ? esc(start) : "—") +
       row("Дизель", "$" + dieselPrice.toFixed(2) + "/гал") +
@@ -396,6 +419,12 @@
       '<span class="pro-tag">Pro</span></div>' +
       '<div class="note">Скоринг учитывает deadhead, топливо и медиану рынка по lane. Ставка с борда — запрос брокера. HOS-бейдж — выполнимость по часам водителя.</div>';
 
+    const drvSel = bd.querySelector("#ll-driver");
+    if (drvSel) drvSel.onchange = async () => {
+      activeDriver = (typeof LLDRV !== "undefined") ? LLDRV.pickActive(drivers, drvSel.value) : null;
+      if (typeof LLDRV !== "undefined") await LLDRV.setActive(drvSel.value);
+      render();
+    };
     const cpm = bd.querySelector("#ll-cpm");
     if (cpm) cpm.onchange = () => { const v = parseFloat(cpm.value); if (v > 0) { costPerMile = v; render(); } };
     const st = bd.querySelector("#ll-start");
@@ -447,6 +476,13 @@
     }
     if (typeof LLHOS !== "undefined") { try { hosState = await LLHOS.load(); } catch { /* fresh */ } }
     try { const { ll_cpm } = await chrome.storage.local.get("ll_cpm"); if (ll_cpm > 0) costPerMile = ll_cpm; } catch { /* дефолт */ }
+    // парк водителей диспетчера (если залогинен); активный — per-device выбор
+    if (typeof LLAPI !== "undefined" && typeof LLDRV !== "undefined") {
+      try {
+        drivers = await LLAPI.getDrivers();
+        if (drivers.length) activeDriver = LLDRV.pickActive(drivers, await LLDRV.getActiveId());
+      } catch { drivers = []; activeDriver = null; }
+    }
     // живое применение настроек из попапа без перезагрузки страницы
     try {
       chrome.storage.onChanged.addListener((ch) => {
