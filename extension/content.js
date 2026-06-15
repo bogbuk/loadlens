@@ -20,6 +20,7 @@
   let activeEquipment = null;    // фильтр прицепа активного водителя (null = без фильтра)
 
   let gqlLoads = [];              // грузы из перехваченного ответа DAT FindLoads (inject.js)
+  let expandedChainSig = null;   // сигнатура раскрытой цепочки (route path), переживает re-render
   const laneCache = new Map();    // "O>D|E" -> {medianRpm|null}  (из backend)
   const marketCache = new Map();  // market -> strength 0..1
   const repCache = new Map();     // brokerMc -> reputation (crowd)
@@ -438,6 +439,7 @@
     const fab = document.getElementById("ll-fab"); if (fab) fab.remove();
 
     const chains = buildChains(chainPool(loads), start).filter((c) => c.legs.length >= 1);
+    const chainsCtx = chainCtx(loads, chainPool(loads));
     const deals = loads.map((l) => ({ l, b: LLSCORE.profitBadge(l, { costPerMile, dieselPrice, laneMedian: laneCache.get(laneKeyOf(l)) }) }))
       .filter((d) => d.b.level === "green").slice(0, 5);
 
@@ -454,7 +456,7 @@
       row("Дизель", "$" + dieselPrice.toFixed(2) + "/гал") +
       `<div class="ll-cfg">Cost/mi: <input id="ll-cpm" type="number" step="0.05" value="${costPerMile}" style="width:60px"> ` +
       `Старт: <input id="ll-start" type="text" value="${start ? esc(start) : ""}" style="width:110px" placeholder="CHICAGO_IL"></div>` +
-      (chains.length ? "<h4>Get-out цепочки</h4>" + chains.map(chainRow).join("") : "<div class='note'>Цепочки появятся, когда видно достаточно грузов из рынка старта.</div>") +
+      (chains.length ? "<h4>Get-out цепочки</h4>" + chains.map((c) => chainCard(c, chainsCtx)).join("") : "<div class='note'>Цепочки появятся, когда видно достаточно грузов из рынка старта.</div>") +
       (deals.length ? "<h4>Выгодные сейчас</h4>" + deals.map((d) =>
         `<div class="deal"><span class="m">${esc(d.l.originMarket)} → ${esc(d.l.destMarket)} ${esc(d.l.equipment)}</span>` +
         `<span class="p">$${d.b.netRpm.toFixed(2)}/mi</span></div>`).join("") : "") +
@@ -474,6 +476,20 @@
     if (st) st.onchange = () => { currentMarket = st.value.trim().toUpperCase() || null; render(); };
     const csvBtn = bd.querySelector('[data-act="csv"]');
     if (csvBtn) csvBtn.onclick = () => exportCsv(loads);
+    bd.querySelectorAll(".chain-hd").forEach((hd) => {
+      hd.addEventListener("click", () => {
+        const sig = hd.getAttribute("data-sig");
+        expandedChainSig = (expandedChainSig === sig) ? null : sig;
+        render();
+      });
+    });
+    bd.querySelectorAll(".leg.leg-live").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const rid = el.getAttribute("data-result");
+        if (rid != null && adapter && typeof adapter.scrollToRow === "function") adapter.scrollToRow(rid);
+      });
+    });
   }
 
   // Pro-экспорт CSV видимых грузов (гейт через LLAPI.getMe().plan, как в PriceLens).
@@ -493,13 +509,125 @@
     URL.revokeObjectURL(a.href);
   }
 
-  function chainRow(c) {
-    const path = c.legs.map((l) => l.origin).concat(c.finalMarket);
-    const badge = c.hosBadge === "green" ? "✓" : c.hosBadge === "amber" ? "!" : "✕";
-    return `<div class="chain ll-${c.hosBadge}">` +
-      `<div class="route">${esc(path.join(" → "))}</div>` +
-      `<div class="meta">$${c.chainNetRpm.toFixed(2)}/mi · net $${c.totalNet} · ${c.totalMiles}mi · HOS ${badge}</div></div>`;
+  // сигнатура цепочки = путь рынков (стабильна между рендерами)
+  function chainSig(c) { return c.legs.map((l) => l.origin).concat(c.finalMarket).join(">"); }
+
+  // контекст рендера: индекс пула по loadId + множество «живых» loadId (видимых в выдаче)
+  function chainCtx(visible, pool) {
+    const poolById = new Map(pool.map((l) => [l.loadId, l]));
+    const liveIds = new Set(visible.map((l) => l.loadId));
+    return { poolById, liveIds };
   }
+
+  const HOS_ICON = { green: "✓", amber: "!", red: "✕" };
+
+  // свёрнутая/раскрытая карточка цепочки
+  function chainCard(c, ctx) {
+    const sig = chainSig(c);
+    const open = sig === expandedChainSig;
+    const path = c.legs.map((l) => l.origin).concat(c.finalMarket).join(" → ");
+    const h = LLPLAN.horizon(c);
+    const caret = open ? "▾" : "▸";
+    const meta = `$${c.chainNetRpm.toFixed(2)}/mi · net $${c.totalNet} · ~${h.days}д · $${h.perDay}/д · HOS ${HOS_ICON[c.hosBadge] || "?"}`;
+    let html = `<div class="chain ll-${c.hosBadge}${open ? " open" : ""}">` +
+      `<div class="chain-hd" data-sig="${esc(sig)}">` +
+      `<div class="route">${esc(path)} <span class="caret">${caret}</span></div>` +
+      `<div class="meta">${esc(meta)}</div></div>`;
+    if (open) html += `<div class="chain-legs">` + c.legs.map((l, i) => legRow(l, i, c, ctx)).join("") + `</div>`;
+    return html + `</div>`;
+  }
+
+  // одно плечо: live (из выдачи) или forecast (крауд)
+  function legRow(leg, i, c, ctx) {
+    const full = ctx.poolById.get(leg.loadId) || {};
+    const isLive = ctx.liveIds.has(leg.loadId);
+    const rpm = (leg.loadedMiles + leg.deadhead) > 0 ? leg.rate / (leg.loadedMiles + leg.deadhead) : 0;
+    const route = `${esc(leg.origin)} → ${esc(leg.dest)}`;
+    const idx = `плечо ${i + 1} · ${esc(leg.equipment || "")}`;
+    if (isLive) {
+      const rid = full.resultId != null ? ` data-result="${esc(String(full.resultId))}"` : "";
+      const eco = `$${money(leg.rate)} · ${leg.loadedMiles}mi${leg.deadhead ? " +" + leg.deadhead + "dh" : ""} · $${rpm.toFixed(2)}/mi · HOS ${HOS_ICON[leg.hosBadge] || "?"}`;
+      return `<div class="leg leg-live"${rid}>` +
+        `<div class="leg-top"><span class="leg-tag live">● СЕЙЧАС В ВЫДАЧЕ ↗</span><span class="leg-idx">${idx}</span></div>` +
+        `<div class="leg-route">${route}</div>` +
+        `<div class="leg-eco">${esc(eco)}</div>` +
+        `<div class="leg-chips">${liveChips(full)}</div></div>`;
+    }
+    // forecast (крауд) плечо. laneKeyOf ждёт originMarket/destMarket — у leg поля origin/dest, маппим.
+    const laneKey = laneKeyOf({ originMarket: leg.origin, destMarket: leg.dest, equipment: leg.equipment });
+    const median = laneCache.has(laneKey) ? laneCache.get(laneKey) : null;
+    const rpmTxt = median != null ? `$${median.toFixed(2)}/mi медиана lane` : `$${rpm.toFixed(2)}/mi`;
+    const fresh = freshnessText(full.lastSeen);
+    const density = (crowdCache.get(leg.origin) || []).length;
+    const densTxt = density ? ` · ~${density} груз. из рынка` : "";
+    const isLast = i === c.legs.length - 1;
+    const strengthTxt = isLast ? ` · финиш ${strengthBar(strengthOf(leg.dest))}` : "";
+    return `<div class="leg leg-fc">` +
+      `<div class="leg-top"><span class="leg-tag fc">◔ ПРОГНОЗ ПО РЫНКУ</span><span class="leg-idx">${esc(fresh)}</span></div>` +
+      `<div class="leg-route">${route}</div>` +
+      `<div class="leg-eco">${esc(rpmTxt)}${esc(densTxt)}${esc(strengthTxt)} · HOS ${HOS_ICON[leg.hosBadge] || "?"}</div></div>`;
+  }
+
+  // чипы живого плеча из распарсенного Load
+  function liveChips(load) {
+    const out = [];
+    // репутация брокера: crowd (если есть отзывы) иначе CS-бейдж
+    const rep = load.brokerMc ? repCache.get(String(load.brokerMc)) : null;
+    if (rep && rep.n) {
+      out.push(`<span class="lchip ${CROWD_CLS[rep.level] === "ll-good" ? "good" : rep.level === "bad" ? "risk" : rep.level === "mixed" ? "ok" : ""}">${esc((load.brokerName ? load.brokerName + " · " : "") + crowdShort(rep))}</span>`);
+    } else if (typeof LLSCORE !== "undefined") {
+      const b = LLSCORE.brokerBadge(load);
+      if (b.level !== "unknown") {
+        const cls = b.level === "good" ? "good" : b.level === "ok" ? "ok" : "risk";
+        const tag = b.level === "good" ? "🛡 надёжный" : b.level === "ok" ? "ок" : "⚠ риск";
+        out.push(`<span class="lchip ${cls}">${esc((load.brokerName ? load.brokerName + " · " : "") + tag + (b.creditScore != null ? " " + b.creditScore + "CS" : ""))}</span>`);
+      }
+    }
+    const pick = fmtPickup(load.availability);
+    if (pick) out.push(`<span class="lchip">pickup ${esc(pick)}</span>`);
+    if (load.weight || load.lengthFt) {
+      const wl = [load.weight ? Math.round(load.weight / 1000) + "klb" : null, load.lengthFt ? load.lengthFt + "ft" : null].filter(Boolean).join(" · ");
+      out.push(`<span class="lchip">${esc(wl)}</span>`);
+    }
+    if (load.isNegotiable) out.push(`<span class="lchip">торг</span>`);
+    if (load.isFactorable) out.push(`<span class="lchip">факторинг</span>`);
+    if (load.bookNow) out.push(`<span class="lchip book">Book Now</span>`);
+    return out.join("");
+  }
+
+  // короткий crowd-вердикт для чипа плеча
+  function crowdShort(rep) {
+    if (rep.level === "good") return "🛡 ок";
+    if (rep.level === "bad") return "⚠ риск";
+    if (rep.level === "thin") return rep.n + " отзыв.";
+    return "смешанно";
+  }
+
+  function fmtPickup(av) {
+    if (!av || !av.earliest) return null;
+    const d = new Date(av.earliest);
+    if (isNaN(d.getTime())) return null;
+    const today = new Date();
+    if (d.toDateString() === today.toDateString()) return "сегодня";
+    return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+  }
+
+  function freshnessText(lastSeen) {
+    if (!lastSeen) return "прогноз";
+    const d = new Date(lastSeen);
+    if (isNaN(d.getTime())) return "прогноз";
+    const days = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+    if (days <= 0) return "видели сегодня";
+    if (days === 1) return "видели вчера";
+    return `видели ${days} дн назад`;
+  }
+
+  function strengthBar(s) {
+    const n = Math.max(0, Math.min(5, Math.round((s || 0) * 5)));
+    return "▰".repeat(n) + "▱".repeat(5 - n);
+  }
+
+  const money = (n) => Math.round(n || 0).toLocaleString("en-US");
 
   function uniqueMarkets(loads) {
     const s = new Set();
