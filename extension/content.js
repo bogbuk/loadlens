@@ -343,7 +343,9 @@
     const ctx = (typeof LLDRV !== "undefined")
       ? LLDRV.resolveDriverContext(activeDriver, { market: fallbackMarket, hos: hosState, costPerMile })
       : { market: fallbackMarket, hos: hosState, equipment: null, costPerMile };
-    if (activeDriver) {                       // водитель переопределяет аноним-настройки
+    if (activeDriver) {
+      // При активном водителе его hos/costPerMile НАМЕРЕННО переопределяют ручные настройки
+      // попапа (#ll-cpm, ll_hos из storage.onChanged) — это ожидаемое поведение, не баг.
       hosState = ctx.hos;
       costPerMile = ctx.costPerMile;
     }
@@ -382,6 +384,10 @@
     fetchBrokerReps(loads);
     fetchCrowdLoads([...new Set(loads.map((l) => l.destMarket))]); // origin'ы следующих плеч
 
+    // Сначала применяем контекст водителя: мутирует hosState/costPerMile/activeEquipment,
+    // которые читают построчные бейджи (hosBadge/badgeRow) — иначе бейджи отстают на один рендер.
+    const start = applyDriverContext(loads);
+
     clearBadges();
     // построчные бейджи: матчим видимые DOM-строки с грузами (DAT — по resultId, TS — parseRow)
     (adapter.anchor ? adapter.anchor(loads) : []).forEach((p) => badgeRow(p.anchor || p.row, p.load));
@@ -393,7 +399,6 @@
     }
     const fab = document.getElementById("ll-fab"); if (fab) fab.remove();
 
-    const start = applyDriverContext(loads);
     const chains = buildChains(chainPool(loads), start).filter((c) => c.legs.length >= 1);
     const deals = loads.map((l) => ({ l, b: LLSCORE.profitBadge(l, { costPerMile, dieselPrice, laneMedian: laneCache.get(laneKeyOf(l)) }) }))
       .filter((d) => d.b.level === "green").slice(0, 5);
