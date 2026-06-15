@@ -438,8 +438,9 @@
     }
     const fab = document.getElementById("ll-fab"); if (fab) fab.remove();
 
-    const chains = buildChains(chainPool(loads), start).filter((c) => c.legs.length >= 1);
-    const chainsCtx = chainCtx(loads, chainPool(loads));
+    const pool = chainPool(loads);
+    const chains = buildChains(pool, start).filter((c) => c.legs.length >= 1);
+    const chainsCtx = chainCtx(loads, pool);
     const deals = loads.map((l) => ({ l, b: LLSCORE.profitBadge(l, { costPerMile, dieselPrice, laneMedian: laneCache.get(laneKeyOf(l)) }) }))
       .filter((d) => d.b.level === "green").slice(0, 5);
 
@@ -510,7 +511,7 @@
   }
 
   // сигнатура цепочки = путь рынков (стабильна между рендерами)
-  function chainSig(c) { return c.legs.map((l) => l.origin).concat(c.finalMarket).join(">"); }
+  function chainSig(c) { return c.legs.map((l) => l.origin).concat(c.finalMarket).join(">") + "|" + c.chainNetRpm + "|" + c.totalMiles; }
 
   // контекст рендера: индекс пула по loadId + множество «живых» loadId (видимых в выдаче)
   function chainCtx(visible, pool) {
@@ -543,8 +544,8 @@
     const isLive = ctx.liveIds.has(leg.loadId);
     const rpm = (leg.loadedMiles + leg.deadhead) > 0 ? leg.rate / (leg.loadedMiles + leg.deadhead) : 0;
     const route = `${esc(leg.origin)} → ${esc(leg.dest)}`;
-    const idx = `плечо ${i + 1} · ${esc(leg.equipment || "")}`;
     if (isLive) {
+      const idx = `плечо ${i + 1} · ${esc(leg.equipment || "")}`;
       const rid = full.resultId != null ? ` data-result="${esc(String(full.resultId))}"` : "";
       const eco = `$${money(leg.rate)} · ${leg.loadedMiles}mi${leg.deadhead ? " +" + leg.deadhead + "dh" : ""} · $${rpm.toFixed(2)}/mi · HOS ${HOS_ICON[leg.hosBadge] || "?"}`;
       return `<div class="leg leg-live"${rid}>` +
@@ -574,7 +575,8 @@
     // репутация брокера: crowd (если есть отзывы) иначе CS-бейдж
     const rep = load.brokerMc ? repCache.get(String(load.brokerMc)) : null;
     if (rep && rep.n) {
-      out.push(`<span class="lchip ${CROWD_CLS[rep.level] === "ll-good" ? "good" : rep.level === "bad" ? "risk" : rep.level === "mixed" ? "ok" : ""}">${esc((load.brokerName ? load.brokerName + " · " : "") + crowdShort(rep))}</span>`);
+      const repCls = { good: "good", bad: "risk", mixed: "ok" }[rep.level] || "";
+      out.push(`<span class="lchip ${repCls}">${esc((load.brokerName ? load.brokerName + " · " : "") + crowdShort(rep))}</span>`);
     } else if (typeof LLSCORE !== "undefined") {
       const b = LLSCORE.brokerBadge(load);
       if (b.level !== "unknown") {
