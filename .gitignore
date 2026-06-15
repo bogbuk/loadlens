@@ -15,3 +15,4 @@ backend/dist/
 backend/.env
 *.log
 extension.zip
+.superpowers/
