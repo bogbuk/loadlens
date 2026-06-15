@@ -9,9 +9,15 @@
 
   let panelCollapsed = false;
   let dieselPrice = 3.95;
-  let costPerMile = 1.80;
-  let hosState = (typeof LLHOS !== "undefined") ? LLHOS.fresh() : { remainingDrive: 660, remainingOnDuty: 840, remainingCycle: 4200 };
+  let baseCostPerMile = 1.80; // «базовая» (диспетчерская) настройка; не мутируется водителем
+  let costPerMile = 1.80;     // текущий (resolveDriverContext → applyDriverContext)
+  const _freshHos = (typeof LLHOS !== "undefined") ? LLHOS.fresh() : { remainingDrive: 660, remainingOnDuty: 840, remainingCycle: 4200 };
+  let baseHos = { ..._freshHos }; // «базовый» HOS (диспетчерские часы из storage/popup)
+  let hosState = { ..._freshHos }; // текущий (resolveDriverContext → applyDriverContext)
   let currentMarket = null; // рынок водителя для планировщика (по умолчанию — самый частый origin в выдаче)
+  let drivers = [];              // парк диспетчера (LLAPI.getDrivers; пусто, если не залогинен)
+  let activeDriver = null;       // выбранный водитель (LLDRV.pickActive)
+  let activeEquipment = null;    // фильтр прицепа активного водителя (null = без фильтра)
 
   let gqlLoads = [];              // грузы из перехваченного ответа DAT FindLoads (inject.js)
   const laneCache = new Map();    // "O>D|E" -> {medianRpm|null}  (из backend)
@@ -322,6 +328,7 @@
       loads: pool,
       distance: (a, b) => LLGEO.sync(a, b),
       marketStrength: strengthOf,
+      equipment: activeEquipment || undefined,
       dieselPrice, costPerMile, maxLegs: 3, topN: 5,
     });
   }
@@ -331,6 +338,21 @@
     let best = null, n = -1;
     for (const m in c) if (c[m] > n) { n = c[m]; best = m; }
     return best;
+  }
+
+  // Применить активного водителя к параметрам планировщика/скоринга (или аноним-фолбэк).
+  // Всегда читает из СТАБИЛЬНЫХ базовых настроек (baseHos/baseCostPerMile), чтобы переключение
+  // между водителями с explicit-cost и без не накапливало грязь от предыдущего водителя.
+  function applyDriverContext(loads) {
+    const fallbackMarket = currentMarket || topOriginMarket(loads);
+    const ctx = (typeof LLDRV !== "undefined")
+      ? LLDRV.resolveDriverContext(activeDriver, { market: fallbackMarket, hos: baseHos, costPerMile: baseCostPerMile })
+      : { market: fallbackMarket, hos: baseHos, equipment: null, costPerMile: baseCostPerMile };
+    // ВСЕГДА присваиваем: аноним → base-значения; водитель → его значения (или base, если null).
+    hosState = ctx.hos;
+    costPerMile = ctx.costPerMile;
+    activeEquipment = ctx.equipment;
+    return ctx.market;
   }
 
   // ---------- панель ----------
@@ -364,6 +386,10 @@
     fetchBrokerReps(loads);
     fetchCrowdLoads([...new Set(loads.map((l) => l.destMarket))]); // origin'ы следующих плеч
 
+    // Сначала применяем контекст водителя: мутирует hosState/costPerMile/activeEquipment,
+    // которые читают построчные бейджи (hosBadge/badgeRow) — иначе бейджи отстают на один рендер.
+    const start = applyDriverContext(loads);
+
     clearBadges();
     // построчные бейджи: матчим видимые DOM-строки с грузами (DAT — по resultId, TS — parseRow)
     (adapter.anchor ? adapter.anchor(loads) : []).forEach((p) => badgeRow(p.anchor || p.row, p.load));
@@ -375,7 +401,6 @@
     }
     const fab = document.getElementById("ll-fab"); if (fab) fab.remove();
 
-    const start = currentMarket || topOriginMarket(loads);
     const chains = buildChains(chainPool(loads), start).filter((c) => c.legs.length >= 1);
     const deals = loads.map((l) => ({ l, b: LLSCORE.profitBadge(l, { costPerMile, dieselPrice, laneMedian: laneCache.get(laneKeyOf(l)) }) }))
       .filter((d) => d.b.level === "green").slice(0, 5);
@@ -383,6 +408,11 @@
     const p = buildPanel();
     const bd = p.querySelector(".bd");
     bd.innerHTML =
+      (drivers.length ? `<div class="ll-driver"><span class="k">Водитель</span>` +
+        `<select id="ll-driver">` + drivers.map((d) =>
+          `<option value="${esc(d.id)}"${activeDriver && d.id === activeDriver.id ? " selected" : ""}>` +
+          `${esc(d.name)}${d.currentMarket ? " · " + esc(d.currentMarket) : ""}${d.equipment ? " · " + esc(d.equipment) : ""}</option>`).join("") +
+        `</select></div>` : "") +
       row("Грузов в выдаче", String(loads.length)) +
       row("Рынок старта", start ? esc(start) : "—") +
       row("Дизель", "$" + dieselPrice.toFixed(2) + "/гал") +
@@ -396,8 +426,14 @@
       '<span class="pro-tag">Pro</span></div>' +
       '<div class="note">Скоринг учитывает deadhead, топливо и медиану рынка по lane. Ставка с борда — запрос брокера. HOS-бейдж — выполнимость по часам водителя.</div>';
 
+    const drvSel = bd.querySelector("#ll-driver");
+    if (drvSel) drvSel.onchange = async () => {
+      activeDriver = (typeof LLDRV !== "undefined") ? LLDRV.pickActive(drivers, drvSel.value) : null;
+      if (typeof LLDRV !== "undefined") await LLDRV.setActive(drvSel.value);
+      render();
+    };
     const cpm = bd.querySelector("#ll-cpm");
-    if (cpm) cpm.onchange = () => { const v = parseFloat(cpm.value); if (v > 0) { costPerMile = v; render(); } };
+    if (cpm) cpm.onchange = () => { const v = parseFloat(cpm.value); if (v > 0) { baseCostPerMile = v; render(); } };
     const st = bd.querySelector("#ll-start");
     if (st) st.onchange = () => { currentMarket = st.value.trim().toUpperCase() || null; render(); };
     const csvBtn = bd.querySelector('[data-act="csv"]');
@@ -446,12 +482,20 @@
       try { dieselPrice = await LLAPI.getDiesel(); } catch { /* фолбэк */ }
     }
     if (typeof LLHOS !== "undefined") { try { hosState = await LLHOS.load(); } catch { /* fresh */ } }
-    try { const { ll_cpm } = await chrome.storage.local.get("ll_cpm"); if (ll_cpm > 0) costPerMile = ll_cpm; } catch { /* дефолт */ }
+    baseHos = { ...hosState }; // зафиксировать базу после загрузки из storage
+    try { const { ll_cpm } = await chrome.storage.local.get("ll_cpm"); if (ll_cpm > 0) { costPerMile = ll_cpm; baseCostPerMile = ll_cpm; } } catch { /* дефолт */ }
+    // парк водителей диспетчера (если залогинен); активный — per-device выбор
+    if (typeof LLAPI !== "undefined" && typeof LLDRV !== "undefined") {
+      try {
+        drivers = await LLAPI.getDrivers();
+        if (drivers.length) activeDriver = LLDRV.pickActive(drivers, await LLDRV.getActiveId());
+      } catch { drivers = []; activeDriver = null; }
+    }
     // живое применение настроек из попапа без перезагрузки страницы
     try {
       chrome.storage.onChanged.addListener((ch) => {
-        if (ch.ll_cpm && ch.ll_cpm.newValue > 0) costPerMile = ch.ll_cpm.newValue;
-        if (ch.ll_hos && ch.ll_hos.newValue) hosState = ch.ll_hos.newValue;
+        if (ch.ll_cpm && ch.ll_cpm.newValue > 0) baseCostPerMile = ch.ll_cpm.newValue; // обновляем базу; render→applyDriverContext применит
+        if (ch.ll_hos && ch.ll_hos.newValue) baseHos = ch.ll_hos.newValue;              // аналогично для HOS
         schedule();
       });
     } catch { /* нет API */ }

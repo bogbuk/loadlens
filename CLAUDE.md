@@ -33,7 +33,8 @@ extension/                  MV3-расширение (грузит vendor/* → 
   content.js                источник: gqlLoads (перехват, приоритет) → панель/скоринг/sync; DOM → построчные бейджи
   api.js (LLAPI)            JWT-клиент + sanitizeLoad (PII-фильтр) + sendLoads/getLane/getMarket/getDistance
   geo.js, hos.js            обёртки: дистанции (backend+haversine), HOS-состояние водителя
-  popup.*                   настройки водителя (cost/mile, HOS-часы) + аккаунт
+  drivers.js (LLDRV)        парк диспетчера: resolveDriverContext (чистая, выбор контекста планировщика) + per-device активный водитель (ll_active_driver)
+  popup.*                   настройки водителя (cost/mile, HOS-часы) + аккаунт + секция «Парк» (CRUD водителей)
   vendor/                   ★ АВТОКОПИИ из shared/ (load.model, scoring, planner, markets.seed). `npm run sync:shared`
 backend/src/                NestJS, synchronize:true (миграций нет)
   loads/                    POST /loads — ingest+upsert; GET /loads?origin=&equipment= — крауд-грузы рынка (onward-плечи цепочек, без PII)
@@ -41,6 +42,7 @@ backend/src/                NestJS, synchronize:true (миграций нет)
   markets/                  GET /markets/:m/strength — сила рынка (крауд-плотность + seed-фолбэк)
   geo/                      GET /geo/distance — OSRM-прокси + кэш lane_distances + haversine
   brokers/                  POST /brokers/reports (crowd-отзыв, upsert client_id+mc) + GET /brokers/:mc/reputation
+  drivers/                  GET/POST/PATCH/DELETE /drivers — парк водителей диспетчера (JwtAuthGuard, скоуп userId, каскад от users)
   rates/                    GET /rates — дизель EIA (фолбэк $3.95 без EIA_API_KEY)
   auth/ users/              register/login/refresh/me, PATCH /admin/users/:email/plan (X-Admin-Key)
   shared/markets.seed.json  ★ копия seed для Docker-контекста backend/ (генерит sync:shared)
@@ -86,6 +88,13 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   flaked/double_brokered), upsert по `client_id+mc` (один вердикт на юзера → нет накрутки), агрегат
   `deriveLevel` → good/mixed/bad/thin. Чётвертый (clickable) чип в полосе + меню отзыва. MC нормализуем
   к цифрам (`normalizeMc`). Поверх DAT-кредита — это network-effect moat.
+- **Парк водителей** (`backend/drivers` + `extension/drivers.js`): диспетчер ведёт несколько
+  водителей (имя/рынок/HOS/equipment/costPerMile/homeBase/status), профили на бэкенде под JWT
+  (скоуп `userId`, каскад от users). Активный водитель — per-device (`ll_active_driver`) — питает
+  скоринг и цепочки через `LLDRV.resolveDriverContext` (его hos/costPerMile переопределяют ручные
+  настройки попапа). **Без логина / при пустом парке — аноним-режим: прежнее поведение (локальный
+  `ll_hos`, авто-рынок `topOriginMarket`).** Свитчер водителя — в шапке панели (только при непустом
+  парке), CRUD парка — в popup. `homeBase` хранится, в скоринг пока не идёт (YAGNI).
 - **Скоринг:** trueRpm = rate/(loaded+deadhead); бейдж red/amber/green по break-even (cost/mile,
   дефолт $1.80) и медиане lane. `metric` груза = RPM (аналог цены в PriceLens).
 - Backend: `synchronize:true` (миграций нет, MVP). Новые колонки — идемпотентный
