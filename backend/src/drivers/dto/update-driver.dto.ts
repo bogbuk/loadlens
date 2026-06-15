@@ -1,5 +1,7 @@
-import { IsIn, IsNumber, IsObject, IsOptional, IsString, Matches, MaxLength, Min } from 'class-validator';
+import { IsIn, IsNumber, IsOptional, IsString, Matches, MaxLength, Min, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { DRIVER_STATUS, EQUIPMENT } from '../driver.model';
+import { DriverHosDto } from './driver-hos.dto';
 
 export class UpdateDriverDto {
   @IsOptional() @IsString() @MaxLength(64) @Matches(/^[^\n\r]{1,64}$/)
@@ -20,6 +22,6 @@ export class UpdateDriverDto {
   @IsOptional() @IsIn(DRIVER_STATUS as unknown as string[])
   status?: string;
 
-  @IsOptional() @IsObject()
-  hos?: { remainingDrive: number; remainingOnDuty: number; remainingCycle: number };
+  @IsOptional() @ValidateNested() @Type(() => DriverHosDto)
+  hos?: DriverHosDto;
 }

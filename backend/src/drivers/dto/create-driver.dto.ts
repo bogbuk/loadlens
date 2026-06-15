@@ -1,5 +1,7 @@
-import { IsIn, IsNumber, IsObject, IsOptional, IsString, Matches, MaxLength, Min } from 'class-validator';
+import { IsIn, IsNumber, IsOptional, IsString, Matches, MaxLength, Min, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { DRIVER_STATUS, EQUIPMENT } from '../driver.model';
+import { DriverHosDto } from './driver-hos.dto';
 
 export class CreateDriverDto {
   @IsString() @MaxLength(64) @Matches(/^[^\n\r]{1,64}$/)
@@ -22,6 +24,6 @@ export class CreateDriverDto {
   status?: string;
 
   // { remainingDrive, remainingOnDuty, remainingCycle } в минутах. По умолчанию — «свежий» в сервисе.
-  @IsOptional() @IsObject()
-  hos?: { remainingDrive: number; remainingOnDuty: number; remainingCycle: number };
+  @IsOptional() @ValidateNested() @Type(() => DriverHosDto)
+  hos?: DriverHosDto;
 }

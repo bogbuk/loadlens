@@ -13,7 +13,7 @@ async function bootstrap() {
   app.enableCors({
     origin: [/^https:\/\/([a-z0-9-]+\.)?dat\.com$/, /^https:\/\/([a-z0-9-]+\.)?truckstop\.com$/,
              /^chrome-extension:\/\/[a-p]{32}$/],
-    methods: ['GET', 'POST', 'PATCH'],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   });
 
   await app.listen(Number(process.env.PORT ?? 3000));

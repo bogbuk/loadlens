@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { DriversService } from './drivers.service';
 import { CreateDriverDto } from './dto/create-driver.dto';
@@ -20,12 +20,12 @@ export class DriversController {
   }
 
   @Patch(':id')
-  update(@Req() req: any, @Param('id') id: string, @Body() dto: UpdateDriverDto) {
+  update(@Req() req: any, @Param('id', new ParseUUIDPipe()) id: string, @Body() dto: UpdateDriverDto) {
     return this.service.update(req.user.userId, id, dto);
   }
 
   @Delete(':id')
-  remove(@Req() req: any, @Param('id') id: string) {
+  remove(@Req() req: any, @Param('id', new ParseUUIDPipe()) id: string) {
     return this.service.remove(req.user.userId, id);
   }
 }
