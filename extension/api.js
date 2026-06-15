@@ -162,8 +162,52 @@ const LLAPI = (() => {
     } catch { return { email: auth.email, plan: auth.plan }; }
   }
 
+  // ---- authed fetch с авто-refresh (как getMe). Возвращает Response или null (не залогинен). ----
+  async function authedFetch(path, opts = {}) {
+    let auth = await getAuth();
+    if (!auth) return null;
+    const call = (a) => fetch(`${BASE}${path}`, {
+      ...opts,
+      headers: { ...(opts.headers || {}), "Content-Type": "application/json", Authorization: `Bearer ${a.accessToken}` },
+    });
+    let res = await call(auth);
+    if (res.status === 401) {
+      auth = await refreshTokens(auth);
+      if (!auth) return null;
+      res = await call(auth);
+    }
+    return res;
+  }
+
+  // ---- парк водителей (под JWT диспетчера) ----
+  async function getDrivers() {
+    try { const res = await authedFetch("/drivers"); return res && res.ok ? await res.json() : []; }
+    catch { return []; }
+  }
+  async function createDriver(d) {
+    const res = await authedFetch("/drivers", { method: "POST", body: JSON.stringify(d) });
+    if (!res) throw new Error("нужен вход в аккаунт");
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || `ошибка ${res.status}`);
+    return data;
+  }
+  async function updateDriver(id, patch) {
+    const res = await authedFetch(`/drivers/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(patch) });
+    if (!res) throw new Error("нужен вход в аккаунт");
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || `ошибка ${res.status}`);
+    return data;
+  }
+  async function deleteDriver(id) {
+    const res = await authedFetch(`/drivers/${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!res) throw new Error("нужен вход в аккаунт");
+    if (!res.ok) throw new Error(`ошибка ${res.status}`);
+    return { ok: true };
+  }
+
   return { sanitizeLoad, clientId, sendLoads, getLane, getMarket, getDistance, getDiesel,
-           getLoadsByOrigin, getBrokerReputation, reportBroker, register, login, logout, getMe };
+           getLoadsByOrigin, getBrokerReputation, reportBroker, register, login, logout, getMe,
+           getDrivers, createDriver, updateDriver, deleteDriver };
 })();
 
 if (typeof module !== "undefined" && module.exports) { module.exports = LLAPI; }
