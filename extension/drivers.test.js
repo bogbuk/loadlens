@@ -27,6 +27,7 @@ test("resolveDriverContext: пустой market/equipment у водителя �
   const ctx = LLDRV.resolveDriverContext({ id: "d2", name: "Sue", hos: LLDRV.FRESH }, { market: "PERU_IL", costPerMile: 1.8 });
   assert.strictEqual(ctx.market, "PERU_IL");         // фолбэк на авто-рынок выдачи
   assert.strictEqual(ctx.equipment, null);
+  assert.strictEqual(ctx.costPerMile, 1.8);  // costPerMile берётся из fallback, когда у водителя поля нет
 });
 
 test("pickActive: находит по id, иначе первый, иначе null", () => {

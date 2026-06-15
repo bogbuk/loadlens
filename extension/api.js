@@ -170,13 +170,15 @@ const LLAPI = (() => {
       ...opts,
       headers: { ...(opts.headers || {}), "Content-Type": "application/json", Authorization: `Bearer ${a.accessToken}` },
     });
-    let res = await call(auth);
-    if (res.status === 401) {
-      auth = await refreshTokens(auth);
-      if (!auth) return null;
-      res = await call(auth);
-    }
-    return res;
+    try {
+      let res = await call(auth);
+      if (res.status === 401) {
+        auth = await refreshTokens(auth);
+        if (!auth) return null;
+        res = await call(auth);
+      }
+      return res;
+    } catch { throw new Error("сетевая ошибка"); }
   }
 
   // ---- парк водителей (под JWT диспетчера) ----
