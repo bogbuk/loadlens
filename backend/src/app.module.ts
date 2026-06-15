@@ -17,6 +17,7 @@ import { User } from './users/user.model';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { Driver } from './drivers/driver.model';
+import { DriversModule } from './drivers/drivers.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -45,6 +46,7 @@ import { HealthController } from './health/health.controller';
     RatesModule,
     UsersModule,
     AuthModule,
+    DriversModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
