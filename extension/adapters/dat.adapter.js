@@ -42,6 +42,18 @@
       return pairs;
     },
 
+    // Прокрутка выдачи DAT к строке груза по resultId + кратковременная подсветка.
+    // resultId совпадает с id="table-row-<resultId>" (как в anchor). Возвращает true, если строка найдена.
+    scrollToRow(resultId) {
+      if (resultId == null) return false;
+      const row = document.getElementById(ROW_ID_PREFIX + resultId);
+      if (!row) return false;
+      row.scrollIntoView({ behavior: "smooth", block: "center" });
+      row.classList.add("ll-row-flash");
+      setTimeout(() => row.classList.remove("ll-row-flash"), 2000);
+      return true;
+    },
+
     // Данные DAT берём из GraphQL-перехвата, не из DOM.
     collect() { return []; },
   };
