@@ -63,8 +63,8 @@ function accForm(err) {
 const fleetEl = document.getElementById("fleet");
 const EQUIP = ["V", "R", "F", "SD", "PO"];
 
-async function renderFleet() {
-  const me = await LLAPI.getMe().catch(() => null);
+async function renderFleet(me) {
+  if (me === undefined) me = await LLAPI.getMe().catch(() => null);
   if (!me) { fleetEl.innerHTML = '<h4>Парк водителей</h4><div class="note">Войдите в аккаунт, чтобы вести своих водителей.</div>'; return; }
   let list = [];
   try { list = await LLAPI.getDrivers(); } catch { list = []; }
@@ -72,7 +72,10 @@ async function renderFleet() {
     (list.length ? list.map(driverRow).join("") : '<div class="note">Пока нет водителей. Добавьте первого.</div>') +
     '<button id="drv-add">+ Добавить водителя</button>';
   list.forEach((d) => {
-    fleetEl.querySelector(`[data-del="${d.id}"]`).onclick = async () => { await LLAPI.deleteDriver(d.id); renderFleet(); };
+    fleetEl.querySelector(`[data-del="${d.id}"]`).onclick = async () => {
+      try { await LLAPI.deleteDriver(d.id); renderFleet(); }
+      catch (e) { alert(e.message); }
+    };
     fleetEl.querySelector(`[data-mkt="${d.id}"]`).onchange = (e) => saveField(d.id, "currentMarket", e.target.value.trim().toUpperCase());
     fleetEl.querySelector(`[data-eq="${d.id}"]`).onchange = (e) => saveField(d.id, "equipment", e.target.value || null);
   });
@@ -83,7 +86,7 @@ function driverRow(d) {
   const opts = ['<option value="">—</option>'].concat(EQUIP.map((e) =>
     `<option value="${e}"${d.equipment === e ? " selected" : ""}>${e}</option>`)).join("");
   const eid = escA(d.id);
-  return `<div class="row"><span class="k">${escA(d.name)}</span>` +
+  return `<div class="row"><span class="k">${escA(d.name || "")}</span>` +
     `<span><input data-mkt="${eid}" type="text" value="${escA(d.currentMarket || "")}" placeholder="CHICAGO_IL" style="width:96px">` +
     `<select data-eq="${eid}">${opts}</select>` +
     `<button data-del="${eid}" title="Удалить" style="width:auto;margin:0 0 0 4px;padding:4px 8px">✕</button></span></div>`;
@@ -101,4 +104,4 @@ async function addDriver() {
 }
 
 renderSettings();
-LLAPI.getMe().then((u) => (u ? accRow(u) : accForm())).catch(() => accForm()).finally(renderFleet);
+LLAPI.getMe().then((u) => { (u ? accRow(u) : accForm()); renderFleet(u || null); }, () => { accForm(); renderFleet(null); });
