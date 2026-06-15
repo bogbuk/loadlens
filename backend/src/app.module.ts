@@ -16,6 +16,7 @@ import { RatesModule } from './rates/rates.module';
 import { User } from './users/user.model';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { Driver } from './drivers/driver.model';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -23,7 +24,7 @@ import { HealthController } from './health/health.controller';
     SequelizeModule.forRoot({
       dialect: 'postgres',
       uri: process.env.DATABASE_URL,
-      models: [Load, LaneDistance, BrokerReport, User],
+      models: [Load, LaneDistance, BrokerReport, User, Driver],
       autoLoadModels: true,
       synchronize: true,
       logging: false,
