@@ -66,6 +66,7 @@ const EQUIP = ["V", "R", "F", "SD", "PO"];
 async function renderFleet(me) {
   if (me === undefined) me = await LLAPI.getMe().catch(() => null);
   if (!me) { fleetEl.innerHTML = '<h4>Парк водителей</h4><div class="note">Войдите в аккаунт, чтобы вести своих водителей.</div>'; return; }
+  if (me.plan !== "pro") { fleetEl.innerHTML = '<h4>Парк водителей <span class="plan pro">PRO</span></h4><div class="note">Парк водителей и матчинг «все водители сразу» доступны в Pro.</div>'; return; }
   let list = [];
   try { list = await LLAPI.getDrivers(); } catch { list = []; }
   fleetEl.innerHTML = '<h4>Парк водителей</h4>' +

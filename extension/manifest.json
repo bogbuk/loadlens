@@ -25,6 +25,7 @@
         "vendor/load.model.js",
         "vendor/scoring.js",
         "vendor/planner.js",
+        "vendor/fleet.js",
         "vendor/markets.seed.js",
         "api.js",
         "adapters/adapters.js",

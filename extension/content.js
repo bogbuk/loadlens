@@ -147,8 +147,27 @@
     if (broker.level !== "unknown") host.appendChild(chip(brokerText(broker), "ll-broker ll-" + broker.level));
     // crowd-репутация: кликабельный чип (показывает агрегат + открывает меню отзыва)
     if (load.brokerMc) host.appendChild(crowdChip(load.brokerMc));
+    if (drivers.length && typeof LLFLEET !== "undefined") host.appendChild(fleetChip(load));
     host.appendChild(detailChip(load));
     anchorEl.appendChild(host);
+  }
+  // «все водители сразу»: чип лучшего подходящего водителя из парка + (N/M)
+  function fleetMatch(load) {
+    return LLFLEET.matchLoadToFleet(load, drivers,
+      { distance: (a, b) => LLGEO.sync(a, b), dieselPrice, costPerMile: baseCostPerMile });
+  }
+  function fleetChip(load) {
+    const m = fleetMatch(load);
+    const lvl = m.best ? m.best.hosBadge : "thin";
+    const cls = lvl === "green" ? "ll-good" : lvl === "amber" ? "ll-ok" : lvl === "red" ? "ll-risk" : "ll-thin";
+    const txt = m.best ? `👤 ${m.best.name} (${m.feasibleCount}/${m.total})` : `👤 нет (0/${m.total})`;
+    const c = chip(txt, "ll-fleet " + cls);
+    c.style.cursor = "pointer";
+    c.title = m.matches.map((x) =>
+      `${x.feasible ? "✓" : "✕"} ${x.name}: HOS ${x.hosBadge}${x.equipMatch ? "" : " · прицеп≠"} · DH ${x.deadhead}mi` +
+      `${x.netRpm != null ? " · $" + x.netRpm.toFixed(2) + "/mi" : ""}`).join("\n");
+    c.addEventListener("click", (e) => { e.stopPropagation(); e.preventDefault(); openLoadDetail(load); });
+    return c;
   }
   function detailChip(load) {
     const c = chip("ⓘ детали", "ll-detail-chip");
@@ -276,6 +295,23 @@
     if (load.contactPhone) { const a = document.createElement("a"); a.href = "tel:" + load.contactPhone; a.textContent = load.contactPhone; bd.appendChild(drow("Телефон", a)); }
     if (load.contactEmail) { const a = document.createElement("a"); a.href = "mailto:" + load.contactEmail; a.textContent = load.contactEmail; bd.appendChild(drow("Email", a)); }
     if (load.comments) { const c = document.createElement("div"); c.className = "comments"; c.textContent = load.comments; bd.appendChild(drow("Заметки", c)); }
+
+    // «Кому подходит» — разбивка по парку (все водители сразу)
+    if (drivers.length && typeof LLFLEET !== "undefined") {
+      const m = fleetMatch(load);
+      const wrap = document.createElement("div"); wrap.className = "fleet-match";
+      const h = document.createElement("div"); h.className = "fleet-h";
+      h.textContent = `Кому подходит (${m.feasibleCount}/${m.total})`;
+      wrap.appendChild(h);
+      m.matches.forEach((x) => {
+        const r = document.createElement("div"); r.className = "fleet-row ll-" + (x.feasible ? "ok" : "no");
+        r.textContent = `${x.feasible ? "✓" : "✕"} ${x.name} · HOS ${x.hosBadge}` +
+          `${x.equipMatch ? "" : " · прицеп≠"} · DH ${x.deadhead}mi` +
+          `${x.netRpm != null ? " · $" + x.netRpm.toFixed(2) + "/mi" : ""}`;
+        wrap.appendChild(r);
+      });
+      bd.appendChild(wrap);
+    }
 
     // действия
     const act = document.createElement("div"); act.className = "actions";

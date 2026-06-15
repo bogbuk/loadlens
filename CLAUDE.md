@@ -90,11 +90,15 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   к цифрам (`normalizeMc`). Поверх DAT-кредита — это network-effect moat.
 - **Парк водителей** (`backend/drivers` + `extension/drivers.js`): диспетчер ведёт несколько
   водителей (имя/рынок/HOS/equipment/costPerMile/homeBase/status), профили на бэкенде под JWT
-  (скоуп `userId`, каскад от users). Активный водитель — per-device (`ll_active_driver`) — питает
-  скоринг и цепочки через `LLDRV.resolveDriverContext` (его hos/costPerMile переопределяют ручные
-  настройки попапа). **Без логина / при пустом парке — аноним-режим: прежнее поведение (локальный
-  `ll_hos`, авто-рынок `topOriginMarket`).** Свитчер водителя — в шапке панели (только при непустом
-  парке), CRUD парка — в popup. `homeBase` хранится, в скоринг пока не идёт (YAGNI).
+  (скоуп `userId`, каскад от users). **Гейт Pro** (`drivers/pro.guard.ts` — `JwtAuthGuard, ProGuard`):
+  парк только для `plan==='pro'`; Free → 403 → пустой парк → аноним-режим. Активный водитель —
+  per-device (`ll_active_driver`) — питает скоринг и цепочки через `LLDRV.resolveDriverContext`.
+  **Без логина / Free / пустой парк — аноним-режим: прежнее поведение (`ll_hos`, `topOriginMarket`).**
+  Свитчер водителя — в шапке панели, CRUD парка — в popup. `homeBase` хранится, в скоринг не идёт (YAGNI).
+- **Матчинг «все водители сразу»** (`shared/fleet.js` `LLFLEET.matchLoadToFleet`): на каждом грузе
+  чип `👤 лучший (N/M)` (переиспользует `LLPLAN.stepHos` + `LLSCORE.netRpm`): equipment-фильтр +
+  deadhead от локации водителя + HOS-гейт + netRpm → ранжирование; `status:'off'` исключаются.
+  Клик → разбивка «Кому подходит» в карточке детали. Считается локально (данные грузов на сервер не шлём).
 - **Скоринг:** trueRpm = rate/(loaded+deadhead); бейдж red/amber/green по break-even (cost/mile,
   дефолт $1.80) и медиане lane. `metric` груза = RPM (аналог цены в PriceLens).
 - Backend: `synchronize:true` (миграций нет, MVP). Новые колонки — идемпотентный
