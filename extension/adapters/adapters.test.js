@@ -4,7 +4,7 @@ const assert = require("node:assert");
 // Порядок require: сначала зависимости-глобалы, потом адаптеры (регистрируются по сайд-эффекту).
 require("../../shared/load.model.js");
 const LLADAPT = require("./adapters.js");
-const { DAT_ADAPTER, resultIdOf } = require("./dat.adapter.js");
+const { DAT_ADAPTER, resultIdOf, domRowKey } = require("./dat.adapter.js");
 const { TRUCKSTOP_ADAPTER, TRUCKSTOP_SELECTORS } = require("./truckstop.adapter.js");
 
 // Лёгкий DOM-шим для Truckstop parseRow (карта {selector: text}).
@@ -44,6 +44,29 @@ test("DAT anchor матчит DOM-строки с грузами по resultId",
     assert.strictEqual(pairs.length, 1);
     assert.strictEqual(pairs[0].row, rowB);
     assert.strictEqual(pairs[0].load.resultId, "BBB");
+  } finally {
+    global.document = saved;
+  }
+});
+
+test("DAT domRowKey берёт сегмент после последнего '+' (композитный resultId)", () => {
+  // новый формат DAT: resultId = <длинное>+<короткий-row-id>
+  assert.strictEqual(domRowKey("L.c296v.1a85.0.H5Dk-f7GE+ZS1WtkGc"), "ZS1WtkGc");
+  // старый формат без '+' — возвращаем как есть (обратная совместимость)
+  assert.strictEqual(domRowKey("ZS1WtGvw"), "ZS1WtGvw");
+  assert.strictEqual(domRowKey(null), "");
+});
+
+test("DAT anchor матчит композитный resultId по короткому хвосту row-id", () => {
+  // DOM-id строки короткий, а load.resultId — композитный: матч должен сработать по хвосту
+  const rowB = { id: "table-row-ZS1WtkGc", querySelector: () => null };
+  const saved = global.document;
+  global.document = { querySelectorAll: () => [rowB] };
+  try {
+    const loads = [{ resultId: "L.c296v.1a85.0.H5Dk-f7GE+ZS1WtkGc", originMarket: "CHICAGO_IL", destMarket: "DALLAS_TX" }];
+    const pairs = DAT_ADAPTER.anchor(loads);
+    assert.strictEqual(pairs.length, 1);
+    assert.strictEqual(pairs[0].row, rowB);
   } finally {
     global.document = saved;
   }

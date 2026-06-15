@@ -488,7 +488,16 @@
       el.addEventListener("click", (e) => {
         e.stopPropagation();
         const rid = el.getAttribute("data-result");
-        if (rid != null && adapter && typeof adapter.scrollToRow === "function") adapter.scrollToRow(rid);
+        const ok = rid != null && adapter && typeof adapter.scrollToRow === "function" && adapter.scrollToRow(rid);
+        // строки нет в DOM (груз из similarResults / прокручен за пределы) — подсказываем, а не молчим
+        if (!ok) {
+          const tag = el.querySelector(".leg-tag");
+          if (tag) {
+            const prev = tag.textContent;
+            tag.textContent = "груз вне видимой выдачи";
+            setTimeout(() => { tag.textContent = prev; }, 1800);
+          }
+        }
       });
     });
   }
