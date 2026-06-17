@@ -8,4 +8,6 @@
 3. Added a freshness mechanism that recognises when a load has likely already been taken and removes it, so recommendations no longer send drivers toward unavailable freight.
 4. Delivered a live-monitoring mode where suggestions refresh automatically while a dispatcher watches the market, dropping loads as they disappear.
 5. Reviewed the work through several independent quality checks and resolved two issues that could briefly hide valid suggestions.
-6. Verified the full automated test suite passed and integrated the completed feature.
+6. Verified the full automated test suite passed and released the feature to production with the live service confirmed healthy.
+7. Added clear at-a-glance freshness indicators and a "detour" marker to each suggested stop, so dispatchers can trust and understand the recommendations faster.
+8. Prepared the browser extension for its next app-store release.
