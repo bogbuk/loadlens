@@ -26,7 +26,7 @@ describe('nearbyMarkets', () => {
     expect(nearbyMarkets('NOWHERE_XX', 75, SEED)).toEqual([{ market: 'NOWHERE_XX', crowMi: 0 }]);
   });
 
-  it('ограничивает число соседей maxNeighbors', () => {
+  it('ограничивает общее число записей maxNeighbors (включая сам рынок)', () => {
     const r = nearbyMarkets('DALLAS_TX', 5000, SEED, 3);
     expect(r.length).toBeLessThanOrEqual(3);
   });
