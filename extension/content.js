@@ -579,7 +579,7 @@
       const eco = `$${money(leg.rate)} · ${leg.loadedMiles}mi${leg.deadhead ? " +" + leg.deadhead + "dh" : ""} · $${rpm.toFixed(2)}/mi · HOS ${HOS_ICON[leg.hosBadge] || "?"}`;
       return `<div class="leg leg-live"${rid}>` +
         `<div class="leg-top"><span class="leg-tag live">● СЕЙЧАС В ВЫДАЧЕ ↗</span><span class="leg-idx">${idx}</span></div>` +
-        `<div class="leg-route">${route}</div>` +
+        `<div class="leg-route">${route}${neighborTag(full)}</div>` +
         `<div class="leg-eco">${esc(eco)}</div>` +
         `<div class="leg-chips">${liveChips(full)}</div></div>`;
     }
@@ -601,7 +601,7 @@
     const strengthTxt = isLast ? ` · финиш ${strengthBar(strengthOf(leg.dest))}` : "";
     return `<div class="leg leg-fc">` +
       `<div class="leg-top"><span class="leg-tag fc">◔ ПРОГНОЗ ПО РЫНКУ</span><span class="leg-idx">${esc(fresh)}</span></div>` +
-      `<div class="leg-route">${route}</div>` +
+      `<div class="leg-route">${route}${neighborTag(full)}</div>` +
       `<div class="leg-eco">${esc(rpmTxt)}${esc(densTxt)}${esc(strengthTxt)} · HOS ${HOS_ICON[leg.hosBadge] || "?"}</div></div>`;
   }
 
@@ -665,6 +665,12 @@
     if (liveness > 0.66) return { dot: "🟢", word: "свежо" };
     if (liveness >= 0.33) return { dot: "🟡", word: "стынет" };
     return { dot: "🔴", word: "могло уйти" };
+  }
+
+  // Плечо взято из соседнего рынка (радиус) — тег с крюком. Пусто при точном рынке (0/нет поля).
+  function neighborTag(full) {
+    const dh = full && full.originDeadheadMi;
+    return dh > 0 ? ` <span class="leg-nb">↪ +${Math.round(dh)}mi сосед</span>` : "";
   }
 
   function strengthBar(s) {

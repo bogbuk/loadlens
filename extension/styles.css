@@ -141,6 +141,7 @@
 #ll-panel .leg .lchip.ok   { background: #fef9c3; color: #854d0e; }
 #ll-panel .leg .lchip.risk { background: #fee2e2; color: #991b1b; }
 #ll-panel .leg .lchip.book { background: #dbeafe; color: #1e40af; }
+#ll-panel .leg .leg-nb { margin-left: 6px; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 8px; background: #eef1f4; color: #64748b; white-space: nowrap; }
 
 /* подсветка строки в выдаче DAT при клике по живому плечу */
 @keyframes ll-row-flash { 0%,100% { background: transparent; } 30% { background: rgba(29,78,216,.22); } }
