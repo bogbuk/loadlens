@@ -125,8 +125,15 @@ const LLPLAN = (() => {
     for (let depth = 1; depth <= o.maxLegs; depth++) {
       const next = [];
       for (const p of beam) {
-        const candidates = byOrigin.get(p.node) || [];
-        for (const load of candidates) {
+        // кандидаты узла: грузы из самого рынка + из соседей в радиусе (o.nearby).
+        // По умолчанию nearby нет → только сам рынок (строгий матч, прежнее поведение).
+        const origins = o.nearby ? o.nearby(p.node) : [{ market: p.node, miles: 0 }];
+        const seenIds = new Set();
+        for (const { market: om } of origins) {
+          const list = byOrigin.get(om) || [];
+          for (const load of list) {
+            if (seenIds.has(load.loadId)) continue;
+            seenIds.add(load.loadId);
           if (p.visited.has(load.destMarket)) continue;            // без циклов
           const deadhead = Math.round(distance(p.node, load.originMarket)); // 0, если уже в точке
           const driveMin = legMinutes((load.loadedMiles || 0) + deadhead);
@@ -149,6 +156,7 @@ const LLPLAN = (() => {
             worstBadge: worse(p.worstBadge, hos.badge),
           };
           next.push(score(cand, strength, o));
+          }
         }
       }
       next.sort((a, b) => b.rank - a.rank);
