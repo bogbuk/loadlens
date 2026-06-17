@@ -1,6 +1,8 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { getConnectionToken } from '@nestjs/sequelize';
+import type { Sequelize } from 'sequelize';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -8,8 +10,7 @@ async function bootstrap() {
     throw new Error('JWT_SECRET обязателен в проде');
 
   const app = await NestFactory.create(AppModule);
-  const { getConnectionToken } = await import('@nestjs/sequelize');
-  const sequelize = app.get(getConnectionToken()) as import('sequelize').Sequelize;
+  const sequelize = app.get<Sequelize>(getConnectionToken());
   await sequelize.query(
     'ALTER TABLE loads ADD COLUMN IF NOT EXISTS seen_count INTEGER NOT NULL DEFAULT 1',
   );

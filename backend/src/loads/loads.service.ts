@@ -48,19 +48,22 @@ export class LoadsService {
     });
     // Инкремент seen_count только для уже существовавших грузов: у новых first_seen == now
     // (выставлен выше), у существующих — старее. Группируем по board (составной ключ board+load_id).
-    const idsByBoard = new Map<string, string[]>();
-    for (const r of rows) {
-      const arr = idsByBoard.get(r.board) ?? [];
-      arr.push(r.loadId);
-      idsByBoard.set(r.board, arr);
-    }
-    for (const [board, ids] of idsByBoard) {
-      await this.sequelize.query(
-        `UPDATE loads SET seen_count = seen_count + 1
-           WHERE board = :board AND load_id IN (:ids) AND first_seen < :now`,
-        { replacements: { board, ids, now } },
-      );
-    }
+    // seen_count — soft-метрика; её сбой не должен ломать ingest грузов.
+    try {
+      const idsByBoard = new Map<string, string[]>();
+      for (const r of rows) {
+        const arr = idsByBoard.get(r.board) ?? [];
+        arr.push(r.loadId);
+        idsByBoard.set(r.board, arr);
+      }
+      for (const [board, ids] of idsByBoard) {
+        await this.sequelize.query(
+          `UPDATE loads SET seen_count = seen_count + 1
+             WHERE board = :board AND load_id IN (:ids) AND first_seen < :now`,
+          { replacements: { board, ids, now } },
+        );
+      }
+    } catch { /* soft-метрика — игнорируем */ }
     return { accepted: rows.length };
   }
 
