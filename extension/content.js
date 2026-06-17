@@ -588,9 +588,13 @@
     const median = laneCache.has(laneKey) ? laneCache.get(laneKey) : null;
     const rpmTxt = median != null ? `$${median.toFixed(2)}/mi медиана lane` : `$${rpm.toFixed(2)}/mi`;
     // серверная свежесть, если груз аннотирован /loads/near; иначе fallback на относительное время
-    const fresh = (full.liveness != null)
-      ? `${livenessLabel(full.liveness).dot} ${livenessLabel(full.liveness).word} · ${freshnessText(full.lastSeen)}`
-      : freshnessText(full.lastSeen);
+    let fresh;
+    if (full.liveness != null) {
+      const ll = livenessLabel(full.liveness);
+      fresh = `${ll.dot} ${ll.word} · ${freshnessText(full.lastSeen)}`;
+    } else {
+      fresh = freshnessText(full.lastSeen);
+    }
     const density = (crowdCache.get(leg.origin) || []).length;
     const densTxt = density ? ` · ~${density} груз. из рынка` : "";
     const isLast = i === c.legs.length - 1;
