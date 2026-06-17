@@ -25,6 +25,10 @@
   const marketCache = new Map();  // market -> strength 0..1
   const repCache = new Map();     // brokerMc -> reputation (crowd)
   const crowdCache = new Map();   // market -> CrowdLoad[] (onward-плечи из бэкенда)
+  const goneIds = new Set();      // loadId, помеченные сервером likelyGone — исключаем из цепочек
+  const crowdSince = new Map();   // market -> серверный ts последнего near-ответа (для delta-poll)
+  const RADIUS_MI = 75;           // радиус соседних рынков (тот же, что в LLGEO.nearby и бэке)
+  const POLL_MS = 7000;           // интервал живого delta-poll при открытой панели
   const laneRequested = new Set();
   const marketRequested = new Set();
   const repRequested = new Set();
@@ -98,23 +102,38 @@
     repRequested.delete(mc);
     if (typeof LLAPI !== "undefined") LLAPI.getBrokerReputation(mc).then((r) => { if (r) { repCache.set(String(mc), r); schedule(); } }).catch(() => {});
   }
-  // подтянуть крауд-грузы из рынков назначения — это origin'ы следующих плеч цепочки
-  function fetchCrowdLoads(markets) {
+  // подтянуть neighborhood грузов из рынков назначения (рынок + соседи) — origin'ы следующих плеч.
+  // opts.poll=true: живой delta-poll (игнорируем crowdRequested, шлём since); иначе разовый снимок.
+  function fetchCrowdLoads(markets, opts = {}) {
     if (typeof LLAPI === "undefined") return;
     markets.slice(0, 25).forEach((m) => {            // bound: не больше 25 запросов
-      if (crowdRequested.has(m)) return;
+      if (!opts.poll && crowdRequested.has(m)) return;
       crowdRequested.add(m);
-      LLAPI.getLoadsByOrigin(m).then((rows) => {
-        if (rows && rows.length) { crowdCache.set(m, rows); schedule(); }
+      const since = opts.poll ? crowdSince.get(m) : undefined;
+      // фетчим neighborhood equipment-agnostically (планировщик сам фильтрует по equipment);
+      // иначе при смене водителя кэш остаётся под старый equipment до следующего poll.
+      LLAPI.getLoadsNear(m, { since }).then((res) => {
+        if (res) mergeNear(m, res);
       }).catch(() => {});
     });
+  }
+
+  // Слить near-ответ в crowdCache: added/updated upsert по loadId, gone — удалить и запомнить.
+  function mergeNear(market, res) {
+    const prev = crowdCache.get(market) || [];
+    const byId = new Map(prev.map((l) => [l.loadId, l]));
+    (res.loads || []).forEach((l) => { byId.set(l.loadId, l); goneIds.delete(l.loadId); });
+    (res.gone || []).forEach((id) => { byId.delete(id); goneIds.add(id); });
+    crowdCache.set(market, [...byId.values()]);
+    if (res.ts) crowdSince.set(market, res.ts);
+    if ((res.loads && res.loads.length) || (res.gone && res.gone.length)) schedule();
   }
   // пул для планировщика: видимые грузы + крауд onward-плечи (дедуп по loadId)
   function chainPool(visible) {
     const byId = new Map();
     visible.forEach((l) => byId.set(l.loadId, l));
     crowdCache.forEach((rows) => rows.forEach((l) => { if (!byId.has(l.loadId)) byId.set(l.loadId, l); }));
-    return [...byId.values()];
+    return [...byId.values()].filter((l) => !goneIds.has(l.loadId)); // ушедшие грузы — вон из цепочек
   }
   function strengthOf(market) {
     if (marketCache.has(market)) return marketCache.get(market);
@@ -364,6 +383,7 @@
       hosState,
       loads: pool,
       distance: (a, b) => LLGEO.sync(a, b),
+      nearby: (m) => LLGEO.nearby(m, RADIUS_MI),
       marketStrength: strengthOf,
       equipment: activeEquipment || undefined,
       dieselPrice, costPerMile, maxLegs: 3, topN: 5,
@@ -694,6 +714,12 @@
       const cur = location.pathname + location.search;
       if (cur !== lastPath) { lastPath = cur; schedule(); }
     }, 600);
+    // живой монитор: пока панель открыта и вкладка видима — delta-poll neighborhood'ов цепочки
+    setInterval(() => {
+      if (panelCollapsed || document.visibilityState !== "visible") return;
+      const onward = [...new Set(currentLoads().map((l) => l.destMarket))];
+      if (onward.length) fetchCrowdLoads(onward, { poll: true });
+    }, POLL_MS);
   }
   boot();
 })();

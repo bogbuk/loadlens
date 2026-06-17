@@ -12,6 +12,23 @@ export class LoadsController {
     return this.service.ingest(dto);
   }
 
+  // Neighborhood грузов (рынок + соседи в радиусе) для цепочек + delta-poll живой свежести.
+  @SkipThrottle()
+  @Get('near')
+  near(
+    @Query('market') market?: string,
+    @Query('equipment') equipment?: string,
+    @Query('radiusMi') radiusMi?: string,
+    @Query('since') since?: string,
+  ) {
+    if (!market) throw new BadRequestException('market обязателен');
+    return this.service.near(market, {
+      equipment,
+      radiusMi: radiusMi && Number.isFinite(parseInt(radiusMi, 10)) ? parseInt(radiusMi, 10) : undefined,
+      since,
+    });
+  }
+
   // Крауд-грузы из рынка отправления — для onward-плеч планировщика. Чтения не троттлим.
   @SkipThrottle()
   @Get()

@@ -1,6 +1,8 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { getConnectionToken } from '@nestjs/sequelize';
+import type { Sequelize } from 'sequelize';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -8,6 +10,10 @@ async function bootstrap() {
     throw new Error('JWT_SECRET обязателен в проде');
 
   const app = await NestFactory.create(AppModule);
+  const sequelize = app.get<Sequelize>(getConnectionToken());
+  await sequelize.query(
+    'ALTER TABLE loads ADD COLUMN IF NOT EXISTS seen_count INTEGER NOT NULL DEFAULT 1',
+  );
   app.setGlobalPrefix('api/v1', { exclude: ['healthz'] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.enableCors({

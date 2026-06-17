@@ -163,3 +163,35 @@ test("horizon: неточное время округляется до полу�
   assert.strictEqual(h.days, 1.5);
   assert.strictEqual(h.perDay, 1000);
 });
+
+test("радиус: цепочка продолжается через соседний рынок", () => {
+  const loads = [
+    load({ id: "B", from: "CHI", to: "DAL", rate: 2000, mi: 920 }),
+    // onward-груз из СОСЕДА FTW, не из DAL
+    load({ id: "C", from: "FTW", to: "LA", rate: 1900, mi: 1400 }),
+  ];
+  const nearby = (m) =>
+    m === "DAL" ? [{ market: "DAL", miles: 0 }, { market: "FTW", miles: 35 }]
+                : [{ market: m, miles: 0 }];
+  const distance = (a, b) => (a === "DAL" && b === "FTW" ? 35 : 0);
+  const chains = LLPLAN.plan({
+    start: { market: "CHI" }, hosState: FRESH_HOS, loads,
+    distance, marketStrength: strengthFn, nearby, maxLegs: 3,
+  });
+  const multi = chains.find((c) => c.legs.length === 2);
+  assert.ok(multi, "ожидается 2-плечевая цепочка через соседа");
+  assert.strictEqual(multi.finalMarket, "LA");
+  assert.strictEqual(multi.legs[1].deadhead, 35); // крюк DAL→FTW учтён
+});
+
+test("без nearby онвард из соседа не подхватывается (регрессия строгого матча)", () => {
+  const loads = [
+    load({ id: "B", from: "CHI", to: "DAL", rate: 2000, mi: 920 }),
+    load({ id: "C", from: "FTW", to: "LA", rate: 1900, mi: 1400 }),
+  ];
+  const chains = LLPLAN.plan({
+    start: { market: "CHI" }, hosState: FRESH_HOS, loads,
+    distance: zeroDistance, marketStrength: strengthFn,
+  });
+  assert.ok(chains.every((c) => c.legs.length === 1), "соседский онвард не должен попадать без nearby");
+});

@@ -62,4 +62,7 @@ export class Load extends Model {
 
   @Column({ type: DataType.DATE, allowNull: false, defaultValue: DataType.NOW, field: 'last_seen' })
   lastSeen: Date;
+
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 1, field: 'seen_count' })
+  seenCount: number;
 }
