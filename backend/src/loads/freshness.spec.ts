@@ -26,4 +26,14 @@ describe('computeLiveness', () => {
     const r = computeLiveness({ firstSeen: minsAgo(150), lastSeen: minsAgo(2), seenCount: 10 }, NOW);
     expect(r.likelyGone).toBe(false);
   });
+
+  it('span=0 при seenCount >= MIN_OBS → не gone (cadence=0, guard)', () => {
+    const r = computeLiveness({ firstSeen: minsAgo(30), lastSeen: minsAgo(30), seenCount: 5 }, NOW);
+    expect(r.likelyGone).toBe(false);
+  });
+
+  it('seenCount null → как одно наблюдение, не gone', () => {
+    const r = computeLiveness({ firstSeen: minsAgo(30), lastSeen: minsAgo(30), seenCount: null }, NOW);
+    expect(r.likelyGone).toBe(false);
+  });
 });

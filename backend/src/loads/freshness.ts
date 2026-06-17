@@ -27,6 +27,7 @@ export function computeLiveness(row: LivenessInput, now: Date): Liveness {
     const cadenceMs = spanMs / Math.max(1, seen - 1);
     if (cadenceMs > 0 && ageMs > GONE_FACTOR * cadenceMs) likelyGone = true;
   }
+  // round2 — для отображения/хранения, не для дальнейших вычислений.
   return { liveness: round2(liveness), likelyGone };
 }
 
