@@ -50,7 +50,24 @@ const LLGEO = (() => {
     await Promise.all(pairs.map(([f, t]) => distance(f, t)));
   }
 
-  return { distance, sync, warm, offline, haversineMiles };
+  // Соседние seed-рынки в радиусе (включая сам рынок, miles=0). Та же метрика и радиус,
+  // что в backend nearbyMarkets — чтобы neighborhood пула и индекс планировщика совпадали.
+  // miles здесь информационные (deadhead планировщик берёт из distance()); до 12 записей всего.
+  function nearby(market, radiusMi) {
+    const seed = (globalThis.LLSEED && globalThis.LLSEED.markets) || {};
+    const self = seed[market];
+    const out = [{ market, miles: 0 }];
+    if (!self) return out;
+    for (const m in seed) {
+      if (m === market) continue;
+      const mi = Math.round(haversineMiles(self, seed[m]) * 1.2);
+      if (mi <= radiusMi) out.push({ market: m, miles: mi });
+    }
+    out.sort((a, b) => a.miles - b.miles);
+    return out.slice(0, 12);
+  }
+
+  return { distance, sync, warm, offline, haversineMiles, nearby };
 })();
 
 if (typeof module !== "undefined" && module.exports) module.exports = LLGEO;
