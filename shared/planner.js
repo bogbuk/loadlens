@@ -129,33 +129,35 @@ const LLPLAN = (() => {
         // По умолчанию nearby нет → только сам рынок (строгий матч, прежнее поведение).
         const origins = o.nearby ? o.nearby(p.node) : [{ market: p.node, miles: 0 }];
         const seenIds = new Set();
+        // miles из тапла nearby здесь НЕ используется: deadhead берётся из distance(p.node, load.originMarket);
+        // miles — информационное поле для live-chains UI.
         for (const { market: om } of origins) {
           const list = byOrigin.get(om) || [];
           for (const load of list) {
             if (seenIds.has(load.loadId)) continue;
             seenIds.add(load.loadId);
-          if (p.visited.has(load.destMarket)) continue;            // без циклов
-          const deadhead = Math.round(distance(p.node, load.originMarket)); // 0, если уже в точке
-          const driveMin = legMinutes((load.loadedMiles || 0) + deadhead);
-          const hos = stepHos(p.hos, driveMin, LOAD_UNLOAD_MIN);
-          if (!hos.feasible) continue;                              // HOS-ГЕЙТ
+            if (p.visited.has(load.destMarket)) continue;            // без циклов
+            const deadhead = Math.round(distance(p.node, load.originMarket)); // 0, если уже в точке
+            const driveMin = legMinutes((load.loadedMiles || 0) + deadhead);
+            const hos = stepHos(p.hos, driveMin, LOAD_UNLOAD_MIN);
+            if (!hos.feasible) continue;                              // HOS-ГЕЙТ
 
-          const eco = legEconomics(load, deadhead, o);
-          const leg = {
-            load, deadhead, driveMin, idleMin: hos.idleMin,
-            badge: hos.badge, net: eco.net,
-          };
-          const visited = new Set(p.visited); visited.add(load.destMarket);
-          const cand = {
-            legs: [...p.legs, leg], node: load.destMarket, hos: hos.state,
-            totalRev: p.totalRev + (load.rate || 0),
-            totalCost: p.totalCost + eco.fuel + eco.tolls,
-            totalMiles: p.totalMiles + eco.totalMiles,
-            totalIdleMin: p.totalIdleMin + hos.idleMin,
-            visited,
-            worstBadge: worse(p.worstBadge, hos.badge),
-          };
-          next.push(score(cand, strength, o));
+            const eco = legEconomics(load, deadhead, o);
+            const leg = {
+              load, deadhead, driveMin, idleMin: hos.idleMin,
+              badge: hos.badge, net: eco.net,
+            };
+            const visited = new Set(p.visited); visited.add(load.destMarket);
+            const cand = {
+              legs: [...p.legs, leg], node: load.destMarket, hos: hos.state,
+              totalRev: p.totalRev + (load.rate || 0),
+              totalCost: p.totalCost + eco.fuel + eco.tolls,
+              totalMiles: p.totalMiles + eco.totalMiles,
+              totalIdleMin: p.totalIdleMin + hos.idleMin,
+              visited,
+              worstBadge: worse(p.worstBadge, hos.badge),
+            };
+            next.push(score(cand, strength, o));
           }
         }
       }
