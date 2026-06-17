@@ -670,7 +670,7 @@
   // Плечо взято из соседнего рынка (радиус) — тег с крюком. Пусто при точном рынке (0/нет поля).
   function neighborTag(full) {
     const dh = full && full.originDeadheadMi;
-    return dh > 0 ? ` <span class="leg-nb">↪ +${Math.round(dh)}mi сосед</span>` : "";
+    return dh > 0 ? `<span class="leg-nb">↪ +${Math.round(dh)}mi сосед</span>` : "";
   }
 
   function strengthBar(s) {
