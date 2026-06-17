@@ -120,11 +120,11 @@
   function mergeNear(market, res) {
     const prev = crowdCache.get(market) || [];
     const byId = new Map(prev.map((l) => [l.loadId, l]));
-    (res.loads || []).forEach((l) => byId.set(l.loadId, l));
+    (res.loads || []).forEach((l) => { byId.set(l.loadId, l); goneIds.delete(l.loadId); });
     (res.gone || []).forEach((id) => { byId.delete(id); goneIds.add(id); });
     crowdCache.set(market, [...byId.values()]);
     if (res.ts) crowdSince.set(market, res.ts);
-    schedule();
+    if ((res.loads && res.loads.length) || (res.gone && res.gone.length)) schedule();
   }
   // пул для планировщика: видимые грузы + крауд onward-плечи (дедуп по loadId)
   function chainPool(visible) {
