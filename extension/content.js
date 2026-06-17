@@ -587,7 +587,10 @@
     const laneKey = laneKeyOf({ originMarket: leg.origin, destMarket: leg.dest, equipment: leg.equipment });
     const median = laneCache.has(laneKey) ? laneCache.get(laneKey) : null;
     const rpmTxt = median != null ? `$${median.toFixed(2)}/mi медиана lane` : `$${rpm.toFixed(2)}/mi`;
-    const fresh = freshnessText(full.lastSeen);
+    // серверная свежесть, если груз аннотирован /loads/near; иначе fallback на относительное время
+    const fresh = (full.liveness != null)
+      ? `${livenessLabel(full.liveness).dot} ${livenessLabel(full.liveness).word} · ${freshnessText(full.lastSeen)}`
+      : freshnessText(full.lastSeen);
     const density = (crowdCache.get(leg.origin) || []).length;
     const densTxt = density ? ` · ~${density} груз. из рынка` : "";
     const isLast = i === c.legs.length - 1;
@@ -651,6 +654,13 @@
     if (days <= 0) return "видели сегодня";
     if (days === 1) return "видели вчера";
     return `видели ${days} дн назад`;
+  }
+
+  // Серверная свежесть (0..1) → цветная точка + слово. Бакеты как в спеке.
+  function livenessLabel(liveness) {
+    if (liveness > 0.66) return { dot: "🟢", word: "свежо" };
+    if (liveness >= 0.33) return { dot: "🟡", word: "стынет" };
+    return { dot: "🔴", word: "могло уйти" };
   }
 
   function strengthBar(s) {
