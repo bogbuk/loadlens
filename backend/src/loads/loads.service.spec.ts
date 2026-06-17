@@ -64,3 +64,44 @@ describe('LoadsService.ingest seen_count', () => {
     expect(repl.ids).toEqual(['L1']);
   });
 });
+
+describe('LoadsService.near', () => {
+  it('возвращает соседей с originDeadheadMi и делит на loads/gone', async () => {
+    const now = new Date('2026-06-17T12:00:00Z');
+    const minsAgo = (m: number) => new Date(now.getTime() - m * 60_000);
+    const findAll = jest.fn().mockResolvedValue([
+      { board: 'dat', loadId: 'L1', originMarket: 'DALLAS_TX', destMarket: 'ATLANTA_GA',
+        equipment: 'V', groupKey: 'g1', lastSeen: minsAgo(1), firstSeen: minsAgo(2), seenCount: 1,
+        rate: 2000, loadedMiles: 800, deadheadMiles: 0, weight: null, brokerMc: null, brokerName: null },
+      { board: 'dat', loadId: 'L2', originMarket: 'FORT_WORTH_TX', destMarket: 'HOUSTON_TX',
+        equipment: 'V', groupKey: 'g2', lastSeen: minsAgo(60), firstSeen: minsAgo(150), seenCount: 10,
+        rate: 1500, loadedMiles: 250, deadheadMiles: 0, weight: null, brokerMc: null, brokerName: null },
+    ]);
+    const svc = new LoadsService({ findAll } as any, { query: jest.fn() } as any);
+    const res = await svc.near('DALLAS_TX', { radiusMi: 75 }, now);
+
+    expect(res.gone).toContain('L2');
+    expect(res.loads.map((l) => l.loadId)).toEqual(['L1']);
+    expect(res.loads[0].originDeadheadMi).toBe(0);
+    expect(typeof res.loads[0].liveness).toBe('number');
+    expect(typeof res.ts).toBe('string');
+    const origins = findAll.mock.calls[0][0].where.originMarket;
+    expect(origins[Object.getOwnPropertySymbols(origins)[0]]).toContain('FORT_WORTH_TX');
+  });
+
+  it('с since отдаёт только обновлённые после since', async () => {
+    const now = new Date('2026-06-17T12:00:00Z');
+    const minsAgo = (m: number) => new Date(now.getTime() - m * 60_000);
+    const findAll = jest.fn().mockResolvedValue([
+      { board: 'dat', loadId: 'NEW', originMarket: 'DALLAS_TX', destMarket: 'ATLANTA_GA',
+        equipment: 'V', groupKey: 'g', lastSeen: minsAgo(1), firstSeen: minsAgo(2), seenCount: 1,
+        rate: 2000, loadedMiles: 800, deadheadMiles: 0, weight: null, brokerMc: null, brokerName: null },
+      { board: 'dat', loadId: 'OLD', originMarket: 'DALLAS_TX', destMarket: 'MEMPHIS_TN',
+        equipment: 'V', groupKey: 'g', lastSeen: minsAgo(30), firstSeen: minsAgo(40), seenCount: 1,
+        rate: 1800, loadedMiles: 450, deadheadMiles: 0, weight: null, brokerMc: null, brokerName: null },
+    ]);
+    const svc = new LoadsService({ findAll } as any, { query: jest.fn() } as any);
+    const res = await svc.near('DALLAS_TX', { since: minsAgo(10).toISOString() }, now);
+    expect(res.loads.map((l) => l.loadId)).toEqual(['NEW']);
+  });
+});

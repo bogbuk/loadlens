@@ -3,6 +3,9 @@ import { InjectModel, InjectConnection } from '@nestjs/sequelize';
 import { Op, Sequelize } from 'sequelize';
 import { Load } from './load.model';
 import { IngestLoadsDto } from './dto/ingest.dto';
+import { loadSeed } from '../common/seed';
+import { nearbyMarkets } from '../geo/nearby';
+import { computeLiveness } from './freshness';
 
 const CROWD_WINDOW_HOURS = 72;
 
@@ -12,6 +15,16 @@ export interface CrowdLoad {
   equipment: string; groupKey: string; lastSeen: Date;
   rate: number | null; loadedMiles: number | null; deadheadMiles: number | null;
   weight: number | null; brokerMc: string | null; brokerName: string | null;
+}
+
+export interface CrowdLoadNear extends CrowdLoad {
+  originDeadheadMi: number;
+  liveness: number;
+}
+export interface NearResult {
+  loads: CrowdLoadNear[];
+  gone: string[];
+  ts: string;
 }
 
 @Injectable()
@@ -83,6 +96,42 @@ export class LoadsService {
       rate: r.rate, loadedMiles: r.loadedMiles, deadheadMiles: r.deadheadMiles,
       weight: r.weight, brokerMc: r.brokerMc, brokerName: r.brokerName,
     }));
+  }
+
+  // Neighborhood грузов (рынок + соседи в радиусе) для непрерывных цепочек + живой свежести.
+  async near(
+    market: string,
+    opts: { equipment?: string; radiusMi?: number; since?: string } = {},
+    now: Date = new Date(),
+  ): Promise<NearResult> {
+    const radiusMi = Math.min(Math.max(0, opts.radiusMi ?? 75), 200);
+    const neighbors = nearbyMarkets(market, radiusMi, loadSeed());
+    const dhByMarket = new Map(neighbors.map((n) => [n.market, n.crowMi]));
+    const where: any = {
+      originMarket: { [Op.in]: neighbors.map((n) => n.market) },
+      lastSeen: { [Op.gt]: new Date(now.getTime() - CROWD_WINDOW_HOURS * 3600 * 1000) },
+    };
+    if (opts.equipment) where.equipment = opts.equipment;
+    const rows = await this.model.findAll({ where, order: [['lastSeen', 'DESC']], limit: 300 });
+
+    const since = opts.since ? new Date(opts.since) : null;
+    const loads: CrowdLoadNear[] = [];
+    const gone: string[] = [];
+    for (const r of rows) {
+      const { liveness, likelyGone } = computeLiveness(r, now);
+      if (likelyGone) { gone.push(r.loadId); continue; }
+      if (since && new Date(r.lastSeen) <= since) continue;
+      loads.push({
+        board: r.board, loadId: r.loadId,
+        originMarket: r.originMarket, destMarket: r.destMarket,
+        equipment: r.equipment, groupKey: r.groupKey, lastSeen: r.lastSeen,
+        rate: r.rate, loadedMiles: r.loadedMiles, deadheadMiles: r.deadheadMiles,
+        weight: r.weight, brokerMc: r.brokerMc, brokerName: r.brokerName,
+        originDeadheadMi: dhByMarket.get(r.originMarket) ?? 0,
+        liveness,
+      });
+    }
+    return { loads, gone, ts: now.toISOString() };
   }
 }
 
