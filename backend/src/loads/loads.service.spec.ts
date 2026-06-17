@@ -28,7 +28,7 @@ describe('LoadsService.byOrigin', () => {
         rate: 2000, loadedMiles: 716,
         deadheadMiles: 20, weight: 44000, brokerMc: 'MC-1', brokerName: 'Acme' },
     ]);
-    const svc = new LoadsService({ findAll } as any);
+    const svc = new LoadsService({ findAll } as any, { query: jest.fn() } as any);
     const res = await svc.byOrigin('CHICAGO_IL', 'F', 999);
     expect(res[0]).toEqual({
       board: 'dat', loadId: 'L1', originMarket: 'CHICAGO_IL', destMarket: 'ATLANTA_GA',
@@ -39,5 +39,28 @@ describe('LoadsService.byOrigin', () => {
     expect(res[0]).not.toHaveProperty('contact');
     expect(findAll.mock.calls[0][0].limit).toBe(300); // clamp 999 -> 300
     expect(findAll.mock.calls[0][0].where.equipment).toBe('F');
+  });
+});
+
+describe('LoadsService.ingest seen_count', () => {
+  it('инкрементит seen_count для уже существующих грузов (first_seen < now)', async () => {
+    const bulkCreate = jest.fn().mockResolvedValue([]);
+    const query = jest.fn().mockResolvedValue([]);
+    const svc = new LoadsService({ bulkCreate } as any, { query } as any);
+    await svc.ingest({
+      clientId: 'c1',
+      items: [{
+        board: 'dat', loadId: 'L1', originMarket: 'CHICAGO_IL', destMarket: 'ATLANTA_GA',
+        equipment: 'V', groupKey: 'dat|CHICAGO_IL>ATLANTA_GA|V',
+      }],
+    } as any);
+    expect(bulkCreate).toHaveBeenCalledTimes(1);
+    expect(query).toHaveBeenCalledTimes(1);
+    const sql = query.mock.calls[0][0] as string;
+    expect(sql).toMatch(/seen_count = seen_count \+ 1/);
+    expect(sql).toMatch(/first_seen < :now/);
+    const repl = query.mock.calls[0][1].replacements;
+    expect(repl.board).toBe('dat');
+    expect(repl.ids).toEqual(['L1']);
   });
 });

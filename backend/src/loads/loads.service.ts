@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
+import { InjectModel, InjectConnection } from '@nestjs/sequelize';
+import { Op, Sequelize } from 'sequelize';
 import { Load } from './load.model';
 import { IngestLoadsDto } from './dto/ingest.dto';
 
@@ -16,7 +16,10 @@ export interface CrowdLoad {
 
 @Injectable()
 export class LoadsService {
-  constructor(@InjectModel(Load) private readonly model: typeof Load) {}
+  constructor(
+    @InjectModel(Load) private readonly model: typeof Load,
+    @InjectConnection() private readonly sequelize: Sequelize,
+  ) {}
 
   async ingest(dto: IngestLoadsDto): Promise<{ accepted: number }> {
     const now = new Date();
@@ -43,6 +46,21 @@ export class LoadsService {
         'brokerMc', 'brokerName', 'groupKey', 'lastSeen',
       ],
     });
+    // Инкремент seen_count только для уже существовавших грузов: у новых first_seen == now
+    // (выставлен выше), у существующих — старее. Группируем по board (составной ключ board+load_id).
+    const idsByBoard = new Map<string, string[]>();
+    for (const r of rows) {
+      const arr = idsByBoard.get(r.board) ?? [];
+      arr.push(r.loadId);
+      idsByBoard.set(r.board, arr);
+    }
+    for (const [board, ids] of idsByBoard) {
+      await this.sequelize.query(
+        `UPDATE loads SET seen_count = seen_count + 1
+           WHERE board = :board AND load_id IN (:ids) AND first_seen < :now`,
+        { replacements: { board, ids, now } },
+      );
+    }
     return { accepted: rows.length };
   }
 
