@@ -60,6 +60,17 @@ const LLAPI = (() => {
     } catch { return []; }
   }
 
+  // neighborhood грузов (рынок + соседи) + delta(since) для живого монитора цепочек
+  async function getLoadsNear(market, { equipment, since } = {}) {
+    try {
+      const q = new URLSearchParams({ market });
+      if (equipment) q.set("equipment", equipment);
+      if (since) q.set("since", since);
+      const res = await fetch(`${BASE}/loads/near?${q.toString()}`);
+      return res.ok ? res.json() : null;
+    } catch { return null; }
+  }
+
   async function getBrokerReputation(mc) {
     try {
       const res = await fetch(`${BASE}/brokers/${encodeURIComponent(mc)}/reputation`);
@@ -216,7 +227,7 @@ const LLAPI = (() => {
   }
 
   return { sanitizeLoad, clientId, sendLoads, getLane, getMarket, getDistance, getDiesel,
-           getLoadsByOrigin, getBrokerReputation, reportBroker, register, login, logout, getMe,
+           getLoadsByOrigin, getLoadsNear, getBrokerReputation, reportBroker, register, login, logout, getMe,
            getDrivers, createDriver, updateDriver, deleteDriver, deleteAccount };
 })();
 
