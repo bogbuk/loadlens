@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import { rpmCents, LoadsService } from './loads.service';
 
 describe('rpmCents', () => {
@@ -86,7 +87,7 @@ describe('LoadsService.near', () => {
     expect(typeof res.loads[0].liveness).toBe('number');
     expect(typeof res.ts).toBe('string');
     const origins = findAll.mock.calls[0][0].where.originMarket;
-    expect(origins[Object.getOwnPropertySymbols(origins)[0]]).toContain('FORT_WORTH_TX');
+    expect(origins[Op.in]).toContain('FORT_WORTH_TX');
   });
 
   it('с since отдаёт только обновлённые после since', async () => {

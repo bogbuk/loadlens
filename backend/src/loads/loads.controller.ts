@@ -24,7 +24,7 @@ export class LoadsController {
     if (!market) throw new BadRequestException('market обязателен');
     return this.service.near(market, {
       equipment,
-      radiusMi: radiusMi ? parseInt(radiusMi, 10) : undefined,
+      radiusMi: radiusMi && Number.isFinite(parseInt(radiusMi, 10)) ? parseInt(radiusMi, 10) : undefined,
       since,
     });
   }

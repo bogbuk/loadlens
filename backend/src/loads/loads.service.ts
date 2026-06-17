@@ -89,13 +89,17 @@ export class LoadsService {
     };
     if (equipment) where.equipment = equipment;
     const rows = await this.model.findAll({ where, order: [['lastSeen', 'DESC']], limit: lim });
-    return rows.map((r) => ({
+    return rows.map((r) => this.toCrowdLoad(r));
+  }
+
+  private toCrowdLoad(r: Load): CrowdLoad {
+    return {
       board: r.board, loadId: r.loadId,
       originMarket: r.originMarket, destMarket: r.destMarket,
       equipment: r.equipment, groupKey: r.groupKey, lastSeen: r.lastSeen,
       rate: r.rate, loadedMiles: r.loadedMiles, deadheadMiles: r.deadheadMiles,
       weight: r.weight, brokerMc: r.brokerMc, brokerName: r.brokerName,
-    }));
+    };
   }
 
   // Neighborhood грузов (рынок + соседи в радиусе) для непрерывных цепочек + живой свежести.
@@ -112,6 +116,8 @@ export class LoadsService {
       lastSeen: { [Op.gt]: new Date(now.getTime() - CROWD_WINDOW_HOURS * 3600 * 1000) },
     };
     if (opts.equipment) where.equipment = opts.equipment;
+    // limit 300 по lastSeen DESC: loads[] всегда свежий; в очень плотном (>300) neighborhood
+    // хвостовые likelyGone могут не попасть в gone[] — приемлемо для MVP (300 свежих в одном радиусе маловероятно).
     const rows = await this.model.findAll({ where, order: [['lastSeen', 'DESC']], limit: 300 });
 
     const since = opts.since ? new Date(opts.since) : null;
@@ -121,15 +127,7 @@ export class LoadsService {
       const { liveness, likelyGone } = computeLiveness(r, now);
       if (likelyGone) { gone.push(r.loadId); continue; }
       if (since && new Date(r.lastSeen) <= since) continue;
-      loads.push({
-        board: r.board, loadId: r.loadId,
-        originMarket: r.originMarket, destMarket: r.destMarket,
-        equipment: r.equipment, groupKey: r.groupKey, lastSeen: r.lastSeen,
-        rate: r.rate, loadedMiles: r.loadedMiles, deadheadMiles: r.deadheadMiles,
-        weight: r.weight, brokerMc: r.brokerMc, brokerName: r.brokerName,
-        originDeadheadMi: dhByMarket.get(r.originMarket) ?? 0,
-        liveness,
-      });
+      loads.push({ ...this.toCrowdLoad(r), originDeadheadMi: dhByMarket.get(r.originMarket) ?? 0, liveness });
     }
     return { loads, gone, ts: now.toISOString() };
   }
