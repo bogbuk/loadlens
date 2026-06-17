@@ -110,7 +110,9 @@
       if (!opts.poll && crowdRequested.has(m)) return;
       crowdRequested.add(m);
       const since = opts.poll ? crowdSince.get(m) : undefined;
-      LLAPI.getLoadsNear(m, { equipment: activeEquipment || undefined, since }).then((res) => {
+      // фетчим neighborhood equipment-agnostically (планировщик сам фильтрует по equipment);
+      // иначе при смене водителя кэш остаётся под старый equipment до следующего poll.
+      LLAPI.getLoadsNear(m, { since }).then((res) => {
         if (res) mergeNear(m, res);
       }).catch(() => {});
     });
