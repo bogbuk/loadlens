@@ -7,6 +7,10 @@
   const adapter = (typeof LLADAPT !== "undefined") && LLADAPT.adapterFor(location.host);
   if (!adapter) return; // не наш борд
 
+  // debug-логи под флагом: localStorage.LL_DEBUG = "1" (парн. с inject.js; читаем каждый раз)
+  const llDebug = () => { try { return localStorage.getItem("LL_DEBUG") != null; } catch (_) { return false; } };
+  const log = (...a) => { if (llDebug()) { try { console.log("[LoadLens/content]", ...a); } catch (_) {} } };
+
   let panelCollapsed = false;
   let dieselPrice = 3.95;
   let baseCostPerMile = 1.80; // «базовая» (диспетчерская) настройка; не мутируется водителем
@@ -37,8 +41,12 @@
   // ---------- сбор строк ----------
   // Источник грузов для панели/скоринга/sync: DAT — GraphQL-перехват (gqlLoads), Truckstop — DOM (collect).
   function currentLoads() {
-    if (gqlLoads.length) return gqlLoads;
-    try { return adapter.collect ? uniqueLoads(adapter.collect()) : []; } catch { return []; }
+    if (gqlLoads.length) { log("currentLoads: источник=GraphQL-перехват,", gqlLoads.length, "грузов"); return gqlLoads; }
+    try {
+      const dom = adapter.collect ? uniqueLoads(adapter.collect()) : [];
+      log("currentLoads: источник=DOM-адаптер,", dom.length, "грузов");
+      return dom;
+    } catch (_) { return []; }
   }
 
   // уникальные грузы (без дублей строк) для статистики/планировщика
@@ -58,7 +66,10 @@
       _flushTimer = null;
       const items = [..._pending.values()];
       _pending.clear();
-      if (items.length && typeof LLAPI !== "undefined") LLAPI.sendLoads(items).catch(() => {});
+      if (items.length && typeof LLAPI !== "undefined") {
+        log("sync → POST /loads (агрегат после sanitizeLoad):", items.length, "грузов");
+        LLAPI.sendLoads(items).catch(() => {});
+      }
     }, 1500);
   }
 
@@ -722,7 +733,10 @@
       if (!d || d.source !== "loadlens" || d.type !== "dat-findloads") return;
       if (typeof DAT_GQL !== "undefined") {
         const parsed = DAT_GQL.parseFindLoads(d.payload);
+        log("приём dat-findloads → parseFindLoads:", parsed.length, "грузов", parsed.length ? "" : "(пусто — схема DAT могла измениться)");
         if (parsed.length) { gqlLoads = parsed; schedule(); }
+      } else {
+        log("приём dat-findloads, но DAT_GQL не загружен");
       }
     });
 

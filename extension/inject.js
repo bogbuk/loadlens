@@ -8,13 +8,22 @@
   if (window.__loadlensHooked) return;
   window.__loadlensHooked = true;
 
-  const post = (payload) =>
+  // debug-логи под флагом: localStorage.LL_DEBUG = "1" (без перезагрузки расширения, читаем каждый раз)
+  const llDebug = () => { try { return localStorage.getItem("LL_DEBUG") != null; } catch (_) { return false; } };
+  const log = (...a) => { if (llDebug()) { try { console.log("[LoadLens/inject]", ...a); } catch (_) {} } };
+
+  const post = (payload) => {
+    const fl = payload && payload.data && payload.data.freightSearchV4 && payload.data.freightSearchV4.findLoads;
+    const n = (fl && fl.results && fl.results.length) || 0;
+    log("FindLoads перехвачен → постим content.js:", n, "results");
     window.postMessage({ source: "loadlens", type: "dat-findloads", payload }, window.location.origin);
+  };
 
   function maybeCapture(url, getJson) {
     if (!url || url.indexOf("one-web-bff/graphql") === -1) return;
     getJson().then((j) => {
       if (j && j.data && j.data.freightSearchV4 && j.data.freightSearchV4.findLoads) post(j);
+      else log("graphql-ответ без freightSearchV4.findLoads (другая operation):", url);
     }).catch(() => {});
   }
 
@@ -51,4 +60,6 @@
     });
     return origSend.apply(this, a);
   };
+
+  log("перехватчик fetch/XHR установлен (MAIN-world). Включён LL_DEBUG.");
 })();
