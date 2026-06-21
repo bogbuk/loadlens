@@ -218,6 +218,39 @@ const LLAPI = (() => {
     return { ok: true };
   }
 
+  // ---- Telegram-алерты (под JWT диспетчера; link/alerts Pro-гейт на сервере) ----
+  async function telegramStatus() {
+    try { const res = await authedFetch("/telegram/status"); return res && res.ok ? await res.json() : null; }
+    catch { return null; }
+  }
+  async function telegramLink() {
+    const res = await authedFetch("/telegram/link", { method: "POST" });
+    if (!res) throw new Error("нужен вход в аккаунт");
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || `ошибка ${res.status}`);
+    return data; // { url, token, configured }
+  }
+  async function telegramAlerts(enabled) {
+    const res = await authedFetch("/telegram/alerts", { method: "PATCH", body: JSON.stringify({ enabled }) });
+    if (!res) throw new Error("нужен вход в аккаунт");
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || `ошибка ${res.status}`);
+    return data;
+  }
+  async function telegramUnlink() {
+    const res = await authedFetch("/telegram/unlink", { method: "POST" });
+    if (!res) throw new Error("нужен вход в аккаунт");
+    if (!res.ok) throw new Error(`ошибка ${res.status}`);
+    return { ok: true };
+  }
+  // Релей подошедших грузов (green+фильтр) в Telegram. Тихо глотает ошибки — это фоновый канал.
+  async function notifyAlerts(items) {
+    try {
+      const res = await authedFetch("/telegram/notify", { method: "POST", body: JSON.stringify({ items }) });
+      return res && res.ok ? await res.json() : null;
+    } catch { return null; }
+  }
+
   // Удаление аккаунта (hard-delete на сервере; водители уходят каскадом). Затем локальный logout.
   async function deleteAccount() {
     const res = await authedFetch("/users/me", { method: "DELETE" });
@@ -228,7 +261,8 @@ const LLAPI = (() => {
 
   return { sanitizeLoad, clientId, sendLoads, getLane, getMarket, getDistance, getDiesel,
            getLoadsByOrigin, getLoadsNear, getBrokerReputation, reportBroker, register, login, logout, getMe,
-           getDrivers, createDriver, updateDriver, deleteDriver, deleteAccount };
+           getDrivers, createDriver, updateDriver, deleteDriver, deleteAccount,
+           telegramStatus, telegramLink, telegramAlerts, telegramUnlink, notifyAlerts };
 })();
 
 if (typeof module !== "undefined" && module.exports) { module.exports = LLAPI; }

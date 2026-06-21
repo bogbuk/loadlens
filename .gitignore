@@ -18,3 +18,4 @@ backend/.env
 extension.zip
 .superpowers/
 /tasks/
+/loadconnect/

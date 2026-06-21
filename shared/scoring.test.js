@@ -40,6 +40,51 @@ test("profitBadge: unknown когда нет ставки/миль", () => {
   assert.strictEqual(b.level, "unknown");
 });
 
+test("targetForMiles: бакеты по trip-милям (границы включительно, overflow)", () => {
+  const t = [{ maxMi: 500, rpm: 7 }, { maxMi: 1000, rpm: 6 }, { maxMi: null, rpm: 5 }];
+  assert.strictEqual(LLSCORE.targetForMiles(300, t), 7);
+  assert.strictEqual(LLSCORE.targetForMiles(500, t), 7);   // граница включительно
+  assert.strictEqual(LLSCORE.targetForMiles(501, t), 6);
+  assert.strictEqual(LLSCORE.targetForMiles(1000, t), 6);  // граница включительно
+  assert.strictEqual(LLSCORE.targetForMiles(1500, t), 5);  // overflow
+  assert.strictEqual(LLSCORE.targetForMiles(0, t), null);  // нет дистанции
+  assert.strictEqual(LLSCORE.targetForMiles(null, t), null);
+});
+
+test("targetForMiles: дефолтная таблица DEFAULTS.targets когда table не передан", () => {
+  assert.strictEqual(LLSCORE.targetForMiles(400), 7);
+  assert.strictEqual(LLSCORE.targetForMiles(800), 6);
+  assert.strictEqual(LLSCORE.targetForMiles(2000), 5);
+});
+
+test("profitBadge: green когда trueRpm >= targetRpm бакета", () => {
+  // 3500/500 = 7.0 trueRpm == target 7 → green; net высоко, не red
+  const load = { rate: 3500, loadedMiles: 500, deadheadMiles: 0 };
+  const b = LLSCORE.profitBadge(load, { costPerMile: 1.8, targetRpm: 7, dieselPrice: 4.0 });
+  assert.strictEqual(b.level, "green");
+});
+
+test("profitBadge: amber когда в плюс, но trueRpm ниже целевой", () => {
+  // 2500/500 = 5.0 trueRpm < target 7; net > break-even → amber
+  const load = { rate: 2500, loadedMiles: 500, deadheadMiles: 0 };
+  const b = LLSCORE.profitBadge(load, { costPerMile: 1.8, targetRpm: 7, dieselPrice: 4.0 });
+  assert.strictEqual(b.level, "amber");
+});
+
+test("profitBadge: red по costPerMile даже при заданной цели", () => {
+  // 700/500 = 1.4 trueRpm; net < 1.8 → red несмотря на target
+  const load = { rate: 700, loadedMiles: 500, deadheadMiles: 0 };
+  const b = LLSCORE.profitBadge(load, { costPerMile: 1.8, targetRpm: 7, dieselPrice: 4.0 });
+  assert.strictEqual(b.level, "red");
+});
+
+test("profitBadge: target имеет приоритет над laneMedian для green", () => {
+  // trueRpm 5.0 >= target 5, но < laneMedian 6 → раньше был бы amber, теперь green
+  const load = { rate: 6000, loadedMiles: 1200, deadheadMiles: 0 };
+  const b = LLSCORE.profitBadge(load, { costPerMile: 1.8, targetRpm: 5, laneMedian: 6, dieselPrice: 4.0 });
+  assert.strictEqual(b.level, "green");
+});
+
 test("brokerBadge: good при высоком credit и быстрой оплате", () => {
   assert.strictEqual(LLSCORE.brokerBadge({ creditScore: 97, daysToPay: 19 }).level, "good");
 });

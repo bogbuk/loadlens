@@ -35,6 +35,7 @@
         "geo.js",
         "hos.js",
         "drivers.js",
+        "alerts.js",
         "csv.js",
         "content.js"
       ],

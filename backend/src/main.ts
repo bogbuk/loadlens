@@ -14,6 +14,12 @@ async function bootstrap() {
   await sequelize.query(
     'ALTER TABLE loads ADD COLUMN IF NOT EXISTS seen_count INTEGER NOT NULL DEFAULT 1',
   );
+  // synchronize не меняет существующие таблицы — Telegram-колонки добавляем идемпотентно.
+  await sequelize.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id TEXT');
+  await sequelize.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_link_token TEXT');
+  await sequelize.query(
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS alerts_enabled BOOLEAN NOT NULL DEFAULT false',
+  );
   app.setGlobalPrefix('api/v1', { exclude: ['healthz'] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.enableCors({

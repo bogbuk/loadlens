@@ -15,6 +15,8 @@
   let dieselPrice = 3.95;
   let baseCostPerMile = 1.80; // «базовая» (диспетчерская) настройка; не мутируется водителем
   let costPerMile = 1.80;     // текущий (resolveDriverContext → applyDriverContext)
+  let targets = LLSCORE.DEFAULTS.targets; // целевые $/mi по бакетам дистанции (ll_targets); порог green
+  let equipFilter = null;     // ручной фильтр прицепа из попапа (ll_equip_filter); null = без фильтра
   const _freshHos = (typeof LLHOS !== "undefined") ? LLHOS.fresh() : { remainingDrive: 660, remainingOnDuty: 840, remainingCycle: 4200 };
   let baseHos = { ..._freshHos }; // «базовый» HOS (диспетчерские часы из storage/popup)
   let hosState = { ..._freshHos }; // текущий (resolveDriverContext → applyDriverContext)
@@ -75,6 +77,10 @@
 
   // ---------- lane / market статистика (ленивая загрузка + перерисовка) ----------
   function laneKeyOf(l) { return `${l.originMarket}>${l.destMarket}|${l.equipment}`; }
+  // целевой $/mi для груза по его trip-милям (бакет из ll_targets); порог green в profitBadge
+  function targetFor(l) { return LLSCORE.targetForMiles(l.loadedMiles, targets); }
+  // ручной equipment-фильтр из попапа: груз проходит, если фильтр не задан или совпадает прицеп
+  function passEquip(l) { return !equipFilter || l.equipment === equipFilter; }
   function fetchLanes(loads) {
     if (typeof LLAPI === "undefined") return;
     const keys = new Map();
@@ -158,7 +164,7 @@
   function badgeRow(anchorEl, load) {
     if (!anchorEl) return;
     const laneMedian = laneCache.has(laneKeyOf(load)) ? laneCache.get(laneKeyOf(load)) : null;
-    const profit = LLSCORE.profitBadge(load, { costPerMile, dieselPrice, laneMedian });
+    const profit = LLSCORE.profitBadge(load, { costPerMile, dieselPrice, laneMedian, targetRpm: targetFor(load) });
     const hos = hosBadge(load);
 
     // полоса под строкой: full-width, ничего не перекрывает (строка просто чуть выше)
@@ -286,7 +292,7 @@
   function openLoadDetail(load) {
     closeLoadDetail();
     const laneMedian = laneCache.has(laneKeyOf(load)) ? laneCache.get(laneKeyOf(load)) : null;
-    const profit = LLSCORE.profitBadge(load, { costPerMile, dieselPrice, laneMedian });
+    const profit = LLSCORE.profitBadge(load, { costPerMile, dieselPrice, laneMedian, targetRpm: targetFor(load) });
     const hos = hosBadge(load);
     const broker = LLSCORE.brokerBadge(load);
     const rep = repCache.get(String(load.brokerMc));
@@ -458,6 +464,13 @@
     // которые читают построчные бейджи (hosBadge/badgeRow) — иначе бейджи отстают на один рендер.
     const start = applyDriverContext(loads);
 
+    // green + passEquip — те же грузы, что в «Выгодные сейчас». Шлём их в Telegram (фоновый канал,
+    // гейт/дедуп/cap внутри LLALERT и на сервере). Считаем до early-return, чтобы работало и со свёрнутой панелью.
+    const greens = loads.filter(passEquip)
+      .map((l) => ({ l, b: LLSCORE.profitBadge(l, { costPerMile, dieselPrice, laneMedian: laneCache.get(laneKeyOf(l)), targetRpm: targetFor(l) }) }))
+      .filter((d) => d.b.level === "green");
+    if (typeof LLALERT !== "undefined") LLALERT.push(greens.map((d) => d.l)).catch(() => {});
+
     clearBadges();
     // построчные бейджи: матчим видимые DOM-строки с грузами (DAT — по resultId, TS — parseRow)
     (adapter.anchor ? adapter.anchor(loads) : []).forEach((p) => badgeRow(p.anchor || p.row, p.load));
@@ -472,8 +485,7 @@
     const pool = chainPool(loads);
     const chains = buildChains(pool, start).filter((c) => c.legs.length >= 1);
     const chainsCtx = chainCtx(loads, pool);
-    const deals = loads.map((l) => ({ l, b: LLSCORE.profitBadge(l, { costPerMile, dieselPrice, laneMedian: laneCache.get(laneKeyOf(l)) }) }))
-      .filter((d) => d.b.level === "green").slice(0, 5);
+    const deals = greens.slice(0, 5);
 
     const p = buildPanel();
     const bd = p.querySelector(".bd");
@@ -484,6 +496,7 @@
           `${esc(d.name)}${d.currentMarket ? " · " + esc(d.currentMarket) : ""}${d.equipment ? " · " + esc(d.equipment) : ""}</option>`).join("") +
         `</select></div>` : "") +
       row("Грузов в выдаче", String(loads.length)) +
+      (equipFilter ? row("Фильтр прицепа", esc(equipFilter)) : "") +
       row("Рынок старта", start ? esc(start) : "—") +
       row("Дизель", "$" + dieselPrice.toFixed(2) + "/гал") +
       `<div class="ll-cfg">Cost/mi: <input id="ll-cpm" type="number" step="0.05" value="${costPerMile}" style="width:60px"> ` +
@@ -710,6 +723,11 @@
     if (typeof LLHOS !== "undefined") { try { hosState = await LLHOS.load(); } catch { /* fresh */ } }
     baseHos = { ...hosState }; // зафиксировать базу после загрузки из storage
     try { const { ll_cpm } = await chrome.storage.local.get("ll_cpm"); if (ll_cpm > 0) { costPerMile = ll_cpm; baseCostPerMile = ll_cpm; } } catch { /* дефолт */ }
+    try {
+      const { ll_targets, ll_equip_filter } = await chrome.storage.local.get(["ll_targets", "ll_equip_filter"]);
+      if (Array.isArray(ll_targets) && ll_targets.length) targets = ll_targets;
+      if (ll_equip_filter) equipFilter = ll_equip_filter;
+    } catch { /* дефолт */ }
     // парк водителей диспетчера (если залогинен); активный — per-device выбор
     if (typeof LLAPI !== "undefined" && typeof LLDRV !== "undefined") {
       try {
@@ -722,6 +740,8 @@
       chrome.storage.onChanged.addListener((ch) => {
         if (ch.ll_cpm && ch.ll_cpm.newValue > 0) baseCostPerMile = ch.ll_cpm.newValue; // обновляем базу; render→applyDriverContext применит
         if (ch.ll_hos && ch.ll_hos.newValue) baseHos = ch.ll_hos.newValue;              // аналогично для HOS
+        if (ch.ll_targets) targets = (Array.isArray(ch.ll_targets.newValue) && ch.ll_targets.newValue.length) ? ch.ll_targets.newValue : LLSCORE.DEFAULTS.targets;
+        if (ch.ll_equip_filter) equipFilter = ch.ll_equip_filter.newValue || null;
         schedule();
       });
     } catch { /* нет API */ }

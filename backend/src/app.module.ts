@@ -18,6 +18,8 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { Driver } from './drivers/driver.model';
 import { DriversModule } from './drivers/drivers.module';
+import { AlertSend } from './telegram/alert-send.model';
+import { TelegramModule } from './telegram/telegram.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -25,7 +27,7 @@ import { HealthController } from './health/health.controller';
     SequelizeModule.forRoot({
       dialect: 'postgres',
       uri: process.env.DATABASE_URL,
-      models: [Load, LaneDistance, BrokerReport, User, Driver],
+      models: [Load, LaneDistance, BrokerReport, User, Driver, AlertSend],
       autoLoadModels: true,
       synchronize: true,
       logging: false,
@@ -47,6 +49,7 @@ import { HealthController } from './health/health.controller';
     UsersModule,
     AuthModule,
     DriversModule,
+    TelegramModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

@@ -34,7 +34,8 @@ extension/                  MV3-расширение (грузит vendor/* → 
   api.js (LLAPI)            JWT-клиент + sanitizeLoad (PII-фильтр) + sendLoads/getLane/getMarket/getDistance
   geo.js, hos.js            обёртки: дистанции (backend+haversine), HOS-состояние водителя
   drivers.js (LLDRV)        парк диспетчера: resolveDriverContext (чистая, выбор контекста планировщика) + per-device активный водитель (ll_active_driver)
-  popup.*                   настройки водителя (cost/mile, HOS-часы) + аккаунт + секция «Парк» (CRUD водителей)
+  alerts.js (LLALERT)       релей green+passEquip грузов в Telegram: keyFor/toPayload (без PII) + push (гейт linked/enabled, session-дедуп). Вызывается из content.render
+  popup.*                   настройки водителя (cost/mile, HOS-часы) + аккаунт + секция «Парк» (CRUD водителей) + секция «Telegram-уведомления» (Pro)
   vendor/                   ★ АВТОКОПИИ из shared/ (load.model, scoring, planner, markets.seed). `npm run sync:shared`
 backend/src/                NestJS, synchronize:true (миграций нет)
   loads/                    POST /loads — ingest+upsert; GET /loads?origin=&equipment= — крауд-грузы рынка (onward-плечи цепочек, без PII)
@@ -43,6 +44,7 @@ backend/src/                NestJS, synchronize:true (миграций нет)
   geo/                      GET /geo/distance — OSRM-прокси + кэш lane_distances + haversine
   brokers/                  POST /brokers/reports (crowd-отзыв, upsert client_id+mc) + GET /brokers/:mc/reputation
   drivers/                  GET/POST/PATCH/DELETE /drivers — парк водителей диспетчера (JwtAuthGuard, скоуп userId, каскад от users)
+  telegram/                 link/status/unlink/alerts (Jwt[+Pro]) + notify (релей green-грузов→Telegram DM) + webhook/:secret (/start привязка chat_id). alert_sends — дедуп(TTL)+soft-cap. Фича-флаг = TELEGRAM_BOT_TOKEN
   rates/                    GET /rates — дизель EIA (фолбэк $3.95 без EIA_API_KEY)
   auth/ users/              register/login/refresh/me, DELETE /users/me (hard-delete + каскад водителей), PATCH /admin/users/:email/plan
   shared/markets.seed.json  ★ копия seed для Docker-контекста backend/ (генерит sync:shared)
@@ -104,8 +106,21 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   чип `👤 лучший (N/M)` (переиспользует `LLPLAN.stepHos` + `LLSCORE.netRpm`): equipment-фильтр +
   deadhead от локации водителя + HOS-гейт + netRpm → ранжирование; `status:'off'` исключаются.
   Клик → разбивка «Кому подходит» в карточке детали. Считается локально (данные грузов на сервер не шлём).
-- **Скоринг:** trueRpm = rate/(loaded+deadhead); бейдж red/amber/green по break-even (cost/mile,
-  дефолт $1.80) и медиане lane. `metric` груза = RPM (аналог цены в PriceLens).
+- **Telegram-алерты** (`backend/telegram` + `extension/alerts.js` + popup-секция): пока DAT-вкладка
+  открыта, `content.render` отдаёт `LLALERT.push` грузы **green+passEquip** (те же, что «Выгодные сейчас»);
+  тот шлёт их в `POST /telegram/notify` → бот DM-ит диспетчеру. **Гейт Pro** + привязка Telegram
+  (`/telegram/link` → deep-link `t.me/<bot>?start=<token>` → вебхук `/telegram/webhook/:secret` ловит
+  `/start` и пишет `users.telegram_chat_id`) + тумблер `alerts_enabled`. Дедуп **по семантическому
+  ключу** (`board|origin>dest|equip|rate|miles|mc`, НЕ по композитному resultId) + TTL 6ч + soft-cap
+  10/10мин (`alert_sends`). **ToS/PII:** только грузы из сессии пользователя, наружу — lane/$/мили/RPM/
+  brokerMC+кредит, контакты режутся. Фича-флаг = `TELEGRAM_BOT_TOKEN` (нет токена → молчит, как EIA).
+- **Скоринг:** trueRpm = rate/(loaded+deadhead); бейдж: **red** = netRpm < break-even (cost/mile,
+  дефолт $1.80, нижняя граница убытка); **green** = trueRpm ≥ целевой $/mi бакета дистанции
+  (`LLSCORE.targetForMiles` по таблице `DEFAULTS.targets`: ≤500mi→$7, ≤1000→$6, 1000+→$5; конфиг
+  в попапе `ll_targets`); **amber** между. Цель задаётся per-груз по его `loadedMiles` и имеет
+  приоритет над медианой lane (медиана остаётся фолбэком green, когда `targetRpm` не передан, и
+  показывается как «рынок $X»). Ручной фильтр прицепа `ll_equip_filter` прячет грузы в панели.
+  `metric` груза = RPM (аналог цены в PriceLens).
 - Backend: `synchronize:true` (миграций нет, MVP). Новые колонки — идемпотентный
   `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` в `main.ts`, т.к. synchronize не меняет существующие таблицы.
 
@@ -133,7 +148,9 @@ coolify --context yoolip999 app deployments list hiooby9kgzj8i79ycl33drec
 ```
 
 Env в Coolify: `DATABASE_URL`, `JWT_SECRET`, `ADMIN_KEY`, `PORT`. Опц. `EIA_API_KEY` (без него дизель =
-фолбэк $3.95), `OSRM_URL` (дефолт публичный OSRM).
+фолбэк $3.95), `OSRM_URL` (дефолт публичный OSRM). Для Telegram-алертов: `TELEGRAM_BOT_TOKEN` +
+`TELEGRAM_BOT_USERNAME` (deep-link) + `TELEGRAM_WEBHOOK_SECRET` (без них фича выключена). После деплоя
+один раз зарегистрировать вебхук: `setWebhook` на `https://loadlens.krait.studio/api/v1/telegram/webhook/<secret>`.
 
 > **Грабли деплоя (решено):** `npm ci` требует `package-lock.json`, а унаследованный `.gitignore` его
 > игнорировал → сборка падала за 12с с `EUSAGE`. Фикс: `!backend/package-lock.json` + коммит лока.

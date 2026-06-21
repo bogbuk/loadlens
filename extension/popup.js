@@ -3,9 +3,14 @@ const escA = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&
 
 // ---- настройки ----
 const setEl = document.getElementById("settings");
+const EQUIP_OPTS = ["V", "R", "F", "SD", "PO"];
+const DEFAULT_TARGETS = (typeof LLSCORE !== "undefined" && LLSCORE.DEFAULTS.targets)
+  || [{ maxMi: 500, rpm: 7.0 }, { maxMi: 1000, rpm: 6.0 }, { maxMi: null, rpm: 5.0 }];
+
 async function renderSettings() {
-  const { ll_cpm } = await chrome.storage.local.get("ll_cpm");
+  const { ll_cpm, ll_targets, ll_equip_filter } = await chrome.storage.local.get(["ll_cpm", "ll_targets", "ll_equip_filter"]);
   const cpm = ll_cpm != null ? ll_cpm : 1.80;
+  const targets = Array.isArray(ll_targets) && ll_targets.length ? ll_targets : DEFAULT_TARGETS;
   const hos = await LLHOS.load();
   setEl.innerHTML =
     '<h4>Параметры водителя</h4>' +
@@ -13,13 +18,30 @@ async function renderSettings() {
     settingRow("Drive left, ч", "s-drive", round1(hos.remainingDrive / 60), 0.5) +
     settingRow("Duty left, ч", "s-duty", round1(hos.remainingOnDuty / 60), 0.5) +
     settingRow("Cycle left, ч", "s-cycle", round1(hos.remainingCycle / 60), 1) +
+    '<h4>Целевые ставки по дистанции</h4>' +
+    targets.map(targetRow).join("") +
+    '<h4>Тип трейлера (фильтр)</h4>' +
+    `<div class="row"><span class="k">Показывать только</span><select id="s-equip">` +
+    ['<option value="">— все —</option>'].concat(EQUIP_OPTS.map((e) =>
+      `<option value="${e}"${ll_equip_filter === e ? " selected" : ""}>${e}</option>`)).join("") +
+    '</select></div>' +
     '<button id="s-save">Сохранить</button>' +
-    '<div class="note">Параметры применяются к скорингу и HOS-бейджам на DAT/Truckstop.</div>';
+    '<div class="note">Целевая $/mi — порог «выгодно» (green): груз green, если его gross $/mile ≥ цели своего бакета. Cost/mile — нижняя граница убытка (red).</div>';
   document.getElementById("s-save").onclick = save;
 }
 function settingRow(label, id, val, step) {
   return `<div class="row"><span class="k">${label}</span>` +
     `<input id="${id}" type="number" step="${step}" min="0" value="${val}"></div>`;
+}
+// строка бакета: для overflow (maxMi==null) — метка «N+ mi», иначе редактируемая верхняя граница миль.
+function targetRow(t, i, arr) {
+  const isLast = t.maxMi == null;
+  const prevMax = i > 0 ? arr[i - 1].maxMi : 0;
+  const label = isLast
+    ? `<span class="k">${prevMax || 0}+ mi</span>`
+    : `<span class="k">≤ <input id="t-max-${i}" type="number" step="50" min="1" value="${t.maxMi}" style="width:56px"> mi</span>`;
+  return `<div class="row">${label}` +
+    `<span>$<input id="t-rpm-${i}" type="number" step="0.05" min="0" value="${t.rpm}" style="width:56px">/mi</span></div>`;
 }
 async function save() {
   const cpm = parseFloat(document.getElementById("s-cpm").value);
@@ -27,10 +49,23 @@ async function save() {
   const dutyH = parseFloat(document.getElementById("s-duty").value);
   const cycleH = parseFloat(document.getElementById("s-cycle").value);
   if (cpm > 0) await chrome.storage.local.set({ ll_cpm: cpm });
+  await chrome.storage.local.set({ ll_targets: readTargets(), ll_equip_filter: document.getElementById("s-equip").value || null });
   await LLHOS.save(LLHOS.fromHours({ driveH, dutyH, cycleH }));
   const btn = document.getElementById("s-save");
   btn.textContent = "Сохранено ✓";
   setTimeout(() => { btn.textContent = "Сохранить"; }, 1200);
+}
+// собирает таблицу бакетов из инпутов: верхняя граница (overflow = null) + целевой $/mi.
+function readTargets() {
+  const rows = [];
+  for (let i = 0; ; i++) {
+    const rpmEl = document.getElementById(`t-rpm-${i}`);
+    if (!rpmEl) break;
+    const maxEl = document.getElementById(`t-max-${i}`);
+    const rpm = parseFloat(rpmEl.value);
+    rows.push({ maxMi: maxEl ? parseInt(maxEl.value, 10) : null, rpm: isNaN(rpm) ? 0 : rpm });
+  }
+  return rows;
 }
 const round1 = (n) => Math.round(n * 10) / 10;
 
@@ -42,10 +77,10 @@ function accRow(user) {
     (user.plan === "pro" ? "PRO" : "FREE") + "</span></div>" +
     '<button id="acc-out">Выйти</button>' +
     '<button id="acc-del" class="danger">Удалить аккаунт</button></div>';
-  document.getElementById("acc-out").onclick = async () => { await LLAPI.logout(); accForm(); renderFleet(null); };
+  document.getElementById("acc-out").onclick = async () => { await LLAPI.logout(); accForm(); renderFleet(null); renderTelegram(null); };
   document.getElementById("acc-del").onclick = async () => {
     if (!confirm("Удалить аккаунт безвозвратно? Профиль и все водители будут удалены. Активную подписку DAT/Truckstop это не отменяет.")) return;
-    try { await LLAPI.deleteAccount(); accForm("Аккаунт удалён."); renderFleet(null); }
+    try { await LLAPI.deleteAccount(); accForm("Аккаунт удалён."); renderFleet(null); renderTelegram(null); }
     catch (e) { accForm(e.message); }
   };
 }
@@ -59,7 +94,8 @@ function accForm(err) {
   const go = (fn) => async () => {
     const email = document.getElementById("acc-email").value.trim();
     const pass = document.getElementById("acc-pass").value;
-    try { accRow(await fn(email, pass)); } catch (e) { accForm(e.message); }
+    try { const u = await fn(email, pass); accRow(u); renderFleet(u); renderTelegram(u); }
+    catch (e) { accForm(e.message); }
   };
   document.getElementById("acc-in").onclick = go(LLAPI.login);
   document.getElementById("acc-reg").onclick = go(LLAPI.register);
@@ -136,6 +172,53 @@ async function saveField(id, field, value) {
   try { await LLAPI.updateDriver(id, { [field]: value }); } catch (e) { alert(e.message); }
 }
 
+// ---- Telegram-уведомления (Pro): привязка чата + тумблер алертов ----
+const tgEl = document.getElementById("telegram");
+
+async function renderTelegram(me) {
+  if (me === undefined) me = await LLAPI.getMe().catch(() => null);
+  if (!me) { tgEl.innerHTML = ""; return; }
+  if (me.plan !== "pro") {
+    tgEl.innerHTML = '<h4>Telegram-уведомления <span class="plan pro">PRO</span></h4>' +
+      '<div class="note">Алерты о выгодных грузах по вашему фильтру — в Pro.</div>';
+    return;
+  }
+  const st = await LLAPI.telegramStatus().catch(() => null);
+  if (!st) { tgEl.innerHTML = '<h4>Telegram-уведомления</h4><div class="note">Не удалось получить статус.</div>'; return; }
+  if (!st.configured) {
+    tgEl.innerHTML = '<h4>Telegram-уведомления</h4><div class="note">Бот ещё не настроен на сервере.</div>';
+    return;
+  }
+  if (!st.linked) {
+    tgEl.innerHTML = '<h4>Telegram-уведомления</h4>' +
+      '<div class="note">Подключите Telegram, чтобы получать выгодные грузы (green + ваш фильтр прицепа) личным сообщением.</div>' +
+      '<button id="tg-link">Подключить Telegram</button>';
+    document.getElementById("tg-link").onclick = async () => {
+      try {
+        const r = await LLAPI.telegramLink();
+        if (r.url) { chrome.tabs.create({ url: r.url }); }
+        else alert("Бот не настроен на сервере.");
+      } catch (e) { alert(e.message); }
+    };
+    return;
+  }
+  tgEl.innerHTML = '<h4>Telegram-уведомления</h4>' +
+    '<div class="row"><span class="k">Статус</span><span>привязан ✓</span></div>' +
+    `<div class="row"><span class="k">Слать алерты</span>` +
+    `<input id="tg-toggle" type="checkbox"${st.enabled ? " checked" : ""} style="width:auto"></div>` +
+    '<button id="tg-unlink" class="danger">Отвязать Telegram</button>' +
+    '<div class="note">1 груз = 1 сообщение, дубли отсекаются. Только пока открыта вкладка DAT.</div>';
+  document.getElementById("tg-toggle").onchange = async (e) => {
+    try { await LLAPI.telegramAlerts(e.target.checked); }
+    catch (err) { alert(err.message); e.target.checked = !e.target.checked; }
+  };
+  document.getElementById("tg-unlink").onclick = async () => {
+    if (!confirm("Отвязать Telegram? Алерты перестанут приходить.")) return;
+    try { await LLAPI.telegramUnlink(); renderTelegram(me); }
+    catch (e) { alert(e.message); }
+  };
+}
+
 async function addDriver() {
   const name = prompt("Имя водителя:");
   if (!name || !name.trim()) return;
@@ -144,4 +227,7 @@ async function addDriver() {
 }
 
 renderSettings();
-LLAPI.getMe().then((u) => { (u ? accRow(u) : accForm()); renderFleet(u || null); }, () => { accForm(); renderFleet(null); });
+LLAPI.getMe().then(
+  (u) => { (u ? accRow(u) : accForm()); renderFleet(u || null); renderTelegram(u || null); },
+  () => { accForm(); renderFleet(null); renderTelegram(null); },
+);

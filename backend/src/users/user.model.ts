@@ -13,4 +13,14 @@ export class User extends Model {
 
   @Column({ type: DataType.ENUM('free', 'pro'), allowNull: false, defaultValue: 'free' })
   plan: 'free' | 'pro';
+
+  // Telegram-алерты: chat_id привязанного чата, одноразовый токен привязки (/start <token>), вкл/выкл.
+  @Column({ type: DataType.TEXT, allowNull: true, field: 'telegram_chat_id' })
+  telegramChatId: string | null;
+
+  @Column({ type: DataType.TEXT, allowNull: true, field: 'telegram_link_token' })
+  telegramLinkToken: string | null;
+
+  @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false, field: 'alerts_enabled' })
+  alertsEnabled: boolean;
 }

@@ -7,8 +7,23 @@ const LLSCORE = (() => {
     costPerMile: 1.80,   // конфиг пользователя; ATRI 2024: all-in $2.26, non-fuel $1.779
     mpg: 6.5,            // средний расход тягача
     tollsPerMile: 0.04,  // грубая оценка платных дорог (HERE/реальные tolls — фаза 2)
-    greenMult: 1.25,     // green требует netRpm >= greenMult * breakeven
+    greenMult: 1.25,     // фолбэк-порог green (netRpm >= greenMult*breakeven), когда цель не задана
+    // Целевая (gross true $/mi) ставка по бакетам trip-миль: короткие плечи требуют выше $/милю.
+    // Упорядочены по возрастанию maxMi; последняя строка maxMi:null = «и больше».
+    targets: [{ maxMi: 500, rpm: 7.0 }, { maxMi: 1000, rpm: 6.0 }, { maxMi: null, rpm: 5.0 }],
   };
+
+  // Целевой $/милю для груза по его trip-милям (loadedMiles). table — массив {maxMi, rpm},
+  // упорядоченный по возрастанию maxMi (последняя строка maxMi:null/Infinity = overflow).
+  // Граница включительна (miles <= maxMi). Без дистанции -> null (бакет неопределим).
+  function targetForMiles(miles, table = DEFAULTS.targets) {
+    const m = Number(miles);
+    if (!m || m <= 0 || !Array.isArray(table) || !table.length) return null;
+    for (const row of table) {
+      if (row.maxMi == null || m <= row.maxMi) return row.rpm;
+    }
+    return table[table.length - 1].rpm;
+  }
 
   // топливо на плечо: (loaded + deadhead) миль / mpg * цена дизеля
   function fuelCost(miles, dieselPrice, mpg = DEFAULTS.mpg) {
@@ -45,13 +60,16 @@ const LLSCORE = (() => {
     const breakeven = o.costPerMile;
     const laneMedian = o.laneMedian != null ? o.laneMedian : null;
 
+    const targetRpm = o.targetRpm != null ? Number(o.targetRpm) : null;
+
     let level;
     if (nr == null) level = "unknown";
-    else if (nr < breakeven) level = "red";                                  // в убыток
+    else if (nr < breakeven) level = "red";                                  // в убыток (нижняя граница)
+    else if (targetRpm != null) level = (tr != null && tr >= targetRpm) ? "green" : "amber"; // цель = порог green
     else if (laneMedian != null && nr >= laneMedian && nr >= o.greenMult * breakeven) level = "green";
-    else if (laneMedian == null && nr >= o.greenMult * breakeven) level = "green"; // нет рынка — по break-even
+    else if (laneMedian == null && nr >= o.greenMult * breakeven) level = "green"; // нет рынка/цели — по break-even
     else level = "amber";                                                    // в плюс, но ниже рынка/порога
-    return { level, netRpm: nr, trueRpm: tr, laneMedian, breakeven };
+    return { level, netRpm: nr, trueRpm: tr, laneMedian, breakeven, targetRpm };
   }
 
   // Broker-trust бейдж по DAT-данным: creditScore (0..100, выше=лучше) + daysToPay (ниже=лучше).
@@ -95,7 +113,7 @@ const LLSCORE = (() => {
     return flags.some((f) => f.sev === "high") ? "high" : flags.length ? "med" : "none";
   }
 
-  return { DEFAULTS, fuelCost, tollsCost, trueRpm, netRpm, profitBadge, brokerBadge, redFlags, redFlagLevel };
+  return { DEFAULTS, fuelCost, tollsCost, trueRpm, netRpm, targetForMiles, profitBadge, brokerBadge, redFlags, redFlagLevel };
 })();
 
 if (typeof module !== "undefined" && module.exports) module.exports = LLSCORE;
