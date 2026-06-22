@@ -2,6 +2,15 @@
 
 All notable user-facing changes to the LoadLens browser extension.
 
+## 0.3.0 — 2026-06-22
+
+### New
+- **All DAT One trailer types.** Equipment filters now cover the load board's full set (Vans, Flatbeds, Reefers, Conestogas, Containers, Decks, Dry Bulk, Hazmat, Tankers and more) instead of just five — shown with readable names next to their codes.
+- **Auto-pilot for the load-board tab (off by default).** Open the board in a separate tab and let it refresh on its own every 60–120 seconds while you work elsewhere, automatically re-applying your preferred sort after each refresh. It clicks the board's own Search button in your session — no new data calls — and stays opt-in.
+
+### Notes
+- No new permissions. Auto-pilot is disabled until you turn it on in the popup.
+
 ## 0.2.0 — 2026-06-17
 
 ### New
