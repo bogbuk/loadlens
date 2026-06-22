@@ -5,11 +5,41 @@
 const LLMODEL = (() => {
   "use strict";
 
-  // equipment: нормализуем длинные имена бордов к одному коду (V/R/F/...).
+  // equipment: канон типов трейлеров — коды DAT One (autocomplete-группы) + наши legacy-коды.
+  // Порядок = порядок в выпадающих списках попапа (LLMODEL.EQUIP_TYPES).
+  const EQUIP_TYPES = [
+    { code: "V",  label: "Vans (Standard)" },
+    { code: "F",  label: "Flatbeds" },
+    { code: "R",  label: "Reefers" },
+    { code: "N",  label: "Conestogas" },
+    { code: "C",  label: "Containers" },
+    { code: "K",  label: "Decks (Specialized)" },
+    { code: "D",  label: "Decks (Standard)" },
+    { code: "B",  label: "Dry Bulk" },
+    { code: "Z",  label: "Hazardous Materials" },
+    { code: "T",  label: "Tankers" },
+    { code: "S",  label: "Vans (Specialized)" },
+    { code: "O",  label: "Other Equipment" },
+    // legacy-коды (не в DAT-группах, но встречаются в сохранённых профилях/Truckstop):
+    { code: "SD", label: "Step Deck" },
+    { code: "PO", label: "Power Only" },
+    { code: "HS", label: "Hotshot" },
+  ];
+
+  // нормализуем длинные имена бордов + сами коды к одному коду (V/R/F/...).
   const EQUIP = {
-    van: "V", "dry van": "V", v: "V",
-    reefer: "R", r: "R", refrigerated: "R",
-    flatbed: "F", f: "F", fb: "F",
+    van: "V", "dry van": "V", "vans (standard)": "V", "vans standard": "V", v: "V",
+    flatbed: "F", flatbeds: "F", fb: "F", f: "F",
+    reefer: "R", reefers: "R", refrigerated: "R", r: "R",
+    conestoga: "N", conestogas: "N", n: "N",
+    container: "C", containers: "C", c: "C",
+    "decks (specialized)": "K", "decks specialized": "K", "specialized deck": "K", k: "K",
+    "decks (standard)": "D", "decks standard": "D", deck: "D", decks: "D", d: "D",
+    "dry bulk": "B", bulk: "B", b: "B",
+    "hazardous materials": "Z", hazardous: "Z", hazmat: "Z", z: "Z",
+    tanker: "T", tankers: "T", tank: "T", t: "T",
+    "vans (specialized)": "S", "vans specialized": "S", "specialized van": "S", s: "S",
+    "other equipment": "O", other: "O", o: "O",
     "step deck": "SD", stepdeck: "SD", sd: "SD",
     "power only": "PO", po: "PO",
     hotshot: "HS", hs: "HS",
@@ -99,6 +129,7 @@ const LLMODEL = (() => {
   }
 
   return {
+    EQUIP_TYPES,
     normEquipment, parseRate, parseMiles, parseAge, parseWeight,
     marketKey, laneKey, buildLoad,
   };

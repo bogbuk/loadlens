@@ -3,7 +3,11 @@ const escA = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&
 
 // ---- настройки ----
 const setEl = document.getElementById("settings");
-const EQUIP_OPTS = ["V", "R", "F", "SD", "PO"];
+// канон типов трейлеров (коды DAT One + legacy) — единый источник из vendor/load.model.js
+const EQUIP_TYPES = (typeof LLMODEL !== "undefined" && LLMODEL.EQUIP_TYPES)
+  || [{ code: "V", label: "Van" }, { code: "R", label: "Reefer" }, { code: "F", label: "Flatbed" }];
+const equipOption = (e, sel) =>
+  `<option value="${e.code}"${sel === e.code ? " selected" : ""}>${escA(e.label)} (${e.code})</option>`;
 const DEFAULT_TARGETS = (typeof LLSCORE !== "undefined" && LLSCORE.DEFAULTS.targets)
   || [{ maxMi: 500, rpm: 7.0 }, { maxMi: 1000, rpm: 6.0 }, { maxMi: null, rpm: 5.0 }];
 
@@ -22,8 +26,7 @@ async function renderSettings() {
     targets.map(targetRow).join("") +
     '<h4>Тип трейлера (фильтр)</h4>' +
     `<div class="row"><span class="k">Показывать только</span><select id="s-equip">` +
-    ['<option value="">— все —</option>'].concat(EQUIP_OPTS.map((e) =>
-      `<option value="${e}"${ll_equip_filter === e ? " selected" : ""}>${e}</option>`)).join("") +
+    ['<option value="">— все —</option>'].concat(EQUIP_TYPES.map((e) => equipOption(e, ll_equip_filter))).join("") +
     '</select></div>' +
     '<button id="s-save">Сохранить</button>' +
     '<div class="note">Целевая $/mi — порог «выгодно» (green): груз green, если его gross $/mile ≥ цели своего бакета. Cost/mile — нижняя граница убытка (red).</div>';
@@ -103,7 +106,6 @@ function accForm(err) {
 
 // ---- парк водителей (виден залогиненному диспетчеру) ----
 const fleetEl = document.getElementById("fleet");
-const EQUIP = ["V", "R", "F", "SD", "PO"];
 
 async function renderFleet(me) {
   if (me === undefined) me = await LLAPI.getMe().catch(() => null);
@@ -147,8 +149,7 @@ async function renderFleet(me) {
 }
 
 function driverRow(d) {
-  const opts = ['<option value="">—</option>'].concat(EQUIP.map((e) =>
-    `<option value="${e}"${d.equipment === e ? " selected" : ""}>${e}</option>`)).join("");
+  const opts = ['<option value="">—</option>'].concat(EQUIP_TYPES.map((e) => equipOption(e, d.equipment))).join("");
   const eid = escA(d.id);
   const h = d.hos || {};
   const driveH = h.remainingDrive != null ? round1(h.remainingDrive / 60) : "";

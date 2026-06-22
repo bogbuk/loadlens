@@ -182,6 +182,9 @@ Product Data; прецедент DAT v. Convoy) — два независимы�
 ## Домен (FMCSA / freight)
 
 - **HOS:** 11h driving, 14h on-duty window, 30min break, 70h/8d или 60h/7d, split sleeper.
-- **Equipment-коды:** V=Van, R=Reefer, F=Flatbed, SD=Step Deck, PO=Power Only.
+- **Equipment-коды** (канон — `shared/load.model.js` `EQUIP_TYPES`, коды DAT One autocomplete-групп):
+  V=Vans (Standard), F=Flatbeds, R=Reefers, N=Conestogas, C=Containers, K=Decks (Specialized),
+  D=Decks (Standard), B=Dry Bulk, Z=Hazardous Materials, T=Tankers, S=Vans (Specialized), O=Other.
+  Legacy (не DAT-группы, но в сохранённых профилях/Truckstop): SD=Step Deck, PO=Power Only, HS=Hotshot.
 - **Бенчмарки RPM** (калибровка скоринга): ATRI 2024 all-in $2.26/mi, non-fuel $1.78; owner-op true CPM $1.45–1.95.
 - **Market key:** `CITY_ST` (напр. `CHICAGO_IL`); lane groupKey = `board|origin>dest|equipment`.
