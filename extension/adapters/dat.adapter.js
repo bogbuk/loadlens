@@ -15,6 +15,24 @@
   };
   const ROW_ID_PREFIX = "table-row-";
 
+  // ★ ЗАГЛУШКИ — снять с живой сессии DAT (как остальные DOM-селекторы DAT, кроме row-якоря).
+  // clickRefresh()/applySort() терпимы к промаху: возвращают false, авто-пилот тихо ждёт след. тик.
+  const REFRESH_SELECTORS = {
+    // кнопка повторного поиска/обновления выдачи; кандидаты пробуем по порядку
+    button: [
+      'button[data-test="search-button"]',
+      'button.search-button',
+      'button[aria-label*="Search" i]',
+      'button[aria-label*="Refresh" i]',
+    ],
+  };
+  const SORT_SELECTORS = {
+    trigger: 'mat-select[data-test="sort-select"], mat-select.sort-select', // открывашка дропдауна
+    panel: '.mat-select-panel, .cdk-overlay-pane mat-option',               // куда рендерятся опции
+    option: 'mat-option',                                                   // одна опция сортировки
+    optionLabel: '.mat-option-text',                                        // её видимый текст
+  };
+
   function resultIdOf(row) {
     const id = (row && row.id) || "";
     return id.startsWith(ROW_ID_PREFIX) ? id.slice(ROW_ID_PREFIX.length) : null;
@@ -25,6 +43,48 @@
   // Берём хвост после "+"; для старого формата (без "+") возвращаем строку как есть.
   function domRowKey(resultId) {
     return resultId == null ? "" : String(resultId).split("+").pop();
+  }
+
+  // ---- авто-пилот: родной Search-клик + удержание сортировки DAT (чистые DOM-хелперы) ----
+
+  // метка сортировки -> ключ: "Rate - Highest" -> "rate-highest" (стабильно к пунктуации/регистру)
+  function sortKey(s) {
+    return String(s == null ? "" : s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
+
+  // отрендеренные опции сорт-дропдауна -> [{key,label}] (если дропдаун в DOM/открыт)
+  function readSortOptions(root) {
+    root = root || (typeof document !== "undefined" ? document : null);
+    const out = [];
+    if (!root) return out;
+    root.querySelectorAll(SORT_SELECTORS.option).forEach((o) => {
+      const labelEl = o.querySelector(SORT_SELECTORS.optionLabel) || o;
+      const label = (labelEl.textContent || "").trim();
+      if (label) out.push({ key: sortKey(label), label });
+    });
+    return out;
+  }
+
+  // найти mat-option по ключу среди отрендеренных опций; null если нет
+  function pickSortOption(root, key) {
+    const want = sortKey(key);
+    if (!want || !root) return null;
+    const list = [...root.querySelectorAll(SORT_SELECTORS.option)];
+    return list.find((o) => {
+      const labelEl = o.querySelector(SORT_SELECTORS.optionLabel) || o;
+      return sortKey(labelEl.textContent) === want;
+    }) || null;
+  }
+
+  // кнопка Search/Refresh: кандидаты по порядку, затем фолбэк по тексту кнопки
+  function findRefreshButton(root) {
+    if (!root) return null;
+    for (const sel of REFRESH_SELECTORS.button) {
+      const el = root.querySelector(sel);
+      if (el) return el;
+    }
+    return [...root.querySelectorAll("button")].find((b) =>
+      /\b(search|refresh)\b/i.test((b.textContent || "").trim())) || null;
   }
 
   const DAT_ADAPTER = {
@@ -64,8 +124,41 @@
 
     // Данные DAT берём из GraphQL-перехвата, не из DOM.
     collect() { return []; },
+
+    // ---- авто-пилот ----
+    // Кликнуть родную кнопку Search/Refresh DAT. true — кнопка нашлась и кликнута.
+    clickRefresh() {
+      const btn = findRefreshButton(typeof document !== "undefined" ? document : null);
+      if (!btn) return false;
+      btn.click();
+      return true;
+    },
+    // Доступные опции сортировки DAT (если дропдаун отрендерен) -> [{key,label}].
+    readSortOptions() { return readSortOptions(typeof document !== "undefined" ? document : null); },
+    // Применить сортировку DAT по ключу через её родной mat-select. Promise<boolean>.
+    applySort(key) {
+      return new Promise((resolve) => {
+        const root = typeof document !== "undefined" ? document : null;
+        if (!key || !root) return resolve(false);
+        const clickIfPresent = () => {
+          const o = pickSortOption(root, key);
+          if (o) { o.click(); return true; }
+          return false;
+        };
+        if (clickIfPresent()) return resolve(true);       // дропдаун уже открыт/опции в DOM
+        const trigger = root.querySelector(SORT_SELECTORS.trigger);
+        if (!trigger) return resolve(false);
+        trigger.click();                                  // открыть; Angular рендерит overlay на след. тике
+        setTimeout(() => resolve(clickIfPresent()), 0);
+      });
+    },
   };
 
   LLADAPT.register(DAT_ADAPTER);
-  if (typeof module !== "undefined" && module.exports) module.exports = { DAT_ADAPTER, DAT_SELECTORS, resultIdOf, domRowKey };
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+      DAT_ADAPTER, DAT_SELECTORS, REFRESH_SELECTORS, SORT_SELECTORS,
+      resultIdOf, domRowKey, sortKey, readSortOptions, pickSortOption, findRefreshButton,
+    };
+  }
 })();

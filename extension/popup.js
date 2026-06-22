@@ -11,10 +11,21 @@ const equipOption = (e, sel) =>
 const DEFAULT_TARGETS = (typeof LLSCORE !== "undefined" && LLSCORE.DEFAULTS.targets)
   || [{ maxMi: 500, rpm: 7.0 }, { maxMi: 1000, rpm: 6.0 }, { maxMi: null, rpm: 5.0 }];
 
+// поля сортировки (зеркало content.js SORT_FIELDS) — наш контрол не хардкодит точные метки DAT
+const SORT_FIELDS = [
+  { field: "rate", label: "Rate" },
+  { field: "age", label: "Age" },
+  { field: "trip", label: "Trip miles" },
+  { field: "deadhead", label: "Deadhead" },
+];
+
 async function renderSettings() {
-  const { ll_cpm, ll_targets, ll_equip_filter } = await chrome.storage.local.get(["ll_cpm", "ll_targets", "ll_equip_filter"]);
+  const { ll_cpm, ll_targets, ll_equip_filter, ll_autorefresh, ll_sort } =
+    await chrome.storage.local.get(["ll_cpm", "ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort"]);
   const cpm = ll_cpm != null ? ll_cpm : 1.80;
   const targets = Array.isArray(ll_targets) && ll_targets.length ? ll_targets : DEFAULT_TARGETS;
+  const ar = (ll_autorefresh && typeof ll_autorefresh === "object") ? ll_autorefresh : { on: false, intervalMs: 60000 };
+  const sort = (ll_sort && ll_sort.field) ? { field: ll_sort.field, dir: ll_sort.dir === "asc" ? "asc" : "desc" } : { field: "", dir: "desc" };
   const hos = await LLHOS.load();
   setEl.innerHTML =
     '<h4>Параметры водителя</h4>' +
@@ -28,8 +39,19 @@ async function renderSettings() {
     `<div class="row"><span class="k">Показывать только</span><select id="s-equip">` +
     ['<option value="">— все —</option>'].concat(EQUIP_TYPES.map((e) => equipOption(e, ll_equip_filter))).join("") +
     '</select></div>' +
+    '<h4>Авто-пилот таба DAT</h4>' +
+    `<div class="row"><span class="k">Авто-рефреш выдачи</span><input id="s-ar-on" type="checkbox"${ar.on ? " checked" : ""}></div>` +
+    `<div class="row"><span class="k">Интервал, сек (≥60)</span><input id="s-ar-int" type="number" min="60" step="10" value="${Math.round((ar.intervalMs || 60000) / 1000)}"></div>` +
+    `<div class="row"><span class="k">Сортировка</span><select id="s-sort-f">` +
+    ['<option value="">— не менять —</option>'].concat(SORT_FIELDS.map((s) =>
+      `<option value="${s.field}"${sort.field === s.field ? " selected" : ""}>${escA(s.label)}</option>`)).join("") +
+    `</select></div>` +
+    `<div class="row"><span class="k">Направление</span><select id="s-sort-d">` +
+    `<option value="desc"${sort.dir === "desc" ? " selected" : ""}>Highest → Lowest</option>` +
+    `<option value="asc"${sort.dir === "asc" ? " selected" : ""}>Lowest → Highest</option></select></div>` +
     '<button id="s-save">Сохранить</button>' +
-    '<div class="note">Целевая $/mi — порог «выгодно» (green): груз green, если его gross $/mile ≥ цели своего бакета. Cost/mile — нижняя граница убытка (red).</div>';
+    '<div class="note">Целевая $/mi — порог «выгодно» (green): груз green, если его gross $/mile ≥ цели своего бакета. Cost/mile — нижняя граница убытка (red).</div>' +
+    '<div class="note">Авто-пилот: открой выдачу DAT в отдельном табе — он сам кликает Search раз в 60–120 с (джиттер) и держит выбранную сортировку, пока ты работаешь в другом табе. Кликает родную кнопку DAT в твоей сессии; по умолчанию выключен.</div>';
   document.getElementById("s-save").onclick = save;
 }
 function settingRow(label, id, val, step) {
@@ -53,6 +75,13 @@ async function save() {
   const cycleH = parseFloat(document.getElementById("s-cycle").value);
   if (cpm > 0) await chrome.storage.local.set({ ll_cpm: cpm });
   await chrome.storage.local.set({ ll_targets: readTargets(), ll_equip_filter: document.getElementById("s-equip").value || null });
+  // авто-пилот: интервал не реже 60с; сорт = поле+направление (пусто → не удерживать)
+  const intSec = Math.max(60, parseInt(document.getElementById("s-ar-int").value, 10) || 60);
+  const sortField = document.getElementById("s-sort-f").value || null;
+  await chrome.storage.local.set({
+    ll_autorefresh: { on: document.getElementById("s-ar-on").checked, intervalMs: intSec * 1000 },
+    ll_sort: sortField ? { field: sortField, dir: document.getElementById("s-sort-d").value === "asc" ? "asc" : "desc" } : { field: null },
+  });
   await LLHOS.save(LLHOS.fromHours({ driveH, dutyH, cycleH }));
   const btn = document.getElementById("s-save");
   btn.textContent = "Сохранено ✓";

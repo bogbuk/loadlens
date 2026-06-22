@@ -26,6 +26,11 @@
   let activeEquipment = null;    // фильтр прицепа активного водителя (null = без фильтра)
 
   let gqlLoads = [];              // грузы из перехваченного ответа DAT FindLoads (inject.js)
+  // авто-пилот: фоновый таб сам кликает Search DAT и удерживает сортировку (см. spec 2026-06-22).
+  // ToS: НЕ вызываем API DAT — кликаем её же UI-кнопку как пользователь; по умолчанию ВЫКЛ, opt-in.
+  let autoRefresh = { on: false, intervalMs: 60000 }; // base; jitter = intervalMs → [base, 2·base)
+  let sortPref = null;           // {field, dir:'asc'|'desc'} — удерживаемая сортировка DAT
+  let pendingSortReapply = false;// true сразу после нашего clickRefresh → переприменить сорт по новой выдаче
   let expandedChainSig = null;   // сигнатура раскрытой цепочки (route path), переживает re-render
   const laneCache = new Map();    // "O>D|E" -> {medianRpm|null}  (из backend)
   const marketCache = new Map();  // market -> strength 0..1
@@ -501,6 +506,11 @@
       row("Дизель", "$" + dieselPrice.toFixed(2) + "/гал") +
       `<div class="ll-cfg">Cost/mi: <input id="ll-cpm" type="number" step="0.05" value="${costPerMile}" style="width:60px"> ` +
       `Старт: <input id="ll-start" type="text" value="${start ? esc(start) : ""}" style="width:110px" placeholder="CHICAGO_IL"></div>` +
+      `<div class="ll-cfg" title="Авто-пилот: фоновый таб сам кликает Search DAT и удерживает сортировку">` +
+        `<label><input type="checkbox" id="ll-ar"${autoRefresh.on ? " checked" : ""}> Авто-рефреш</label> ` +
+        `Сорт: <select id="ll-sort-f"><option value="">—</option>` +
+        SORT_FIELDS.map((s) => `<option value="${s.field}"${sortPref && sortPref.field === s.field ? " selected" : ""}>${esc(s.label)}</option>`).join("") +
+        `</select> <button id="ll-sort-dir" title="Направление сортировки">${sortPref && sortPref.dir === "asc" ? "▲ Low" : "▼ High"}</button></div>` +
       (chains.length ? "<h4>Get-out цепочки</h4>" + chains.map((c) => chainCard(c, chainsCtx)).join("") : "<div class='note'>Цепочки появятся, когда видно достаточно грузов из рынка старта.</div>") +
       (deals.length ? "<h4>Выгодные сейчас</h4>" + deals.map((d) =>
         `<div class="deal"><span class="m">${esc(d.l.originMarket)} → ${esc(d.l.destMarket)} ${esc(d.l.equipment)}</span>` +
@@ -519,6 +529,12 @@
     if (cpm) cpm.onchange = () => { const v = parseFloat(cpm.value); if (v > 0) { baseCostPerMile = v; render(); } };
     const st = bd.querySelector("#ll-start");
     if (st) st.onchange = () => { currentMarket = st.value.trim().toUpperCase() || null; render(); };
+    const ar = bd.querySelector("#ll-ar");
+    if (ar) ar.onchange = () => persistAuto({ on: ar.checked });
+    const sf = bd.querySelector("#ll-sort-f");
+    if (sf) sf.onchange = () => persistSort({ field: sf.value || null });
+    const sd = bd.querySelector("#ll-sort-dir");
+    if (sd) sd.onclick = () => persistSort({ dir: (sortPref && sortPref.dir === "asc") ? "desc" : "asc" });
     const csvBtn = bd.querySelector('[data-act="csv"]');
     if (csvBtn) csvBtn.onclick = () => exportCsv(loads);
     bd.querySelectorAll(".chain-hd").forEach((hd) => {
@@ -712,6 +728,57 @@
   const row = (k, v) => `<div class="row"><span class="k">${k}</span><span class="v">${v}</span></div>`;
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
+  // ---------- авто-пилот: таймер Search-клика + удержание сортировки ----------
+  // Поля сортировки для контрола (фолбэк, если родной дропдаун DAT ещё не прочитан readSortOptions).
+  const SORT_FIELDS = [
+    { field: "rate", label: "Rate" },
+    { field: "age", label: "Age" },
+    { field: "trip", label: "Trip miles" },
+    { field: "deadhead", label: "Deadhead" },
+  ];
+  // (field,dir) → ключ опции DAT. DAT-опции парные ("Rate - Highest"/"Rate - Lowest"); desc=highest.
+  // ★ Единственная точка маппинга — уточнить, когда придёт живой HTML сорт-дропдаупа DAT.
+  function desiredSortKey(sort) {
+    if (!sort || !sort.field) return null;
+    return `${sort.field}-${sort.dir === "asc" ? "lowest" : "highest"}`;
+  }
+  // следующий интервал тика: base + [0, jitter). Чистая, тестируемая (rnd инъектится).
+  function nextDelay(base, jitter, rnd) {
+    const r = typeof rnd === "function" ? rnd : Math.random;
+    return base + Math.floor(r() * jitter);
+  }
+  let autoTimer = null;
+  function clearAuto() { if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; } }
+  function scheduleAuto() {
+    clearAuto();
+    if (!autoRefresh.on) return;
+    const base = Math.max(60000, autoRefresh.intervalMs || 60000); // не чаще 60с (ToS: имитация человека)
+    const delay = nextDelay(base, base);                            // [base, 2·base) → дефолт 60–120с
+    autoTimer = setTimeout(() => {
+      try {
+        if (adapter.clickRefresh && adapter.clickRefresh()) { pendingSortReapply = true; log("авто-рефреш: клик Search"); }
+        else log("авто-рефреш: кнопка Search не найдена (селектор-заглушка?)");
+      } catch (e) { log("авто-рефреш ошибка", e); }
+      scheduleAuto();
+    }, delay);
+  }
+  // применить удерживаемую сортировку через родной дропдаун DAT (вручную или после авто-рефреша)
+  function applySortPref() {
+    const key = desiredSortKey(sortPref);
+    if (key && adapter.applySort) adapter.applySort(key).then((ok) => log("сорт DAT:", key, ok ? "ok" : "промах")).catch(() => {});
+  }
+  // персист настроек авто-пилота: пишем в storage → onChanged применяет (scheduleAuto/applySortPref/render)
+  async function persistAuto(patch) {
+    autoRefresh = { ...autoRefresh, ...patch };
+    try { await chrome.storage.local.set({ ll_autorefresh: autoRefresh }); } catch (_) { scheduleAuto(); schedule(); }
+  }
+  async function persistSort(patch) {
+    const base = sortPref || { field: null, dir: "desc" };
+    const next = { ...base, ...patch };
+    sortPref = next.field ? { field: next.field, dir: next.dir === "asc" ? "asc" : "desc" } : null;
+    try { await chrome.storage.local.set({ ll_sort: sortPref || { field: null } }); } catch (_) { applySortPref(); schedule(); }
+  }
+
   // ---------- boot + observe ----------
   let timer = null;
   function schedule() { clearTimeout(timer); timer = setTimeout(render, 400); }
@@ -724,9 +791,11 @@
     baseHos = { ...hosState }; // зафиксировать базу после загрузки из storage
     try { const { ll_cpm } = await chrome.storage.local.get("ll_cpm"); if (ll_cpm > 0) { costPerMile = ll_cpm; baseCostPerMile = ll_cpm; } } catch { /* дефолт */ }
     try {
-      const { ll_targets, ll_equip_filter } = await chrome.storage.local.get(["ll_targets", "ll_equip_filter"]);
+      const { ll_targets, ll_equip_filter, ll_autorefresh, ll_sort } = await chrome.storage.local.get(["ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort"]);
       if (Array.isArray(ll_targets) && ll_targets.length) targets = ll_targets;
       if (ll_equip_filter) equipFilter = ll_equip_filter;
+      if (ll_autorefresh && typeof ll_autorefresh === "object") autoRefresh = { on: !!ll_autorefresh.on, intervalMs: ll_autorefresh.intervalMs || 60000 };
+      if (ll_sort && ll_sort.field) sortPref = { field: ll_sort.field, dir: ll_sort.dir === "asc" ? "asc" : "desc" };
     } catch { /* дефолт */ }
     // парк водителей диспетчера (если залогинен); активный — per-device выбор
     if (typeof LLAPI !== "undefined" && typeof LLDRV !== "undefined") {
@@ -742,6 +811,16 @@
         if (ch.ll_hos && ch.ll_hos.newValue) baseHos = ch.ll_hos.newValue;              // аналогично для HOS
         if (ch.ll_targets) targets = (Array.isArray(ch.ll_targets.newValue) && ch.ll_targets.newValue.length) ? ch.ll_targets.newValue : LLSCORE.DEFAULTS.targets;
         if (ch.ll_equip_filter) equipFilter = ch.ll_equip_filter.newValue || null;
+        if (ch.ll_autorefresh) {
+          const v = ch.ll_autorefresh.newValue;
+          autoRefresh = (v && typeof v === "object") ? { on: !!v.on, intervalMs: v.intervalMs || 60000 } : { on: false, intervalMs: 60000 };
+          scheduleAuto();
+        }
+        if (ch.ll_sort) {
+          const v = ch.ll_sort.newValue;
+          sortPref = (v && v.field) ? { field: v.field, dir: v.dir === "asc" ? "asc" : "desc" } : null;
+          applySortPref(); // применить новую сортировку сразу
+        }
         schedule();
       });
     } catch { /* нет API */ }
@@ -754,13 +833,18 @@
       if (typeof DAT_GQL !== "undefined") {
         const parsed = DAT_GQL.parseFindLoads(d.payload);
         log("приём dat-findloads → parseFindLoads:", parsed.length, "грузов", parsed.length ? "" : "(пусто — схема DAT могла измениться)");
-        if (parsed.length) { gqlLoads = parsed; schedule(); }
+        if (parsed.length) {
+          gqlLoads = parsed; schedule();
+          // только сразу после НАШЕГО clickRefresh переприменяем удерживаемую сортировку (не на каждый ответ DAT)
+          if (pendingSortReapply) { pendingSortReapply = false; applySortPref(); }
+        }
       } else {
         log("приём dat-findloads, но DAT_GQL не загружен");
       }
     });
 
     render();
+    scheduleAuto(); // запустить авто-рефреш, если включён в настройках
     const obs = new MutationObserver(() => schedule());
     obs.observe(document.body, { childList: true, subtree: true });
     let lastPath = location.pathname + location.search;

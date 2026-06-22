@@ -4,7 +4,7 @@ const assert = require("node:assert");
 // Порядок require: сначала зависимости-глобалы, потом адаптеры (регистрируются по сайд-эффекту).
 require("../../shared/load.model.js");
 const LLADAPT = require("./adapters.js");
-const { DAT_ADAPTER, resultIdOf, domRowKey } = require("./dat.adapter.js");
+const { DAT_ADAPTER, resultIdOf, domRowKey, sortKey, readSortOptions, pickSortOption, findRefreshButton } = require("./dat.adapter.js");
 const { TRUCKSTOP_ADAPTER, TRUCKSTOP_SELECTORS } = require("./truckstop.adapter.js");
 
 // Лёгкий DOM-шим для Truckstop parseRow (карта {selector: text}).
@@ -105,4 +105,71 @@ test("sanitizeLoad режет PII (contact), оставляет brokerName/marke
   assert.strictEqual(clean.contact, undefined);
   assert.strictEqual(clean.brokerName, "Lone Star Brokers");
   assert.strictEqual(clean.originMarket, "DALLAS_TX");
+});
+
+// ---- авто-пилот: DOM-хелперы сортировки/рефреша DAT (фейк-DOM, без jsdom) ----
+function fakeOption(label) {
+  const node = { textContent: label, _clicks: 0, click() { this._clicks++; } };
+  node.querySelector = (sel) => (sel === ".mat-option-text" ? { textContent: label } : null);
+  return node;
+}
+function fakeRoot({ options = [], buttons = [], match = {} } = {}) {
+  return {
+    querySelectorAll(sel) {
+      if (sel === "mat-option") return options;
+      if (sel === "button") return buttons;
+      return [];
+    },
+    querySelector(sel) { return match[sel] || null; },
+  };
+}
+
+test("sortKey нормализует метку DAT к ключу", () => {
+  assert.strictEqual(sortKey("Rate - Highest"), "rate-highest");
+  assert.strictEqual(sortKey("  Age — Newest!! "), "age-newest");
+  assert.strictEqual(sortKey(null), "");
+});
+
+test("readSortOptions парсит mat-option-метки в {key,label}", () => {
+  const root = fakeRoot({ options: [fakeOption("Rate - Highest"), fakeOption("Age - Newest")] });
+  assert.deepStrictEqual(readSortOptions(root), [
+    { key: "rate-highest", label: "Rate - Highest" },
+    { key: "age-newest", label: "Age - Newest" },
+  ]);
+});
+
+test("pickSortOption находит опцию по ключу (нечувств. к пунктуации/регистру)", () => {
+  const hi = fakeOption("Rate - Highest"); const lo = fakeOption("Rate - Lowest");
+  const root = fakeRoot({ options: [hi, lo] });
+  assert.strictEqual(pickSortOption(root, "rate-highest"), hi);
+  assert.strictEqual(pickSortOption(root, "Rate  Lowest"), lo);
+  assert.strictEqual(pickSortOption(root, "trip-highest"), null);
+  assert.strictEqual(pickSortOption(root, ""), null);
+});
+
+test("findRefreshButton: приоритет селектора, затем фолбэк по тексту", () => {
+  const bySel = { textContent: "" };
+  assert.strictEqual(findRefreshButton(fakeRoot({ match: { 'button.search-button': bySel } })), bySel);
+  // фолбэк: нет по селектору, ищем кнопку с текстом Search/Refresh
+  const search = { textContent: "Search" }; const other = { textContent: "Cancel" };
+  assert.strictEqual(findRefreshButton(fakeRoot({ buttons: [other, search] })), search);
+  assert.strictEqual(findRefreshButton(fakeRoot({ buttons: [other] })), null);
+});
+
+test("DAT_ADAPTER.applySort кликает уже отрендеренную опцию (document-шим)", async () => {
+  const hi = fakeOption("Rate - Highest");
+  global.document = fakeRoot({ options: [hi] });
+  const ok = await DAT_ADAPTER.applySort("rate-highest");
+  delete global.document;
+  assert.strictEqual(ok, true);
+  assert.strictEqual(hi._clicks, 1);
+});
+
+test("DAT_ADAPTER.clickRefresh кликает кнопку Search (document-шим)", () => {
+  const btn = { textContent: "Search", _clicks: 0, click() { this._clicks++; } };
+  global.document = fakeRoot({ buttons: [btn] });
+  const ok = DAT_ADAPTER.clickRefresh();
+  delete global.document;
+  assert.strictEqual(ok, true);
+  assert.strictEqual(btn._clicks, 1);
 });

@@ -86,6 +86,14 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   Наружу через наш API — только агрегат (median по lane), не дамп. PII (email/phone/контакты) режется
   в `LLAPI.sanitizeLoad` ДО отправки; `brokerMc`/`creditScore`/`daysToPay` — бизнес-данные, не PII.
   **Живые DAT-токены в чат/файлы не вставлять и не использовать для скрейпинга.** Прецедент DAT v. Convoy.
+- **Авто-пилот таба (осознанный сдвиг ToS).** `content.js` умеет по таймеру кликать **родную кнопку
+  Search/Refresh DAT** и удерживать её **родной сорт-дропдаун** (`dat.adapter.clickRefresh`/`applySort`,
+  селекторы — ★ ЗАГЛУШКИ до живой сессии). Это формально заставляет приложение DAT слать FindLoads —
+  граница сместилась с «только наблюдаем» к «кликаем её же UI как пользователь в его сессии». Поэтому:
+  по умолчанию **ВЫКЛ** (opt-in), интервал **≥60с с джиттером** (`nextDelay`, дефолт 60–120с),
+  переприменяем сортировку только сразу после нашего клика (`pendingSortReapply`). Это НЕ путь Convoy:
+  GraphQL/REST DAT с токеном напрямую по-прежнему НЕЛЬЗЯ. Настройки — `ll_autorefresh`/`ll_sort` (popup
+  «Авто-пилот» + контрол в шапке панели). Спека — `docs/superpowers/specs/2026-06-22-dat-autopilot-refresh-sort-design.md`.
 - **HOS-правила** (11h/14h/30min/70h-8d, split sleeper) живут в `shared/hos-calculator.js` +
   упрощённая мультисменная forward-модель в `planner.stepHos`. Обязательный сон не штрафует ранг.
 - **Broker-trust бейдж** (`LLSCORE.brokerBadge`): good/ok/risk по `creditScore` (≥90 good, <75 risk)
