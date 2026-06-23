@@ -755,11 +755,20 @@
     const base = Math.max(60000, autoRefresh.intervalMs || 60000); // не чаще 60с (ToS: имитация человека)
     const delay = nextDelay(base, base);                            // [base, 2·base) → дефолт 60–120с
     autoTimer = setTimeout(() => {
-      try {
-        if (adapter.clickRefresh && adapter.clickRefresh()) { pendingSortReapply = true; log("авто-рефреш: клик Search"); }
-        else log("авто-рефреш: кнопка Search не найдена (селектор-заглушка?)");
-      } catch (e) { log("авто-рефреш ошибка", e); }
-      scheduleAuto();
+      let clicked = false;
+      try { clicked = !!(adapter.clickRefresh && adapter.clickRefresh()); }
+      catch (e) { log("авто-рефреш ошибка", e); }
+      if (clicked) {
+        // DAT включила SEARCH (критерии менялись) → клик перезапускает поиск без перезагрузки
+        pendingSortReapply = true; log("авто-рефреш: клик Search");
+        scheduleAuto();
+      } else {
+        // SEARCH задизейблена/не найдена (тот же поиск нечего повторять) → перезагружаем страницу.
+        // Маркер в sessionStorage: после reload переприменим удерживаемую сортировку к новой выдаче.
+        log("авто-рефреш: Search неактивна → reload страницы");
+        try { sessionStorage.setItem("ll_autopilot_reload", "1"); } catch (_) {}
+        try { location.reload(); } catch (_) { scheduleAuto(); } // boot после reload сам перезапустит таймер
+      }
     }, delay);
   }
   // применить удерживаемую сортировку через родной дропдаун DAT (вручную или после авто-рефреша)
@@ -797,6 +806,13 @@
       if (ll_autorefresh && typeof ll_autorefresh === "object") autoRefresh = { on: !!ll_autorefresh.on, intervalMs: ll_autorefresh.intervalMs || 60000 };
       if (ll_sort && ll_sort.field) sortPref = { field: ll_sort.field, dir: ll_sort.dir === "asc" ? "asc" : "desc" };
     } catch { /* дефолт */ }
+    // если эта загрузка — наш авто-рефреш через reload, переприменим сортировку к свежей выдаче
+    try {
+      if (sessionStorage.getItem("ll_autopilot_reload")) {
+        sessionStorage.removeItem("ll_autopilot_reload");
+        if (sortPref) pendingSortReapply = true;
+      }
+    } catch { /* нет sessionStorage */ }
     // парк водителей диспетчера (если залогинен); активный — per-device выбор
     if (typeof LLAPI !== "undefined" && typeof LLDRV !== "undefined") {
       try {

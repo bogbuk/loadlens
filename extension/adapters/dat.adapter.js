@@ -15,17 +15,18 @@
   };
   const ROW_ID_PREFIX = "table-row-";
 
-  // ★ ЗАГЛУШКИ — снять с живой сессии DAT (как остальные DOM-селекторы DAT, кроме row-якоря).
-  // clickRefresh()/applySort() терпимы к промаху: возвращают false, авто-пилот тихо ждёт след. тик.
+  // Кнопка SEARCH — РЕАЛЬНЫЙ селектор с живой сессии (2026-06-24): `button[data-test="search-button"]`.
+  // DAT держит её disabled, пока критерии поиска не менялись → findRefreshButton пропускает disabled,
+  // clickRefresh вернёт false, и content.js падает на fallback location.reload() (решение пользователя).
   const REFRESH_SELECTORS = {
-    // кнопка повторного поиска/обновления выдачи; кандидаты пробуем по порядку
     button: [
-      'button[data-test="search-button"]',
+      'button[data-test="search-button"]',                // ← подтверждён живой сессией
       'button.search-button',
       'button[aria-label*="Search" i]',
       'button[aria-label*="Refresh" i]',
     ],
   };
+  // ★ SORT_SELECTORS — всё ещё ЗАГЛУШКИ: снять HTML сорт-дропдауна с живой сессии DAT.
   const SORT_SELECTORS = {
     trigger: 'mat-select[data-test="sort-select"], mat-select.sort-select', // открывашка дропдауна
     panel: '.mat-select-panel, .cdk-overlay-pane mat-option',               // куда рендерятся опции
@@ -76,15 +77,24 @@
     }) || null;
   }
 
-  // кнопка Search/Refresh: кандидаты по порядку, затем фолбэк по тексту кнопки
+  // элемент кликабелен (не disabled): DAT держит SEARCH выключенной, пока критерии не менялись —
+  // клик по ней no-op, поэтому такие пропускаем, чтобы не рапортовать ложный успех.
+  function usable(el) {
+    if (!el) return false;
+    if (el.disabled === true) return false;
+    const ad = el.getAttribute && el.getAttribute("aria-disabled");
+    return ad !== "true" && ad !== true;
+  }
+
+  // кнопка Search/Refresh: кандидаты по порядку, затем фолбэк по тексту; только АКТИВНЫЕ
   function findRefreshButton(root) {
     if (!root) return null;
     for (const sel of REFRESH_SELECTORS.button) {
       const el = root.querySelector(sel);
-      if (el) return el;
+      if (usable(el)) return el;
     }
     return [...root.querySelectorAll("button")].find((b) =>
-      /\b(search|refresh)\b/i.test((b.textContent || "").trim())) || null;
+      usable(b) && /\b(search|refresh)\b/i.test((b.textContent || "").trim())) || null;
   }
 
   const DAT_ADAPTER = {

@@ -156,6 +156,16 @@ test("findRefreshButton: приоритет селектора, затем фо�
   assert.strictEqual(findRefreshButton(fakeRoot({ buttons: [other] })), null);
 });
 
+test("findRefreshButton пропускает disabled SEARCH (DAT гасит её без смены критериев)", () => {
+  const sel = 'button[data-test="search-button"]';
+  const disabled = { getAttribute: () => null, disabled: true, textContent: "Search" };
+  // найдена по селектору, но disabled → пропуск; фолбэк тоже пропускает → null (триггерит reload в content.js)
+  assert.strictEqual(findRefreshButton(fakeRoot({ match: { [sel]: disabled }, buttons: [disabled] })), null);
+  // активная такая же кнопка — возвращается
+  const enabled = { getAttribute: () => null, disabled: false, textContent: "Search" };
+  assert.strictEqual(findRefreshButton(fakeRoot({ match: { [sel]: enabled } })), enabled);
+});
+
 test("DAT_ADAPTER.applySort кликает уже отрендеренную опцию (document-шим)", async () => {
   const hi = fakeOption("Rate - Highest");
   global.document = fakeRoot({ options: [hi] });
