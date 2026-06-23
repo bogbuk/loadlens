@@ -2,6 +2,11 @@
 
 All notable user-facing changes to the LoadLens browser extension.
 
+## 0.3.1 — 2026-06-24
+
+### Fixed
+- **Auto-pilot now actually refreshes the board.** When the board's Search button is greyed out (because the search hasn't changed), the dedicated tab reloads the page to pull fresh loads, then re-applies your preferred sort. Previously it clicked the disabled button and nothing happened.
+
 ## 0.3.0 — 2026-06-22
 
 ### New
