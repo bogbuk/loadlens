@@ -37,6 +37,7 @@
         "drivers.js",
         "alerts.js",
         "csv.js",
+        "tabstate.js",
         "content.js"
       ],
       "css": ["styles.css"],
