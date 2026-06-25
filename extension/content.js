@@ -530,7 +530,11 @@
     const st = bd.querySelector("#ll-start");
     if (st) st.onchange = () => { currentMarket = st.value.trim().toUpperCase() || null; render(); };
     const ar = bd.querySelector("#ll-ar");
-    if (ar) ar.onchange = () => persistAuto({ on: ar.checked });
+    if (ar) ar.onchange = () => {
+      autoRefresh.on = ar.checked;
+      if (typeof LLTAB !== "undefined") LLTAB.setAutorefresh(sessionStorage, ar.checked);
+      scheduleAuto();
+    };
     const sf = bd.querySelector("#ll-sort-f");
     if (sf) sf.onchange = () => persistSort({ field: sf.value || null });
     const sd = bd.querySelector("#ll-sort-dir");
@@ -776,11 +780,6 @@
     const key = desiredSortKey(sortPref);
     if (key && adapter.applySort) adapter.applySort(key).then((ok) => log("сорт DAT:", key, ok ? "ok" : "промах")).catch(() => {});
   }
-  // персист настроек авто-пилота: пишем в storage → onChanged применяет (scheduleAuto/applySortPref/render)
-  async function persistAuto(patch) {
-    autoRefresh = { ...autoRefresh, ...patch };
-    try { await chrome.storage.local.set({ ll_autorefresh: autoRefresh }); } catch (_) { scheduleAuto(); schedule(); }
-  }
   async function persistSort(patch) {
     const base = sortPref || { field: null, dir: "desc" };
     const next = { ...base, ...patch };
@@ -803,7 +802,11 @@
       const { ll_targets, ll_equip_filter, ll_autorefresh, ll_sort } = await chrome.storage.local.get(["ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort"]);
       if (Array.isArray(ll_targets) && ll_targets.length) targets = ll_targets;
       if (ll_equip_filter) equipFilter = ll_equip_filter;
-      if (ll_autorefresh && typeof ll_autorefresh === "object") autoRefresh = { on: !!ll_autorefresh.on, intervalMs: ll_autorefresh.intervalMs || 60000 };
+      // intervalMs — глобальный параметр из попапа; on — per-tab (sessionStorage), дефолт выкл.
+      autoRefresh = {
+        on: (typeof LLTAB !== "undefined") && LLTAB.getAutorefresh(sessionStorage),
+        intervalMs: (ll_autorefresh && ll_autorefresh.intervalMs) || 60000,
+      };
       if (ll_sort && ll_sort.field) sortPref = { field: ll_sort.field, dir: ll_sort.dir === "asc" ? "asc" : "desc" };
     } catch { /* дефолт */ }
     // если эта загрузка — наш авто-рефреш через reload, переприменим сортировку к свежей выдаче
@@ -829,7 +832,7 @@
         if (ch.ll_equip_filter) equipFilter = ch.ll_equip_filter.newValue || null;
         if (ch.ll_autorefresh) {
           const v = ch.ll_autorefresh.newValue;
-          autoRefresh = (v && typeof v === "object") ? { on: !!v.on, intervalMs: v.intervalMs || 60000 } : { on: false, intervalMs: 60000 };
+          autoRefresh.intervalMs = (v && v.intervalMs) || 60000; // on — per-tab, из попапа не меняем
           scheduleAuto();
         }
         if (ch.ll_sort) {
