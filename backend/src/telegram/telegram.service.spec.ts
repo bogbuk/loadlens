@@ -24,6 +24,22 @@ describe('formatAlertMessage', () => {
     expect(msg).not.toContain('Broker');
     expect(msg).toContain('$2.45/mi'); // 2400 / 980
   });
+
+  it('дата пикапа форматируется, контакт брокера выводится', () => {
+    const msg = formatAlertMessage({
+      ...ITEM, pickupDate: '2026-06-14', contactEmail: 'ops@broker.test', contactPhone: '5551234567',
+    });
+    expect(msg).toContain('📅 Pickup 14 Jun 2026');
+    expect(msg).toContain('✉️ ops@broker.test');
+    expect(msg).toContain('📞 5551234567');
+  });
+
+  it('без даты/контакта — строки скрыты', () => {
+    const msg = formatAlertMessage(ITEM);
+    expect(msg).not.toContain('Pickup');
+    expect(msg).not.toContain('✉️');
+    expect(msg).not.toContain('📞');
+  });
 });
 
 describe('parseStartCommand', () => {

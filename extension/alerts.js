@@ -18,7 +18,8 @@ const LLALERT = (() => {
             Math.round(l.rate || 0), Math.round(l.loadedMiles || 0), mc].join("|");
   }
 
-  // Полезная нагрузка для сервера — только бизнес-поля (без контактов/имён).
+  // Полезная нагрузка для сервера — бизнес-поля + (осознанно) дата пикапа и контакт брокера.
+  // Контакт (email/phone) — это PII; шлём по явному решению, чтобы диспетчер мог сразу связаться.
   function toPayload(l) {
     const mc = String(l.brokerMc || "").replace(/\D+/g, "");
     const item = {
@@ -29,6 +30,10 @@ const LLALERT = (() => {
     if (l.deadheadMiles) item.deadheadMiles = Math.round(l.deadheadMiles);
     if (mc) item.brokerMc = mc;
     if (l.creditScore != null && !isNaN(l.creditScore)) item.creditScore = Math.round(l.creditScore);
+    const pickup = l.availability && l.availability.earliest;
+    if (pickup) item.pickupDate = String(pickup).slice(0, 32);
+    if (l.contactEmail) item.contactEmail = String(l.contactEmail).slice(0, 120);
+    if (l.contactPhone) item.contactPhone = String(l.contactPhone).replace(/[^\d+().\- ]/g, "").slice(0, 24);
     return item;
   }
 

@@ -30,6 +30,17 @@ test("toPayload: только бизнес-поля, MC нормализован
   assert.strictEqual(p.contact, undefined);
 });
 
+test("toPayload: дата пикапа и контакт брокера пробрасываются", () => {
+  const p = LLALERT.toPayload({
+    ...LOAD,
+    availability: { earliest: "2026-06-14", latest: "2026-06-15" },
+    contactEmail: "ops@broker.test", contactPhone: "555-123-4567",
+  });
+  assert.strictEqual(p.pickupDate, "2026-06-14");
+  assert.strictEqual(p.contactEmail, "ops@broker.test");
+  assert.strictEqual(p.contactPhone, "555-123-4567");
+});
+
 test("validItem: отсекает без рынка/ставки/миль", () => {
   assert.ok(LLALERT.validItem(LLALERT.toPayload(LOAD)));
   assert.ok(!LLALERT.validItem(LLALERT.toPayload({ ...LOAD, rate: 0 })));

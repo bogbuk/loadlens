@@ -1,9 +1,9 @@
 import {
-  ArrayMaxSize, IsArray, IsInt, IsNumber, IsOptional, IsString, Matches, MaxLength, Min, ValidateNested,
+  ArrayMaxSize, IsArray, IsEmail, IsInt, IsNumber, IsOptional, IsString, Matches, MaxLength, Min, ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-// Один подошедший груз для релея в Telegram. Только бизнес-поля (без PII — контакты режутся в расширении).
+// Один подошедший груз для релея в Telegram. Бизнес-поля + (осознанно) дата пикапа и контакт брокера.
 export class NotifyItemDto {
   // семантический ключ дедупа от расширения
   @IsString() @MaxLength(200) @Matches(/^[^\n\r]{1,200}$/)
@@ -32,6 +32,17 @@ export class NotifyItemDto {
 
   @IsOptional() @IsInt() @Min(0)
   creditScore?: number;
+
+  // Дата пикапа из выдачи DAT (availability.earliest) — напр. "2026-06-14". Не PII.
+  @IsOptional() @IsString() @MaxLength(32) @Matches(/^[0-9T:\-+.Z ]{1,32}$/)
+  pickupDate?: string;
+
+  // Контакт брокера (PII) — шлём по явному решению, чтобы диспетчер связался сразу.
+  @IsOptional() @IsEmail() @MaxLength(120)
+  contactEmail?: string;
+
+  @IsOptional() @IsString() @MaxLength(24) @Matches(/^[0-9+().\- ]{5,24}$/)
+  contactPhone?: string;
 }
 
 export class NotifyDto {

@@ -34,7 +34,7 @@ extension/                  MV3-расширение (грузит vendor/* → 
   api.js (LLAPI)            JWT-клиент + sanitizeLoad (PII-фильтр) + sendLoads/getLane/getMarket/getDistance
   geo.js, hos.js            обёртки: дистанции (backend+haversine), HOS-состояние водителя
   drivers.js (LLDRV)        парк диспетчера: resolveDriverContext (чистая, выбор контекста планировщика) + per-device активный водитель (ll_active_driver)
-  alerts.js (LLALERT)       релей green+passEquip грузов в Telegram: keyFor/toPayload (без PII) + push (гейт linked/enabled, session-дедуп). Вызывается из content.render
+  alerts.js (LLALERT)       релей green+passEquip грузов в Telegram: keyFor/toPayload (бизнес-поля + дата пикапа + контакт брокера — PII по явному решению, только в DM) + push (гейт linked/enabled, session-дедуп). Вызывается из content.render
   popup.*                   настройки водителя (cost/mile, HOS-часы) + аккаунт + секция «Парк» (CRUD водителей) + секция «Telegram-уведомления» (Pro)
   vendor/                   ★ АВТОКОПИИ из shared/ (load.model, scoring, planner, markets.seed). `npm run sync:shared`
 backend/src/                NestJS, synchronize:true (миграций нет)
@@ -124,8 +124,13 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   (`/telegram/link` → deep-link `t.me/<bot>?start=<token>` → вебхук `/telegram/webhook/:secret` ловит
   `/start` и пишет `users.telegram_chat_id`) + тумблер `alerts_enabled`. Дедуп **по семантическому
   ключу** (`board|origin>dest|equip|rate|miles|mc`, НЕ по композитному resultId) + TTL 6ч + soft-cap
-  10/10мин (`alert_sends`). **ToS/PII:** только грузы из сессии пользователя, наружу — lane/$/мили/RPM/
-  brokerMC+кредит, контакты режутся. Фича-флаг = `TELEGRAM_BOT_TOKEN` (нет токена → молчит, как EIA).
+  10/10мин (`alert_sends`). Сообщение бота: lane/$/мили/RPM/brokerMC+кредит **+ дата пикапа**
+  (`availability.earliest`) **+ контакт брокера** (`contactEmail`/`contactPhone`) — чтобы диспетчер
+  сразу связался. **ToS/PII (осознанный сдвиг):** контакт брокера — это PII; в **этот** релей он уходит
+  по явному решению (поля `toPayload` → `NotifyItemDto`). Это касается ТОЛЬКО Telegram-DM пользователю,
+  который и так видит контакт в своей сессии. Крауд-база ставок (`POST /loads` через `sanitizeLoad`)
+  контакты по-прежнему **НЕ** получает — там PII режется. Наружу-агрегат (median по lane) контактов не
+  содержит. Фича-флаг = `TELEGRAM_BOT_TOKEN` (нет токена → молчит, как EIA).
 - **Скоринг:** trueRpm = rate/(loaded+deadhead); бейдж: **red** = netRpm < break-even (cost/mile,
   дефолт $1.80, нижняя граница убытка); **green** = trueRpm ≥ целевой $/mi бакета дистанции
   (`LLSCORE.targetForMiles` по таблице `DEFAULTS.targets`: ≤500mi→$7, ≤1000→$6, 1000+→$5; конфиг

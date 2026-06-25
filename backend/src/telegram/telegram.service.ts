@@ -17,7 +17,17 @@ function money(n: number): string {
   return '$' + Math.round(Number(n) || 0).toLocaleString('en-US');
 }
 
-// Текст алерта. Только бизнес-поля груза (без PII): lane, ставка, мили, RPM, broker MC + кредит.
+// «2026-06-14» → «14 Jun 2026». Невалидную/непарсимую дату отдаём как есть.
+function fmtPickup(raw?: string): string | null {
+  if (!raw) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+  if (!m) return raw;
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const mon = months[Number(m[2]) - 1] || m[2];
+  return `${Number(m[3])} ${mon} ${m[1]}`;
+}
+
+// Текст алерта. Бизнес-поля груза + дата пикапа и контакт брокера (PII — по явному решению).
 export function formatAlertMessage(l: NotifyItemDto): string {
   const total = (Number(l.loadedMiles) || 0) + (Number(l.deadheadMiles) || 0);
   const rpm = total > 0 ? (Number(l.rate) / total).toFixed(2) : '—';
@@ -25,10 +35,17 @@ export function formatAlertMessage(l: NotifyItemDto): string {
   const head = `🟢 ${l.originMarket} → ${l.destMarket} · ${l.equipment}`;
   const line2 = `${money(l.rate)} · ${Math.round(Number(l.loadedMiles) || 0)}mi` +
     (dh ? ` +${Math.round(dh)}DH` : '') + ` · $${rpm}/mi`;
+  const pickup = fmtPickup(l.pickupDate);
+  const dateLine = pickup ? `\n📅 Pickup ${pickup}` : '';
   const broker = l.brokerMc
     ? `\nBroker MC${l.brokerMc}` + (l.creditScore != null ? ` · credit ${l.creditScore}` : '')
     : '';
-  return `${head}\n${line2}${broker}`;
+  const contactBits = [
+    l.contactEmail ? `✉️ ${l.contactEmail}` : '',
+    l.contactPhone ? `📞 ${l.contactPhone}` : '',
+  ].filter(Boolean);
+  const contact = contactBits.length ? `\n${contactBits.join(' · ')}` : '';
+  return `${head}${dateLine}\n${line2}${broker}${contact}`;
 }
 
 // Разбор '/start <token>' из вебхука Telegram. Возвращает токен привязки или null.
