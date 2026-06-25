@@ -25,12 +25,16 @@
   .plan.pro { background:#1d4ed8; color:#fff; }
   .acc .btns { display:flex; gap:8px; } .acc .btns button { margin-top:8px; }
   .note { color:#9aa6b2; font-size:11px; margin-top:6px; }
+  .settings-wrap { padding-top: 6px; }
+  .settings-wrap > summary { cursor: pointer; font-size: 11px; text-transform: uppercase; letter-spacing: .3px; color:#1e3a8a; font-weight:700; list-style: revert; padding: 4px 0; }
 </style>
 </head>
 <body>
   <div class="hd"><div class="logo">Load<b>Lens</b></div><div class="s">Скоринг грузов · DAT One / Truckstop</div></div>
-  <div class="bd" id="settings"></div>
   <div class="bd" id="account"><div class="empty">Аккаунт…</div></div>
+  <details class="bd settings-wrap"><summary>⚙ Настройки</summary>
+    <div id="settings"></div>
+  </details>
   <div class="bd" id="fleet"></div>
   <div class="bd" id="telegram"></div>
   <script src="vendor/load.model.js"></script>
