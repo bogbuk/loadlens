@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { getConnectionToken } from '@nestjs/sequelize';
 import type { Sequelize } from 'sequelize';
 import { AppModule } from './app.module';
+import { parseAdminEmails } from './auth/admin-emails';
 
 async function bootstrap() {
   if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET)
@@ -20,6 +21,14 @@ async function bootstrap() {
   await sequelize.query(
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS alerts_enabled BOOLEAN NOT NULL DEFAULT false',
   );
+  await sequelize.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'");
+  await sequelize.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS blocked BOOLEAN NOT NULL DEFAULT false');
+  // Bootstrap админов из ADMIN_EMAIL (идемпотентно): уже существующие юзеры получают role=admin.
+  const adminEmails = parseAdminEmails(process.env.ADMIN_EMAIL);
+  if (adminEmails.length)
+    await sequelize.query("UPDATE users SET role='admin' WHERE email IN (:emails)", {
+      replacements: { emails: adminEmails },
+    });
   app.setGlobalPrefix('api/v1', { exclude: ['healthz'] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.enableCors({
