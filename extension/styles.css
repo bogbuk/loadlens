@@ -105,6 +105,7 @@
 }
 #ll-panel .hd .logo { font-weight: 800; } #ll-panel .hd .logo b { color: #bcd0ff; }
 #ll-panel .hd button { background: rgba(255,255,255,.18); color: #fff; border: 0; width: 24px; height: 24px; border-radius: 7px; cursor: pointer; font-size: 16px; }
+#ll-panel .hd .hd-actions { display: flex; gap: 6px; align-items: center; }
 #ll-panel .bd { padding: 10px 12px; }
 #ll-panel .row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #eef1f4; }
 #ll-panel .row .k { color: #6b7785; }

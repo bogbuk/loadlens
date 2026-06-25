@@ -12,6 +12,7 @@
   const log = (...a) => { if (llDebug()) { try { console.log("[LoadLens/content]", ...a); } catch (_) {} } };
 
   let panelCollapsed = false;
+  let hintsOff = false; // per-tab: скрыть наши подсказки (бейджи + панель) на этой вкладке
   let dieselPrice = 3.95;
   let baseCostPerMile = 1.80; // «базовая» (диспетчерская) настройка; не мутируется водителем
   let costPerMile = 1.80;     // текущий (resolveDriverContext → applyDriverContext)
@@ -441,7 +442,13 @@
       f = document.createElement("button");
       f.id = "ll-fab"; f.textContent = "🚚 LoadLens";
       document.body.appendChild(f);
-      f.onclick = () => { panelCollapsed = false; f.remove(); render(); };
+      f.onclick = () => {
+        panelCollapsed = false;
+        hintsOff = false;
+        if (typeof LLTAB !== "undefined") LLTAB.setHintsOff(sessionStorage, false);
+        f.remove();
+        render();
+      };
     }
   }
   function buildPanel() {
@@ -450,9 +457,16 @@
       p = document.createElement("div");
       p.id = "ll-panel";
       p.innerHTML = '<div class="hd"><span class="logo">Load<b>Lens</b></span>' +
-        '<button data-act="collapse" title="Свернуть">–</button></div><div class="bd"></div>';
+        '<span class="hd-actions">' +
+        '<button data-act="hints" title="Скрыть подсказки LoadLens на этой вкладке">🙈</button>' +
+        '<button data-act="collapse" title="Свернуть">–</button></span></div><div class="bd"></div>';
       document.body.appendChild(p);
       p.querySelector('[data-act="collapse"]').onclick = () => { panelCollapsed = true; render(); };
+      p.querySelector('[data-act="hints"]').onclick = () => {
+        hintsOff = true;
+        if (typeof LLTAB !== "undefined") LLTAB.setHintsOff(sessionStorage, true);
+        render();
+      };
     }
     return p;
   }
@@ -477,10 +491,13 @@
     if (typeof LLALERT !== "undefined") LLALERT.push(greens.map((d) => d.l)).catch(() => {});
 
     clearBadges();
-    // построчные бейджи: матчим видимые DOM-строки с грузами (DAT — по resultId, TS — parseRow)
-    (adapter.anchor ? adapter.anchor(loads) : []).forEach((p) => badgeRow(p.anchor || p.row, p.load));
+    // построчные бейджи: матчим видимые DOM-строки с грузами (DAT — по resultId, TS — parseRow).
+    // При hintsOff бейджи не рисуем (подсказки скрыты на этой вкладке).
+    if (!hintsOff) {
+      (adapter.anchor ? adapter.anchor(loads) : []).forEach((p) => badgeRow(p.anchor || p.row, p.load));
+    }
 
-    if (panelCollapsed) {
+    if (panelCollapsed || hintsOff) {
       const p = document.getElementById("ll-panel"); if (p) p.remove();
       showFab();
       return;
@@ -816,6 +833,7 @@
         if (sortPref) pendingSortReapply = true;
       }
     } catch { /* нет sessionStorage */ }
+    try { if (typeof LLTAB !== "undefined") hintsOff = LLTAB.getHintsOff(sessionStorage); } catch (_) { /* нет sessionStorage */ }
     // парк водителей диспетчера (если залогинен); активный — per-device выбор
     if (typeof LLAPI !== "undefined" && typeof LLDRV !== "undefined") {
       try {
