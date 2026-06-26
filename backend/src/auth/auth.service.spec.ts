@@ -1,4 +1,4 @@
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 
@@ -13,11 +13,15 @@ describe('AuthService', () => {
       findOne: jest.fn(({ where: { email } }) => Promise.resolve(users[email] ?? null)),
       create: jest.fn((data) => {
         if (users[data.email]) return Promise.reject(new Error('unique'));
-        users[data.email] = { id: 'u-' + data.email, plan: 'free', ...data };
+        users[data.email] = { id: 'u-' + data.email, plan: 'free', role: 'user', blocked: false, ...data };
         return Promise.resolve(users[data.email]);
       }),
       findByPk: jest.fn((id) =>
         Promise.resolve(Object.values(users).find((u: any) => u.id === id) ?? null)),
+      update: jest.fn((vals, { where: { email } }) => {
+        if (users[email]) Object.assign(users[email], vals);
+        return Promise.resolve([1]);
+      }),
     };
     service = new AuthService(userModel, jwt);
   });
@@ -55,5 +59,25 @@ describe('AuthService', () => {
     const res = await service.refresh(refreshToken);
     expect(res.accessToken).toBeTruthy();
     expect(jwt.verify(res.accessToken)).toMatchObject({ type: 'access' });
+  });
+
+  it('login: email из ADMIN_EMAIL -> апгрейд role=admin', async () => {
+    process.env.ADMIN_EMAIL = 'a@b.md';
+    await service.register('a@b.md', 'password1');
+    await service.login('a@b.md', 'password1');
+    expect(users['a@b.md'].role).toBe('admin');
+    delete process.env.ADMIN_EMAIL;
+  });
+
+  it('login: blocked юзер -> ForbiddenException', async () => {
+    await service.register('a@b.md', 'password1');
+    users['a@b.md'].blocked = true;
+    await expect(service.login('a@b.md', 'password1')).rejects.toThrow(ForbiddenException);
+  });
+
+  it('refresh: blocked юзер -> ForbiddenException', async () => {
+    const { refreshToken } = await service.register('a@b.md', 'password1');
+    users['a@b.md'].blocked = true;
+    await expect(service.refresh(refreshToken)).rejects.toThrow(ForbiddenException);
   });
 });

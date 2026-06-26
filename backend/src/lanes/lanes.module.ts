@@ -7,5 +7,6 @@ import { CommonAuthModule } from '../common/common-auth.module';
   imports: [CommonAuthModule],
   controllers: [LanesController],
   providers: [LanesService],
+  exports: [LanesService],
 })
 export class LanesModule {}

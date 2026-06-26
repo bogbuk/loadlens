@@ -46,7 +46,8 @@ backend/src/                NestJS, synchronize:true (миграций нет)
   drivers/                  GET/POST/PATCH/DELETE /drivers — парк водителей диспетчера (JwtAuthGuard, скоуп userId, каскад от users)
   telegram/                 link/status/unlink/alerts (Jwt[+Pro]) + notify (релей green-грузов→Telegram DM) + webhook/:secret (/start привязка chat_id). alert_sends — дедуп(TTL)+soft-cap. Фича-флаг = TELEGRAM_BOT_TOKEN
   rates/                    GET /rates — дизель EIA (фолбэк $3.95 без EIA_API_KEY; read — Premium-гард)
-  auth/ users/              register/login/refresh/me, DELETE /users/me (hard-delete + каскад водителей), PATCH /admin/users/:email/plan
+  auth/ users/              register/login/refresh/me, DELETE /users/me (hard-delete + каскад водителей)
+                            admin/* (JwtAuthGuard+AdminRoleGuard, role из ADMIN_EMAIL): GET users/stats, PATCH users/:email/plan|block. Страница /admin.html
   shared/markets.seed.json  ★ копия seed для Docker-контекста backend/ (генерит sync:shared)
 shared/                     КАНОН: load.model.js, scoring.js, planner.js, markets.seed.json, hos-calculator.js
 ```
@@ -170,7 +171,7 @@ coolify --context yoolip999 app deployments list hiooby9kgzj8i79ycl33drec
 # env (новый деплой подхватывает только свежий): app env sync <uuid> --file .env --is-literal ; затем push
 ```
 
-Env в Coolify: `DATABASE_URL`, `JWT_SECRET`, `ADMIN_KEY`, `PORT`. Опц. `EIA_API_KEY` (без него дизель =
+Env в Coolify: `DATABASE_URL`, `JWT_SECRET`, `ADMIN_EMAIL` (список email админов через запятую), `PORT`. Опц. `EIA_API_KEY` (без него дизель =
 фолбэк $3.95), `OSRM_URL` (дефолт публичный OSRM), `API_KEYS` (список валидных X-API-Key через запятую
 для Premium-чтения; пусто → читает только Pro-JWT). Для Telegram-алертов: `TELEGRAM_BOT_TOKEN` +
 `TELEGRAM_BOT_USERNAME` (deep-link) + `TELEGRAM_WEBHOOK_SECRET` (без них фича выключена). После деплоя
