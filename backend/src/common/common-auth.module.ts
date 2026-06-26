@@ -11,6 +11,9 @@ import { PremiumReadGuard } from './premium-read.guard';
     JwtModule.register({ secret: process.env.JWT_SECRET || 'dev-secret' }),
   ],
   providers: [PremiumReadGuard],
-  exports: [PremiumReadGuard],
+  // Экспортируем не только гард, но и SequelizeModule (UserRepository) + JwtModule (JwtService):
+  // при @UseGuards(PremiumReadGuard) Nest резолвит зависимости гарда в контексте потребляющего
+  // модуля, поэтому его deps должны быть доступны там (как в UsersModule/DriversModule).
+  exports: [PremiumReadGuard, SequelizeModule, JwtModule],
 })
 export class CommonAuthModule {}
