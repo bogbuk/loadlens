@@ -38,14 +38,14 @@ extension/                  MV3-расширение (грузит vendor/* → 
   popup.*                   настройки водителя (cost/mile, HOS-часы) + аккаунт + секция «Парк» (CRUD водителей) + секция «Telegram-уведомления» (Pro)
   vendor/                   ★ АВТОКОПИИ из shared/ (load.model, scoring, planner, markets.seed). `npm run sync:shared`
 backend/src/                NestJS, synchronize:true (миграций нет)
-  loads/                    POST /loads — ingest+upsert; GET /loads?origin=&equipment= — крауд-грузы рынка (onward-плечи цепочек, без PII)
-  lanes/                    GET /lanes/:o/:d — median RPM по lane (чистый SQL-агрегат)
-  markets/                  GET /markets/:m/strength — сила рынка (крауд-плотность + seed-фолбэк)
-  geo/                      GET /geo/distance — OSRM-прокси + кэш lane_distances + haversine
-  brokers/                  POST /brokers/reports (crowd-отзыв, upsert client_id+mc) + GET /brokers/:mc/reputation
+  loads/                    POST /loads — ingest+upsert; GET /loads?origin=&equipment= — крауд-грузы рынка (onward-плечи цепочек, без PII; read — Premium-гард)
+  lanes/                    GET /lanes/:o/:d — median RPM по lane (чистый SQL-агрегат; read — Premium-гард)
+  markets/                  GET /markets/:m/strength — сила рынка (read — Premium-гард: API-KEY/Pro-JWT)
+  geo/                      GET /geo/distance — OSRM-прокси + кэш lane_distances + haversine (read — Premium-гард)
+  brokers/                  POST /brokers/reports (crowd-отзыв, upsert client_id+mc) + GET /brokers/:mc/reputation (read — Premium-гард)
   drivers/                  GET/POST/PATCH/DELETE /drivers — парк водителей диспетчера (JwtAuthGuard, скоуп userId, каскад от users)
   telegram/                 link/status/unlink/alerts (Jwt[+Pro]) + notify (релей green-грузов→Telegram DM) + webhook/:secret (/start привязка chat_id). alert_sends — дедуп(TTL)+soft-cap. Фича-флаг = TELEGRAM_BOT_TOKEN
-  rates/                    GET /rates — дизель EIA (фолбэк $3.95 без EIA_API_KEY)
+  rates/                    GET /rates — дизель EIA (фолбэк $3.95 без EIA_API_KEY; read — Premium-гард)
   auth/ users/              register/login/refresh/me, DELETE /users/me (hard-delete + каскад водителей), PATCH /admin/users/:email/plan
   shared/markets.seed.json  ★ копия seed для Docker-контекста backend/ (генерит sync:shared)
 shared/                     КАНОН: load.model.js, scoring.js, planner.js, markets.seed.json, hos-calculator.js
@@ -107,6 +107,12 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   flaked/double_brokered), upsert по `client_id+mc` (один вердикт на юзера → нет накрутки), агрегат
   `deriveLevel` → good/mixed/bad/thin. Чётвертый (clickable) чип в полосе + меню отзыва. MC нормализуем
   к цифрам (`normalizeMc`). Поверх DAT-кредита — это network-effect moat.
+- **Premium-гейт чтения** (`backend/src/common/premium-read.guard.ts` + `common-auth.module.ts`):
+  read-эндпоинты (`lanes`/`markets`/`geo`/`rates`/`loads` GET/`brokers` GET reputation) отдают
+  крауд-данные только при валидном `X-API-Key` (ENV-список `API_KEYS`, через запятую) ИЛИ Pro-JWT
+  (`plan==='pro'`); иначе 403. POST-инжест (`POST /loads`, `POST /brokers/reports`) — открыт (крауд
+  пополняется от всех). Расширение шлёт `Authorization: Bearer` на read-вызовах; Free/аноним → 403 →
+  локальный скоринг без крауд-данных. Ключи только в ENV, реальные значения не коммитить.
 - **Парк водителей** (`backend/drivers` + `extension/drivers.js`): диспетчер ведёт несколько
   водителей (имя/рынок/HOS/equipment/costPerMile/homeBase/status), профили на бэкенде под JWT
   (скоуп `userId`, каскад от users). **Гейт Pro** (`drivers/pro.guard.ts` — `JwtAuthGuard, ProGuard`):
@@ -165,7 +171,8 @@ coolify --context yoolip999 app deployments list hiooby9kgzj8i79ycl33drec
 ```
 
 Env в Coolify: `DATABASE_URL`, `JWT_SECRET`, `ADMIN_KEY`, `PORT`. Опц. `EIA_API_KEY` (без него дизель =
-фолбэк $3.95), `OSRM_URL` (дефолт публичный OSRM). Для Telegram-алертов: `TELEGRAM_BOT_TOKEN` +
+фолбэк $3.95), `OSRM_URL` (дефолт публичный OSRM), `API_KEYS` (список валидных X-API-Key через запятую
+для Premium-чтения; пусто → читает только Pro-JWT). Для Telegram-алертов: `TELEGRAM_BOT_TOKEN` +
 `TELEGRAM_BOT_USERNAME` (deep-link) + `TELEGRAM_WEBHOOK_SECRET` (без них фича выключена). После деплоя
 один раз зарегистрировать вебхук: `setWebhook` на `https://loadlens.krait.studio/api/v1/telegram/webhook/<secret>`.
 
