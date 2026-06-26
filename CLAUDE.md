@@ -40,7 +40,7 @@ extension/                  MV3-расширение (грузит vendor/* → 
 backend/src/                NestJS, synchronize:true (миграций нет)
   loads/                    POST /loads — ingest+upsert; GET /loads?origin=&equipment= — крауд-грузы рынка (onward-плечи цепочек, без PII; read — Premium-гард)
   lanes/                    GET /lanes/:o/:d — median RPM по lane (чистый SQL-агрегат; read — Premium-гард)
-  markets/                  GET /markets/:m/strength — сила рынка (read — Premium-гард: API-KEY/Pro-JWT)
+  markets/                  GET /markets/:m/strength — сила рынка (крауд-плотность + seed-фолбэк; read — Premium-гард: API-KEY/Pro-JWT)
   geo/                      GET /geo/distance — OSRM-прокси + кэш lane_distances + haversine (read — Premium-гард)
   brokers/                  POST /brokers/reports (crowd-отзыв, upsert client_id+mc) + GET /brokers/:mc/reputation (read — Premium-гард)
   drivers/                  GET/POST/PATCH/DELETE /drivers — парк водителей диспетчера (JwtAuthGuard, скоуп userId, каскад от users)
