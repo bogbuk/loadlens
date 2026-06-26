@@ -1,9 +1,11 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { LanesService } from './lanes.service';
+import { PremiumReadGuard } from '../common/premium-read.guard';
 
 // Чтения не троттлим: расширение шлёт GET /lanes на каждую видимую lane страницы.
 @SkipThrottle()
+@UseGuards(PremiumReadGuard)
 @Controller('lanes')
 export class LanesController {
   constructor(private readonly service: LanesService) {}

@@ -1,7 +1,8 @@
-import { BadRequestException, Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { LoadsService } from './loads.service';
 import { IngestLoadsDto } from './dto/ingest.dto';
+import { PremiumReadGuard } from '../common/premium-read.guard';
 
 @Controller('loads')
 export class LoadsController {
@@ -14,6 +15,7 @@ export class LoadsController {
 
   // Neighborhood грузов (рынок + соседи в радиусе) для цепочек + delta-poll живой свежести.
   @SkipThrottle()
+  @UseGuards(PremiumReadGuard)
   @Get('near')
   near(
     @Query('market') market?: string,
@@ -31,6 +33,7 @@ export class LoadsController {
 
   // Крауд-грузы из рынка отправления — для onward-плеч планировщика. Чтения не троттлим.
   @SkipThrottle()
+  @UseGuards(PremiumReadGuard)
   @Get()
   byOrigin(@Query('origin') origin?: string, @Query('equipment') equipment?: string, @Query('limit') limit?: string) {
     if (!origin) throw new BadRequestException('origin обязателен');

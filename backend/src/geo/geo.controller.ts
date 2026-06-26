@@ -1,8 +1,10 @@
-import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { GeoService } from './geo.service';
+import { PremiumReadGuard } from '../common/premium-read.guard';
 
 @SkipThrottle()
+@UseGuards(PremiumReadGuard)
 @Controller('geo')
 export class GeoController {
   constructor(private readonly service: GeoService) {}
