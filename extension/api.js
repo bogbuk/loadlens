@@ -46,7 +46,7 @@ const LLAPI = (() => {
   async function getLane(origin, dest, equipment) {
     try {
       const q = equipment ? `?equipment=${encodeURIComponent(equipment)}` : "";
-      const res = await fetch(`${BASE}/lanes/${encodeURIComponent(origin)}/${encodeURIComponent(dest)}${q}`);
+      const res = await fetch(`${BASE}/lanes/${encodeURIComponent(origin)}/${encodeURIComponent(dest)}${q}`, { headers: await authHeader() });
       return res.ok ? res.json() : null;
     } catch { return null; }
   }
@@ -55,7 +55,7 @@ const LLAPI = (() => {
   async function getLoadsByOrigin(market, equipment) {
     try {
       const q = equipment ? `&equipment=${encodeURIComponent(equipment)}` : "";
-      const res = await fetch(`${BASE}/loads?origin=${encodeURIComponent(market)}${q}`);
+      const res = await fetch(`${BASE}/loads?origin=${encodeURIComponent(market)}${q}`, { headers: await authHeader() });
       return res.ok ? res.json() : [];
     } catch { return []; }
   }
@@ -66,14 +66,14 @@ const LLAPI = (() => {
       const q = new URLSearchParams({ market });
       if (equipment) q.set("equipment", equipment);
       if (since) q.set("since", since);
-      const res = await fetch(`${BASE}/loads/near?${q.toString()}`);
+      const res = await fetch(`${BASE}/loads/near?${q.toString()}`, { headers: await authHeader() });
       return res.ok ? res.json() : null;
     } catch { return null; }
   }
 
   async function getBrokerReputation(mc) {
     try {
-      const res = await fetch(`${BASE}/brokers/${encodeURIComponent(mc)}/reputation`);
+      const res = await fetch(`${BASE}/brokers/${encodeURIComponent(mc)}/reputation`, { headers: await authHeader() });
       return res.ok ? res.json() : null;
     } catch { return null; }
   }
@@ -92,14 +92,14 @@ const LLAPI = (() => {
 
   async function getMarket(market) {
     try {
-      const res = await fetch(`${BASE}/markets/${encodeURIComponent(market)}/strength`);
+      const res = await fetch(`${BASE}/markets/${encodeURIComponent(market)}/strength`, { headers: await authHeader() });
       return res.ok ? res.json() : null;
     } catch { return null; }
   }
 
   async function getDistance(from, to) {
     try {
-      const res = await fetch(`${BASE}/geo/distance?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+      const res = await fetch(`${BASE}/geo/distance?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, { headers: await authHeader() });
       return res.ok ? res.json() : null;
     } catch { return null; }
   }
@@ -113,7 +113,7 @@ const LLAPI = (() => {
     try {
       const { ll_diesel } = await chrome.storage.local.get("ll_diesel");
       if (ll_diesel && now - ll_diesel.ts < DIESEL_TTL) { _diesel = ll_diesel.price; _dieselTs = ll_diesel.ts; return _diesel; }
-      const res = await fetch(`${BASE}/rates`);
+      const res = await fetch(`${BASE}/rates`, { headers: await authHeader() });
       if (!res.ok) throw new Error("bad");
       const data = await res.json();
       const price = data && data.dieselPrice ? data.dieselPrice : FALLBACK_DIESEL;
@@ -127,6 +127,12 @@ const LLAPI = (() => {
   async function getAuth() { return (await chrome.storage.local.get("ll_auth")).ll_auth || null; }
   async function setAuth(a) { await chrome.storage.local.set({ ll_auth: a }); }
   async function logout() { await chrome.storage.local.remove("ll_auth"); }
+
+  // Bearer для read-вызовов: Premium-чтение требует Pro-JWT. Не залогинен → пустой заголовок → 403 → фолбэк.
+  async function authHeader() {
+    const a = await getAuth();
+    return a && a.accessToken ? { Authorization: `Bearer ${a.accessToken}` } : {};
+  }
 
   async function credsCall(path, email, password) {
     const res = await fetch(`${BASE}/auth/${path}`, {
