@@ -26,7 +26,8 @@ async function bootstrap() {
   // Bootstrap админов из ADMIN_EMAIL (идемпотентно): уже существующие юзеры получают role=admin.
   const adminEmails = parseAdminEmails(process.env.ADMIN_EMAIL);
   if (adminEmails.length)
-    await sequelize.query("UPDATE users SET role='admin' WHERE email IN (:emails)", {
+    // blocked НЕ повышаем: иначе «заблокированный админ» не залогинится и его нельзя разблокировать из панели.
+    await sequelize.query("UPDATE users SET role='admin' WHERE email IN (:emails) AND blocked = false", {
       replacements: { emails: adminEmails },
     });
   app.setGlobalPrefix('api/v1', { exclude: ['healthz'] });
