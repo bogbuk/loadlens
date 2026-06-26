@@ -1,6 +1,7 @@
-import { BadRequestException, Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { LoadsService } from './loads.service';
+import { PartnerApiKeyGuard } from '../auth/partner-api-key.guard';
 import { IngestLoadsDto } from './dto/ingest.dto';
 
 @Controller('loads')
@@ -10,6 +11,23 @@ export class LoadsController {
   @Post()
   ingest(@Body() dto: IngestLoadsDto) {
     return this.service.ingest(dto);
+  }
+
+  // Partner TMS endpoint — guarded by API key, returns PartnerLoad[]
+  @SkipThrottle()
+  @UseGuards(PartnerApiKeyGuard)
+  @Get('partner')
+  partner(
+    @Query('origin') origin?: string,
+    @Query('dest') dest?: string,
+    @Query('equipment') equipment?: string,
+    @Query('limit') limit?: string,
+  ) {
+    if (!origin) throw new BadRequestException('origin обязателен');
+    return this.service.partnerSearch(origin, {
+      dest, equipment,
+      limit: limit && Number.isFinite(parseInt(limit, 10)) ? parseInt(limit, 10) : undefined,
+    });
   }
 
   // Neighborhood грузов (рынок + соседи в радиусе) для цепочек + delta-poll живой свежести.
