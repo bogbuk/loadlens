@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LoadLens — админ-панель</title>
+  <style>
+    :root { --blue:#1d4ed8; --ink:#0f1720; --mut:#64748b; --line:#e2e8f0; --bg:#f8fafc; --red:#991b1b; --green:#166534; }
+    * { box-sizing: border-box; }
+    body { font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink);
+           max-width: 1040px; margin: 0 auto; padding: 32px 16px 64px; background: #fff; }
+    h1 { margin: 0 0 4px; font-size: 24px; } h1 b { color: var(--blue); }
+    .sub { color: var(--mut); font-size: 13px; }
+    .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .spacer { flex: 1; }
+    input, button { font: inherit; }
+    input[type=text], input[type=email], input[type=password] {
+      padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+    button { padding: 7px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); cursor: pointer; }
+    button.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+    button.danger { color: var(--red); }
+    button:disabled { opacity: .5; cursor: default; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin: 20px 0; }
+    .card { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: var(--bg); }
+    .card b { display: block; font-size: 24px; line-height: 1.1; }
+    .card span { color: var(--mut); font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    th { color: var(--mut); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .3px; }
+    .badge { display: inline-block; padding: 1px 7px; border-radius: 6px; font-size: 12px; font-weight: 700; }
+    .badge.admin { background: #eef2ff; color: var(--blue); }
+    .badge.pro { background: #ecfdf5; color: var(--green); }
+    .badge.blocked { background: #fef2f2; color: var(--red); }
+    .err { color: var(--red); font-size: 13px; min-height: 18px; }
+    #login { max-width: 360px; margin: 48px auto; display: grid; gap: 10px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div id="login">
+    <h1>Load<b>Lens</b> · админ</h1>
+    <input id="email" type="email" placeholder="email" autocomplete="username" />
+    <input id="password" type="password" placeholder="пароль" autocomplete="current-password" />
+    <button class="primary" id="loginBtn">Войти</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="row">
+      <h1>Load<b>Lens</b> · админ</h1>
+      <div class="spacer"></div>
+      <span class="sub" id="who"></span>
+      <button id="logoutBtn">Выйти</button>
+    </div>
+    <div class="cards" id="cards"></div>
+    <div class="row">
+      <input id="search" type="text" placeholder="поиск по email…" />
+      <button id="refreshBtn">Обновить</button>
+      <div class="err" id="appErr"></div>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Email</th><th>Роль</th><th>План</th><th>Статус</th><th>TG</th><th>Алерты</th><th>Создан</th><th></th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const API = '/api/v1';
+    const $ = (id) => document.getElementById(id);
+    const tok = {
+      get a() { return localStorage.getItem('ll_admin_at'); },
+      get r() { return localStorage.getItem('ll_admin_rt'); },
+      set(at, rt) { localStorage.setItem('ll_admin_at', at); localStorage.setItem('ll_admin_rt', rt); },
+      clear() { localStorage.removeItem('ll_admin_at'); localStorage.removeItem('ll_admin_rt'); },
+    };
+
+    async function api(path, opts = {}, retry = true) {
+      const res = await fetch(API + path, {
+        ...opts,
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok.a, ...(opts.headers || {}) },
+      });
+      if (res.status === 401 && retry && tok.r) {
+        const ok = await tryRefresh();
+        if (ok) return api(path, opts, false);
+      }
+      if (res.status === 401 || res.status === 403) {
+        const e = new Error(res.status === 403 ? 'нет прав администратора' : 'сессия истекла');
+        e.code = res.status; throw e;
+      }
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || 'ошибка');
+      return res.json();
+    }
+
+    async function tryRefresh() {
+      try {
+        const res = await fetch(API + '/auth/refresh', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: tok.r }),
+        });
+        if (!res.ok) return false;
+        const d = await res.json();
+        tok.set(d.accessToken, d.refreshToken);
+        return true;
+      } catch { return false; }
+    }
+
+    function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('ru-RU') : '—'; }
+    function money(n) { return n == null ? '—' : '$' + Number(n).toFixed(2); }
+
+    async function loadAll() {
+      $('appErr').textContent = '';
+      try {
+        const [stats, users] = await Promise.all([
+          api('/admin/stats'),
+          api('/admin/users' + ($('search').value ? '?q=' + encodeURIComponent($('search').value) : '')),
+        ]);
+        renderCards(stats); renderRows(users);
+        showApp();
+      } catch (e) {
+        if (e.code === 401) return logout();
+        $('appErr').textContent = e.message;
+        if (e.code === 403) { renderCards({}); renderRows([]); showApp(); }
+      }
+    }
+
+    function renderCards(s) {
+      $('cards').innerHTML = [
+        ['Пользователей', s.users ?? '—'], ['Pro', s.proUsers ?? '—'], ['Заблокировано', s.blockedUsers ?? '—'],
+        ['Грузов (7д)', s.loads ?? '—'], ['Lane', s.lanes ?? '—'], ['Рынков', s.markets ?? '—'],
+        ['Медиана RPM', s.medianRpm != null ? money(s.medianRpm) + '/mi' : '—'],
+      ].map(([l, v]) => `<div class="card"><b>${v}</b><span>${l}</span></div>`).join('');
+    }
+
+    function renderRows(users) {
+      $('rows').innerHTML = '';
+      for (const u of users) {
+        const tr = document.createElement('tr');
+        const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        tr.innerHTML = `
+          <td>${esc(u.email)}</td>
+          <td>${u.role === 'admin' ? '<span class="badge admin">admin</span>' : 'user'}</td>
+          <td>${u.plan === 'pro' ? '<span class="badge pro">pro</span>' : 'free'}</td>
+          <td>${u.blocked ? '<span class="badge blocked">blocked</span>' : 'active'}</td>
+          <td>${u.telegramLinked ? '✓' : '—'}</td>
+          <td>${u.alertsEnabled ? '✓' : '—'}</td>
+          <td>${fmtDate(u.createdAt)}</td>
+          <td class="row"></td>`;
+        const actions = tr.querySelector('td.row');
+        const planBtn = document.createElement('button');
+        planBtn.textContent = u.plan === 'pro' ? '→ free' : '→ pro';
+        planBtn.onclick = () => act(() => api('/admin/users/' + encodeURIComponent(u.email) + '/plan',
+          { method: 'PATCH', body: JSON.stringify({ plan: u.plan === 'pro' ? 'free' : 'pro' }) }));
+        actions.appendChild(planBtn);
+        if (u.role !== 'admin') {
+          const blockBtn = document.createElement('button');
+          blockBtn.className = u.blocked ? '' : 'danger';
+          blockBtn.textContent = u.blocked ? 'разблок.' : 'блок';
+          blockBtn.onclick = () => act(() => api('/admin/users/' + encodeURIComponent(u.email) + '/block',
+            { method: 'PATCH', body: JSON.stringify({ blocked: !u.blocked }) }));
+          actions.appendChild(blockBtn);
+        }
+        $('rows').appendChild(tr);
+      }
+    }
+
+    async function act(fn) {
+      try { await fn(); await loadAll(); }
+      catch (e) { $('appErr').textContent = e.message; if (e.code === 401) logout(); }
+    }
+
+    function showApp() { $('login').classList.add('hidden'); $('app').classList.remove('hidden'); $('who').textContent = $('email').value || ''; }
+    function showLogin() { $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
+    function logout() { tok.clear(); showLogin(); }
+
+    $('loginBtn').onclick = async () => {
+      $('loginErr').textContent = '';
+      try {
+        const res = await fetch(API + '/auth/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: $('email').value, password: $('password').value }),
+        });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || 'не удалось войти');
+        const d = await res.json();
+        tok.set(d.accessToken, d.refreshToken);
+        await loadAll();
+      } catch (e) { $('loginErr').textContent = e.message; }
+    };
+    $('logoutBtn').onclick = logout;
+    $('refreshBtn').onclick = loadAll;
+    $('search').addEventListener('keydown', (e) => { if (e.key === 'Enter') loadAll(); });
+
+    // автологин по сохранённому токену
+    if (tok.a) loadAll(); else showLogin();
+  </script>
+</body>
+</html>
