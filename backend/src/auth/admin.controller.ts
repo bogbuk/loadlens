@@ -1,26 +1,31 @@
-import { Body, Controller, NotFoundException, Param, Patch, UseGuards } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { IsIn } from 'class-validator';
-import { User } from '../users/user.model';
-import { AdminGuard } from './admin.guard';
+import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { AdminRoleGuard } from './admin-role.guard';
+import { AdminService } from './admin.service';
+import { SetBlockedDto, SetPlanDto } from './dto/admin.dto';
 
-class SetPlanDto {
-  @IsIn(['free', 'pro'])
-  plan: 'free' | 'pro';
-}
-
-@Controller('admin/users')
-@UseGuards(AdminGuard)
+@Controller('admin')
+@UseGuards(JwtAuthGuard, AdminRoleGuard)
 export class AdminController {
-  constructor(@InjectModel(User) private readonly userModel: typeof User) {}
+  constructor(private readonly service: AdminService) {}
 
-  @Patch(':email/plan')
-  async setPlan(@Param('email') emailRaw: string, @Body() dto: SetPlanDto) {
-    const email = emailRaw.trim().toLowerCase();
-    const user = await this.userModel.findOne({ where: { email } });
-    if (!user) throw new NotFoundException('пользователь не найден');
-    user.plan = dto.plan;
-    await user.save();
-    return { email: user.email, plan: user.plan };
+  @Get('users')
+  users(@Query('q') q?: string) {
+    return this.service.listUsers(q);
+  }
+
+  @Get('stats')
+  stats() {
+    return this.service.stats();
+  }
+
+  @Patch('users/:email/plan')
+  setPlan(@Param('email') email: string, @Body() dto: SetPlanDto) {
+    return this.service.setPlan(email, dto.plan);
+  }
+
+  @Patch('users/:email/block')
+  setBlocked(@Param('email') email: string, @Body() dto: SetBlockedDto) {
+    return this.service.setBlocked(email, dto.blocked);
   }
 }

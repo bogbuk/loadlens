@@ -5,5 +5,6 @@ import { LanesController } from './lanes.controller';
 @Module({
   controllers: [LanesController],
   providers: [LanesService],
+  exports: [LanesService],
 })
 export class LanesModule {}
