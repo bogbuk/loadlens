@@ -39,7 +39,7 @@ extension/                  MV3-расширение (грузит vendor/* → 
   vendor/                   ★ АВТОКОПИИ из shared/ (load.model, scoring, planner, markets.seed). `npm run sync:shared`
 backend/src/                NestJS, synchronize:true (миграций нет)
   loads/                    POST /loads — ingest+upsert; GET /loads?origin=&equipment= — крауд-грузы рынка (onward-плечи цепочек, без PII; read — Premium-гард)
-  lanes/                    GET /lanes/:o/:d — median RPM по lane (чистый SQL-агрегат; read — Premium-гард)
+  lanes/                    GET /lanes — топ-lane'ов + сводка (публичный, для дашборда); GET /lanes/:o/:d — median RPM по lane (read — Premium-гард)
   markets/                  GET /markets/:m/strength — сила рынка (крауд-плотность + seed-фолбэк; read — Premium-гард: API-KEY/Pro-JWT)
   geo/                      GET /geo/distance — OSRM-прокси + кэш lane_distances + haversine (read — Premium-гард)
   brokers/                  POST /brokers/reports (crowd-отзыв, upsert client_id+mc) + GET /brokers/:mc/reputation (read — Premium-гард)
@@ -108,7 +108,7 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   `deriveLevel` → good/mixed/bad/thin. Чётвертый (clickable) чип в полосе + меню отзыва. MC нормализуем
   к цифрам (`normalizeMc`). Поверх DAT-кредита — это network-effect moat.
 - **Premium-гейт чтения** (`backend/src/common/premium-read.guard.ts` + `common-auth.module.ts`):
-  read-эндпоинты (`lanes`/`markets`/`geo`/`rates`/`loads` GET/`brokers` GET reputation) отдают
+  read-эндпоинты (`lanes/:o/:d`/`markets`/`geo`/`rates`/`loads` GET/`brokers` GET reputation) отдают
   крауд-данные только при валидном `X-API-Key` (ENV-список `API_KEYS`, через запятую) ИЛИ Pro-JWT
   (`plan==='pro'`); иначе 403. POST-инжест (`POST /loads`, `POST /brokers/reports`) — открыт (крауд
   пополняется от всех). Расширение шлёт `Authorization: Bearer` на read-вызовах; Free/аноним → 403 →

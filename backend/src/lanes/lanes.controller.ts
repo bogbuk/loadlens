@@ -5,12 +5,11 @@ import { PremiumReadGuard } from '../common/premium-read.guard';
 
 // Чтения не троттлим: расширение шлёт GET /lanes на каждую видимую lane страницы.
 @SkipThrottle()
-@UseGuards(PremiumReadGuard)
 @Controller('lanes')
 export class LanesController {
   constructor(private readonly service: LanesService) {}
 
-  // Список топ-lane'ов + сводка — для живого дашборда на /.
+  // Список топ-lane'ов + сводка — для живого дашборда на /. Публичный.
   @Get()
   async list(@Query('limit') limit?: string) {
     const [summary, lanes] = await Promise.all([
@@ -20,6 +19,7 @@ export class LanesController {
     return { summary, lanes };
   }
 
+  @UseGuards(PremiumReadGuard)
   @Get(':origin/:dest')
   lane(
     @Param('origin') origin: string,
