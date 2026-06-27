@@ -2,6 +2,11 @@
 
 All notable user-facing changes to the LoadLens browser extension.
 
+## 0.3.2 — 2026-06-27
+
+### New
+- **Change your password from the popup.** The account section now has a "Сменить пароль" button that opens an inline form (current password + new password). Requires your current password; the new one must be at least 8 characters and different from the old.
+
 ## 0.3.1 — 2026-06-24
 
 ### Fixed
