@@ -15,6 +15,6 @@ import { ProGuard } from '../drivers/pro.guard';
   ],
   controllers: [TelegramController],
   providers: [TelegramService, JwtAuthGuard, ProGuard],
-  exports: [SequelizeModule],
+  exports: [SequelizeModule, TelegramService],
 })
 export class TelegramModule {}

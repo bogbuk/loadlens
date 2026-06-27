@@ -145,6 +145,11 @@ export class TelegramService {
     return { ok: true };
   }
 
+  // Публичная обёртка над низкоуровневой отправкой (для DM из других сервисов, напр. код сброса пароля).
+  async sendMessageTo(chatId: string, text: string): Promise<boolean> {
+    return this.send(chatId, text);
+  }
+
   // Низкоуровневая отправка в Telegram. true при успехе. Изолирована для подмены в тестах.
   protected async send(chatId: string, text: string): Promise<boolean> {
     if (!this.token) return false;

@@ -143,3 +143,20 @@ describe('TelegramService.handleWebhook', () => {
     expect(send).toHaveBeenCalled();
   });
 });
+
+describe('TelegramService.sendMessageTo', () => {
+  class TestTg extends TelegramService {
+    sent: Array<{ chatId: string; text: string }> = [];
+    protected async send(chatId: string, text: string): Promise<boolean> {
+      this.sent.push({ chatId, text });
+      return true;
+    }
+  }
+
+  it('делегирует в protected send и возвращает его результат', async () => {
+    const tg = new TestTg({} as any, {} as any);
+    const ok = await tg.sendMessageTo('chat-1', 'привет');
+    expect(ok).toBe(true);
+    expect(tg.sent).toEqual([{ chatId: 'chat-1', text: 'привет' }]);
+  });
+});
