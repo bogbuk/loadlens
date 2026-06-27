@@ -10,9 +10,10 @@ import { NotifyDto } from './dto/notify.dto';
 export class TelegramController {
   constructor(private readonly service: TelegramService) {}
 
-  // Привязка/настройка — под аккаунтом, Pro-гейт (как парк).
+  // Привязка — под аккаунтом, БЕЗ Pro: Telegram нужен и для сброса пароля (forgot/reset),
+  // а это базовая функция. Pro-гейт остаётся только на алертах (alerts/notify).
   @Post('link')
-  @UseGuards(JwtAuthGuard, ProGuard)
+  @UseGuards(JwtAuthGuard)
   link(@Req() req: any) { return this.service.link(req.user.userId); }
 
   @Get('status')
