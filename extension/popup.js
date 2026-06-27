@@ -125,6 +125,7 @@ function accForm(err) {
     '<input id="acc-pass" type="password" placeholder="пароль (мин. 8)" autocomplete="current-password">' +
     '<div class="err">' + escA(err || "") + "</div>" +
     '<div class="btns"><button id="acc-in">Войти</button><button id="acc-reg">Регистрация</button></div>' +
+    '<div class="note"><button id="acc-forgot" class="linkbtn">Забыл пароль?</button></div>' +
     '<div class="note">Pro: полные 3-плечевые get-out цепочки + CSV-экспорт грузов.</div></div>';
   const go = (fn) => async () => {
     const email = document.getElementById("acc-email").value.trim();
@@ -134,6 +135,46 @@ function accForm(err) {
   };
   document.getElementById("acc-in").onclick = go(LLAPI.login);
   document.getElementById("acc-reg").onclick = go(LLAPI.register);
+  document.getElementById("acc-forgot").onclick = () => resetForm(document.getElementById("acc-email").value.trim());
+}
+
+// Шаг 1 сброса: ввод email → запрос кода. Контент статический.
+function resetForm(prefillEmail) {
+  accEl.innerHTML = '<div class="acc"><h4>Сброс пароля</h4>' +
+    '<input id="rst-email" type="email" placeholder="email" autocomplete="username">' +
+    '<div class="err" id="rst-err"></div>' +
+    '<div class="btns"><button id="rst-send">Отправить код</button><button id="rst-cancel">Назад</button></div>' +
+    '<div class="note">Если аккаунт привязан к Telegram, код придёт в бот.</div></div>';
+  document.getElementById("rst-email").value = prefillEmail || "";
+  document.getElementById("rst-cancel").onclick = () => accForm();
+  document.getElementById("rst-send").onclick = async () => {
+    const email = document.getElementById("rst-email").value.trim();
+    const err = document.getElementById("rst-err");
+    if (!email) { err.textContent = "введите email"; return; }
+    err.textContent = "";
+    try { await LLAPI.forgotPassword(email); resetCodeForm(email); }
+    catch (e) { err.textContent = e.message; }
+  };
+}
+
+// Шаг 2 сброса: код из Telegram + новый пароль.
+function resetCodeForm(email) {
+  accEl.innerHTML = '<div class="acc"><h4>Введите код</h4>' +
+    '<input id="rst-code" type="text" placeholder="код из Telegram" autocomplete="one-time-code">' +
+    '<input id="rst-new" type="password" placeholder="новый пароль (мин. 8)" autocomplete="new-password">' +
+    '<div class="err" id="rst-err2"></div>' +
+    '<div class="btns"><button id="rst-do">Сбросить</button><button id="rst-back">Назад</button></div></div>';
+  document.getElementById("rst-back").onclick = () => resetForm(email);
+  document.getElementById("rst-do").onclick = async () => {
+    const code = document.getElementById("rst-code").value.trim();
+    const neu = document.getElementById("rst-new").value;
+    const err = document.getElementById("rst-err2");
+    if (!code) { err.textContent = "введите код"; return; }
+    if (neu.length < 8) { err.textContent = "минимум 8 символов"; return; }
+    err.textContent = "";
+    try { await LLAPI.resetPassword(code, neu); accForm("Пароль сброшен, войдите."); }
+    catch (e) { err.textContent = e.message; }
+  };
 }
 
 // Инлайн-форма смены пароля (toggle внутри секции аккаунта). Контент статический — без подстановки данных юзера.

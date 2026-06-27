@@ -2,6 +2,11 @@
 
 All notable user-facing changes to the LoadLens browser extension.
 
+## 0.3.3 — 2026-06-27
+
+### New
+- **Reset a forgotten password from the popup.** A "Забыл пароль?" link on the sign-in screen sends a one-time code to your linked Telegram bot; enter the code and a new password to regain access. Works for accounts that have linked Telegram.
+
 ## 0.3.2 — 2026-06-27
 
 ### New

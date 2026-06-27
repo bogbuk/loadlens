@@ -278,9 +278,31 @@ const LLAPI = (() => {
     return { ok: true };
   }
 
+  async function forgotPassword(email) {
+    const res = await fetch(`${BASE}/auth/forgot`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.message || `ошибка ${res.status}`); }
+    return { ok: true };
+  }
+
+  async function resetPassword(token, newPassword) {
+    const res = await fetch(`${BASE}/auth/reset`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, newPassword }),
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      const m = d.message || `ошибка ${res.status}`;
+      throw new Error(Array.isArray(m) ? m.join(", ") : m);
+    }
+    return { ok: true };
+  }
+
   return { sanitizeLoad, clientId, sendLoads, getLane, getMarket, getDistance, getDiesel,
            getLoadsByOrigin, getLoadsNear, getBrokerReputation, reportBroker, register, login, logout, getMe,
-           getDrivers, createDriver, updateDriver, deleteDriver, deleteAccount, changePassword,
+           getDrivers, createDriver, updateDriver, deleteDriver, deleteAccount, changePassword, forgotPassword, resetPassword,
            telegramStatus, telegramLink, telegramAlerts, telegramUnlink, notifyAlerts };
 })();
 
