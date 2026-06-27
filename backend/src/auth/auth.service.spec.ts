@@ -1,19 +1,35 @@
-import { ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
+import { sha256 } from './reset-code';
 
 describe('AuthService', () => {
   let service: AuthService;
   let users: Record<string, any>;
   const jwt = new JwtService({ secret: 'test-secret' });
 
+  let telegram: { sendMessageTo: jest.Mock };
+
   beforeEach(() => {
     users = {};
+    telegram = { sendMessageTo: jest.fn(() => Promise.resolve(true)) };
     const userModel: any = {
-      findOne: jest.fn(({ where: { email } }) => Promise.resolve(users[email] ?? null)),
+      findOne: jest.fn(({ where }) => {
+        if (where.email) return Promise.resolve(users[where.email] ?? null);
+        if (where.passwordResetTokenHash)
+          return Promise.resolve(
+            Object.values(users).find((u: any) => u.passwordResetTokenHash === where.passwordResetTokenHash) ?? null,
+          );
+        return Promise.resolve(null);
+      }),
       create: jest.fn((data) => {
         if (users[data.email]) return Promise.reject(new Error('unique'));
-        users[data.email] = { id: 'u-' + data.email, plan: 'free', role: 'user', blocked: false, ...data };
+        users[data.email] = {
+          id: 'u-' + data.email, plan: 'free', role: 'user', blocked: false,
+          telegramChatId: null, passwordResetTokenHash: null, passwordResetExpires: null,
+          save: jest.fn(function (this: any) { return Promise.resolve(this); }),
+          ...data,
+        };
         return Promise.resolve(users[data.email]);
       }),
       findByPk: jest.fn((id) =>
@@ -23,7 +39,7 @@ describe('AuthService', () => {
         return Promise.resolve([1]);
       }),
     };
-    service = new AuthService(userModel, jwt);
+    service = new AuthService(userModel, jwt, telegram as any);
   });
 
   it('register: хеширует пароль и возвращает токены без hash', async () => {
@@ -79,5 +95,57 @@ describe('AuthService', () => {
     const { refreshToken } = await service.register('a@b.md', 'password1');
     users['a@b.md'].blocked = true;
     await expect(service.refresh(refreshToken)).rejects.toThrow(ForbiddenException);
+  });
+
+  it('forgot: привязанный Telegram → код отправлен, поля записаны, {ok:true}', async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'x';
+    await service.register('a@b.md', 'password1');
+    users['a@b.md'].telegramChatId = 'chat-1';
+    const res = await service.forgot('A@B.md');
+    expect(res).toEqual({ ok: true });
+    expect(telegram.sendMessageTo).toHaveBeenCalledWith('chat-1', expect.stringContaining('Код сброса пароля'));
+    expect(users['a@b.md'].passwordResetTokenHash).toBeTruthy();
+    expect(Number(users['a@b.md'].passwordResetExpires)).toBeGreaterThan(Date.now());
+    delete process.env.TELEGRAM_BOT_TOKEN;
+  });
+
+  it('forgot: нет привязки Telegram → не шлёт, всё равно {ok:true}', async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'x';
+    await service.register('a@b.md', 'password1');
+    const res = await service.forgot('a@b.md');
+    expect(res).toEqual({ ok: true });
+    expect(telegram.sendMessageTo).not.toHaveBeenCalled();
+    delete process.env.TELEGRAM_BOT_TOKEN;
+  });
+
+  it('forgot: нет юзера → не шлёт, {ok:true}', async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'x';
+    const res = await service.forgot('nobody@b.md');
+    expect(res).toEqual({ ok: true });
+    expect(telegram.sendMessageTo).not.toHaveBeenCalled();
+    delete process.env.TELEGRAM_BOT_TOKEN;
+  });
+
+  it('reset: валидный код → меняет пароль, чистит reset-поля', async () => {
+    await service.register('a@b.md', 'password1');
+    const before = users['a@b.md'].passwordHash;
+    users['a@b.md'].passwordResetTokenHash = sha256('CODE1234');
+    users['a@b.md'].passwordResetExpires = Date.now() + 60000;
+    const res = await service.reset('CODE1234', 'new-password');
+    expect(res).toEqual({ ok: true });
+    expect(users['a@b.md'].passwordHash).not.toBe(before);
+    expect(users['a@b.md'].passwordResetTokenHash).toBeNull();
+    expect(users['a@b.md'].passwordResetExpires).toBeNull();
+  });
+
+  it('reset: неизвестный код → BadRequestException', async () => {
+    await expect(service.reset('NOPE0000', 'new-password')).rejects.toThrow(BadRequestException);
+  });
+
+  it('reset: истёкший код → BadRequestException', async () => {
+    await service.register('a@b.md', 'password1');
+    users['a@b.md'].passwordResetTokenHash = sha256('CODE1234');
+    users['a@b.md'].passwordResetExpires = Date.now() - 1000;
+    await expect(service.reset('CODE1234', 'new-password')).rejects.toThrow(BadRequestException);
   });
 });

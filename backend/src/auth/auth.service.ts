@@ -1,9 +1,11 @@
-import { ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { User } from '../users/user.model';
 import { parseAdminEmails } from './admin-emails';
+import { TelegramService } from '../telegram/telegram.service';
+import { genResetCode, sha256 } from './reset-code';
 
 const ACCESS_TTL = '15m';
 const REFRESH_TTL = '7d';
@@ -13,6 +15,7 @@ export class AuthService {
   constructor(
     @InjectModel(User) private readonly userModel: typeof User,
     private readonly jwt: JwtService,
+    private readonly telegram: TelegramService,
   ) {}
 
   private async tokens(userId: string) {
@@ -62,5 +65,34 @@ export class AuthService {
     const user = await this.userModel.findByPk(userId);
     if (!user) throw new UnauthorizedException('пользователь не найден');
     return this.publicUser(user);
+  }
+
+  // Сброс пароля: шлём код в Telegram, если привязан. Ответ всегда одинаковый (без enumeration).
+  async forgot(emailRaw: string) {
+    const email = emailRaw.trim().toLowerCase();
+    const user = await this.userModel.findOne({ where: { email } });
+    if (user && user.telegramChatId && process.env.TELEGRAM_BOT_TOKEN) {
+      const code = genResetCode();
+      user.passwordResetTokenHash = sha256(code);
+      user.passwordResetExpires = Date.now() + 30 * 60 * 1000;
+      await user.save();
+      await this.telegram.sendMessageTo(
+        user.telegramChatId,
+        `Код сброса пароля LoadLens: ${code}\nДействует 30 минут. Если вы не запрашивали сброс — игнорируйте.`,
+      );
+    }
+    return { ok: true };
+  }
+
+  async reset(token: string, newPassword: string) {
+    const hash = sha256(token.trim());
+    const user = await this.userModel.findOne({ where: { passwordResetTokenHash: hash } });
+    if (!user || user.passwordResetExpires == null || Number(user.passwordResetExpires) < Date.now())
+      throw new BadRequestException('недействительный или истёкший код');
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    user.passwordResetTokenHash = null;
+    user.passwordResetExpires = null;
+    await user.save();
+    return { ok: true };
   }
 }
