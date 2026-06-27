@@ -31,4 +31,11 @@ export class User extends Model {
 
   @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false, field: 'alerts_enabled' })
   alertsEnabled: boolean;
+
+  // Сброс пароля: sha256 одноразового кода (не плейн) + epoch ms истечения (TTL 30 мин).
+  @Column({ type: DataType.TEXT, allowNull: true, field: 'password_reset_token_hash' })
+  passwordResetTokenHash: string | null;
+
+  @Column({ type: DataType.BIGINT, allowNull: true, field: 'password_reset_expires' })
+  passwordResetExpires: number | null;
 }
