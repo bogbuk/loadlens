@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
@@ -12,6 +12,8 @@ const REFRESH_TTL = '7d';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectModel(User) private readonly userModel: typeof User,
     private readonly jwt: JwtService,
@@ -81,7 +83,10 @@ export class AuthService {
           user.telegramChatId,
           `Код сброса пароля LoadLens: ${code}\nДействует 30 минут. Если вы не запрашивали сброс — игнорируйте.`,
         );
-      } catch { /* доставка не критична — пользователь может повторить запрос */ }
+      } catch (e) {
+        // Доставка не критична — пользователь может повторить запрос. Логируем для ops.
+        this.logger.warn(`не удалось отправить код сброса в Telegram: ${(e as Error)?.message ?? e}`);
+      }
     }
     return { ok: true };
   }
