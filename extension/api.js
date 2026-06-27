@@ -265,9 +265,22 @@ const LLAPI = (() => {
     return { ok: true };
   }
 
+  // Смена своего пароля. Серверное сообщение об ошибке (400 — неверный текущий / новый = старый) пробрасываем как есть.
+  async function changePassword(currentPassword, newPassword) {
+    const res = await authedFetch("/users/me/password", {
+      method: "PATCH",
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    if (!res || !res.ok) {
+      const msg = res ? ((await res.json().catch(() => ({}))).message || `ошибка ${res.status}`) : "нужен вход в аккаунт";
+      throw new Error(Array.isArray(msg) ? msg.join(", ") : msg);
+    }
+    return { ok: true };
+  }
+
   return { sanitizeLoad, clientId, sendLoads, getLane, getMarket, getDistance, getDiesel,
            getLoadsByOrigin, getLoadsNear, getBrokerReputation, reportBroker, register, login, logout, getMe,
-           getDrivers, createDriver, updateDriver, deleteDriver, deleteAccount,
+           getDrivers, createDriver, updateDriver, deleteDriver, deleteAccount, changePassword,
            telegramStatus, telegramLink, telegramAlerts, telegramUnlink, notifyAlerts };
 })();
 

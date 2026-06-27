@@ -107,8 +107,11 @@ function accRow(user) {
   accEl.innerHTML = '<div class="acc"><div class="who"><span>' + escA(user.email) +
     '</span><span class="plan ' + (user.plan === "pro" ? "pro" : "") + '">' +
     (user.plan === "pro" ? "PRO" : "FREE") + "</span></div>" +
+    '<button id="acc-pwd-btn">Сменить пароль</button>' +
+    '<div id="acc-pwd"></div>' +
     '<button id="acc-out">Выйти</button>' +
     '<button id="acc-del" class="danger">Удалить аккаунт</button></div>';
+  document.getElementById("acc-pwd-btn").onclick = () => pwdForm(document.getElementById("acc-pwd"));
   document.getElementById("acc-out").onclick = async () => { await LLAPI.logout(); accForm(); renderFleet(null); renderTelegram(null); };
   document.getElementById("acc-del").onclick = async () => {
     if (!confirm("Удалить аккаунт безвозвратно? Профиль и все водители будут удалены. Активную подписку DAT/Truckstop это не отменяет.")) return;
@@ -131,6 +134,29 @@ function accForm(err) {
   };
   document.getElementById("acc-in").onclick = go(LLAPI.login);
   document.getElementById("acc-reg").onclick = go(LLAPI.register);
+}
+
+// Инлайн-форма смены пароля (toggle внутри секции аккаунта). Контент статический — без подстановки данных юзера.
+function pwdForm(box) {
+  if (box.dataset.open === "1") { box.dataset.open = "0"; box.innerHTML = ""; return; }
+  box.dataset.open = "1";
+  box.innerHTML =
+    '<input id="acc-cur" type="password" placeholder="текущий пароль" autocomplete="current-password">' +
+    '<input id="acc-new" type="password" placeholder="новый пароль (мин. 8)" autocomplete="new-password">' +
+    '<div class="err" id="acc-pwd-err"></div>' +
+    '<div class="btns"><button id="acc-pwd-save">Сохранить</button></div>';
+  document.getElementById("acc-pwd-save").onclick = async () => {
+    const cur = document.getElementById("acc-cur").value;
+    const neu = document.getElementById("acc-new").value;
+    const err = document.getElementById("acc-pwd-err");
+    if (cur.length < 8 || neu.length < 8) { err.textContent = "минимум 8 символов"; return; }
+    err.textContent = "";
+    try {
+      await LLAPI.changePassword(cur, neu);
+      box.dataset.open = "0";
+      box.innerHTML = '<div class="note">Пароль изменён.</div>';
+    } catch (e) { err.textContent = e.message; }
+  };
 }
 
 // ---- парк водителей (виден залогиненному диспетчеру) ----
