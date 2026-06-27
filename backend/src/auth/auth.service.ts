@@ -76,10 +76,12 @@ export class AuthService {
       user.passwordResetTokenHash = sha256(code);
       user.passwordResetExpires = Date.now() + 30 * 60 * 1000;
       await user.save();
-      await this.telegram.sendMessageTo(
-        user.telegramChatId,
-        `Код сброса пароля LoadLens: ${code}\nДействует 30 минут. Если вы не запрашивали сброс — игнорируйте.`,
-      );
+      try {
+        await this.telegram.sendMessageTo(
+          user.telegramChatId,
+          `Код сброса пароля LoadLens: ${code}\nДействует 30 минут. Если вы не запрашивали сброс — игнорируйте.`,
+        );
+      } catch { /* доставка не критична — пользователь может повторить запрос */ }
     }
     return { ok: true };
   }

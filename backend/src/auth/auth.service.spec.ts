@@ -126,6 +126,16 @@ describe('AuthService', () => {
     delete process.env.TELEGRAM_BOT_TOKEN;
   });
 
+  it('forgot: ошибка отправки в Telegram не ломает ответ ({ok:true})', async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'x';
+    await service.register('a@b.md', 'password1');
+    users['a@b.md'].telegramChatId = 'chat-1';
+    telegram.sendMessageTo.mockRejectedValueOnce(new Error('tg down'));
+    const res = await service.forgot('a@b.md');
+    expect(res).toEqual({ ok: true });
+    delete process.env.TELEGRAM_BOT_TOKEN;
+  });
+
   it('reset: валидный код → меняет пароль, чистит reset-поля', async () => {
     await service.register('a@b.md', 'password1');
     const before = users['a@b.md'].passwordHash;
