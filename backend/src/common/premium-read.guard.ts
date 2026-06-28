@@ -23,10 +23,15 @@ export class PremiumReadGuard implements CanActivate {
     const [scheme, token] = String(req.headers.authorization ?? '').split(' ');
     if (scheme === 'Bearer' && token) {
       try {
-        const payload: { sub: string; type: string } = await this.jwt.verifyAsync(token);
+        const payload: { sub: string; type: string; tv?: number } = await this.jwt.verifyAsync(token);
         if (payload.type === 'access') {
           const user = await this.users.findByPk(payload.sub);
-          if (user && user.plan === 'pro') {
+          if (
+            user &&
+            user.plan === 'pro' &&
+            !user.blocked &&
+            (payload.tv ?? 0) === user.tokenVersion
+          ) {
             req.user = { userId: payload.sub };
             return true;
           }

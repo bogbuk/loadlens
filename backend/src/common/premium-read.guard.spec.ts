@@ -25,10 +25,47 @@ describe('PremiumReadGuard', () => {
 
   it('Pro-JWT без ключа → пропуск, req.user выставлен', async () => {
     const req: any = { headers: { authorization: 'Bearer t' } };
-    const g = new PremiumReadGuard(usersWith({ plan: 'pro' }), jwtVerifying({ sub: 'u1', type: 'access' }));
+    const g = new PremiumReadGuard(usersWith({ plan: 'pro', tokenVersion: 0, blocked: false }), jwtVerifying({ sub: 'u1', type: 'access' }));
     const c: any = { switchToHttp: () => ({ getRequest: () => req }) };
     await expect(g.canActivate(c)).resolves.toBe(true);
     expect(req.user).toEqual({ userId: 'u1' });
+  });
+
+  // --- tv + blocked (инвалидация сессий на read-эндпоинтах) ---
+
+  it('Pro-JWT: tv в токене не совпадает с tokenVersion в БД → 403', async () => {
+    const g = new PremiumReadGuard(
+      usersWith({ plan: 'pro', tokenVersion: 3, blocked: false }),
+      jwtVerifying({ sub: 'u1', type: 'access', tv: 2 }),
+    );
+    await expect(g.canActivate(ctx({ authorization: 'Bearer t' }))).rejects.toThrow(ForbiddenException);
+  });
+
+  it('Pro-JWT: юзер заблокирован (blocked:true) → 403', async () => {
+    const g = new PremiumReadGuard(
+      usersWith({ plan: 'pro', tokenVersion: 1, blocked: true }),
+      jwtVerifying({ sub: 'u1', type: 'access', tv: 1 }),
+    );
+    await expect(g.canActivate(ctx({ authorization: 'Bearer t' }))).rejects.toThrow(ForbiddenException);
+  });
+
+  it('Pro-JWT: tv совпадает, не blocked, pro → пропуск (регресс happy-path)', async () => {
+    const req: any = { headers: { authorization: 'Bearer t' } };
+    const g = new PremiumReadGuard(
+      usersWith({ plan: 'pro', tokenVersion: 5, blocked: false }),
+      jwtVerifying({ sub: 'u1', type: 'access', tv: 5 }),
+    );
+    const c: any = { switchToHttp: () => ({ getRequest: () => req }) };
+    await expect(g.canActivate(c)).resolves.toBe(true);
+    expect(req.user).toEqual({ userId: 'u1' });
+  });
+
+  it('Pro-JWT: токен без tv при tokenVersion=0 → обратная совместимость, пропуск', async () => {
+    const g = new PremiumReadGuard(
+      usersWith({ plan: 'pro', tokenVersion: 0, blocked: false }),
+      jwtVerifying({ sub: 'u1', type: 'access' }),
+    );
+    await expect(g.canActivate(ctx({ authorization: 'Bearer t' }))).resolves.toBe(true);
   });
 
   it('access-JWT, но план не pro → 403', async () => {
