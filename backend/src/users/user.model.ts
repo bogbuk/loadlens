@@ -38,4 +38,8 @@ export class User extends Model {
 
   @Column({ type: DataType.BIGINT, allowNull: true, field: 'password_reset_expires' })
   passwordResetExpires: number | null;
+
+  // Версия сессий: инкремент инвалидирует все ранее выпущенные токены (смена/сброс пароля).
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0, field: 'token_version' })
+  tokenVersion: number;
 }

@@ -20,10 +20,11 @@ export class AuthService {
     private readonly telegram: TelegramService,
   ) {}
 
-  private async tokens(userId: string) {
+  private async tokens(user: User) {
+    const base = { sub: user.id, tv: user.tokenVersion };
     return {
-      accessToken: await this.jwt.signAsync({ sub: userId, type: 'access' }, { expiresIn: ACCESS_TTL }),
-      refreshToken: await this.jwt.signAsync({ sub: userId, type: 'refresh' }, { expiresIn: REFRESH_TTL }),
+      accessToken: await this.jwt.signAsync({ ...base, type: 'access' }, { expiresIn: ACCESS_TTL }),
+      refreshToken: await this.jwt.signAsync({ ...base, type: 'refresh' }, { expiresIn: REFRESH_TTL }),
     };
   }
 
@@ -35,7 +36,7 @@ export class AuthService {
       throw new ConflictException('email уже зарегистрирован');
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await this.userModel.create({ email, passwordHash });
-    return { ...(await this.tokens(user.id)), user: this.publicUser(user) };
+    return { ...(await this.tokens(user)), user: this.publicUser(user) };
   }
 
   async login(emailRaw: string, password: string) {
@@ -49,18 +50,19 @@ export class AuthService {
       user.role = 'admin';
       await this.userModel.update({ role: 'admin' }, { where: { email } });
     }
-    return { ...(await this.tokens(user.id)), user: this.publicUser(user) };
+    return { ...(await this.tokens(user)), user: this.publicUser(user) };
   }
 
   async refresh(refreshToken: string) {
-    let payload: { sub: string; type: string };
+    let payload: { sub: string; type: string; tv?: number };
     try { payload = await this.jwt.verifyAsync(refreshToken); }
     catch { throw new UnauthorizedException('невалидный refresh-токен'); }
     if (payload.type !== 'refresh') throw new UnauthorizedException('ожидался refresh-токен');
     const user = await this.userModel.findByPk(payload.sub);
     if (!user) throw new UnauthorizedException('пользователь не найден');
     if (user.blocked) throw new ForbiddenException('аккаунт заблокирован');
-    return { ...(await this.tokens(user.id)), user: this.publicUser(user) };
+    if ((payload.tv ?? 0) !== user.tokenVersion) throw new UnauthorizedException('сессия недействительна');
+    return { ...(await this.tokens(user)), user: this.publicUser(user) };
   }
 
   async me(userId: string) {

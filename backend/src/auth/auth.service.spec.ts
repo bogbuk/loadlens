@@ -26,7 +26,7 @@ describe('AuthService', () => {
         if (users[data.email]) return Promise.reject(new Error('unique'));
         users[data.email] = {
           id: 'u-' + data.email, plan: 'free', role: 'user', blocked: false,
-          telegramChatId: null, passwordResetTokenHash: null, passwordResetExpires: null,
+          telegramChatId: null, passwordResetTokenHash: null, passwordResetExpires: null, tokenVersion: 0,
           save: jest.fn(function (this: any) { return Promise.resolve(this); }),
           ...data,
         };
@@ -157,5 +157,23 @@ describe('AuthService', () => {
     users['a@b.md'].passwordResetTokenHash = sha256('CODE1234');
     users['a@b.md'].passwordResetExpires = Date.now() - 1000;
     await expect(service.reset('CODE1234', 'new-password')).rejects.toThrow(BadRequestException);
+  });
+
+  it('login: access-токен несёт tv текущей версии', async () => {
+    await service.register('a@b.md', 'password1');
+    const { accessToken } = await service.login('a@b.md', 'password1');
+    expect(jwt.verify(accessToken)).toMatchObject({ type: 'access', tv: 0 });
+  });
+
+  it('refresh: устаревший tv → UnauthorizedException', async () => {
+    const { refreshToken } = await service.register('a@b.md', 'password1');
+    users['a@b.md'].tokenVersion = 1;          // версия выросла после выпуска токена
+    await expect(service.refresh(refreshToken)).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('refresh: совпадающий tv → новая пара токенов', async () => {
+    const { refreshToken } = await service.register('a@b.md', 'password1');
+    const res = await service.refresh(refreshToken);
+    expect(res.accessToken).toBeTruthy();
   });
 });
