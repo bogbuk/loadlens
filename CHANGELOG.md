@@ -2,6 +2,11 @@
 
 All notable user-facing changes to the LoadLens browser extension.
 
+## 0.3.4 — 2026-06-28
+
+### Changed
+- **Changing your password now signs you out everywhere.** After a successful password change you're returned to the sign-in screen and must log in again with the new password — old sessions on other devices stop working immediately.
+
 ## 0.3.3 — 2026-06-27
 
 ### New

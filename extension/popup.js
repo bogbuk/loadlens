@@ -194,8 +194,10 @@ function pwdForm(box) {
     err.textContent = "";
     try {
       await LLAPI.changePassword(cur, neu);
-      box.dataset.open = "0";
-      box.innerHTML = '<div class="note">Пароль изменён.</div>';
+      // Смена пароля инвалидирует все сессии (включая текущую) — выходим и просим войти заново.
+      await LLAPI.logout();
+      accForm("Пароль изменён, войдите снова.");
+      renderFleet(null); renderTelegram(null);
     } catch (e) { err.textContent = e.message; }
   };
 }

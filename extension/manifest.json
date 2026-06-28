@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LoadLens — скоринг грузов для DAT One / Truckstop",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Показывает выгодность каждого груза ($/милю с учётом deadhead, топлива и рынка lane).",
   "permissions": ["storage"],
   "host_permissions": [
