@@ -11,6 +11,7 @@ describe('UsersService', () => {
     user = {
       id: 'u1',
       passwordHash: await bcrypt.hash('old-password', 10),
+      tokenVersion: 0,
       save: jest.fn(function (this: any) { return Promise.resolve(this); }),
     };
     userModel = {
@@ -38,6 +39,11 @@ describe('UsersService', () => {
     expect(user.passwordHash).not.toBe(before);
     expect(user.passwordHash).not.toBe('new-password');
     expect(await bcrypt.compare('new-password', user.passwordHash)).toBe(true);
+  });
+
+  it('changePassword: инкрементит tokenVersion (инвалидация сессий)', async () => {
+    await service.changePassword('u1', 'old-password', 'new-password');
+    expect(user.tokenVersion).toBe(1);
   });
 
   it('deleteMe: вызывает destroy и возвращает { ok: true }', async () => {

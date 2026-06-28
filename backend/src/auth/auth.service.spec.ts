@@ -146,6 +146,7 @@ describe('AuthService', () => {
     expect(users['a@b.md'].passwordHash).not.toBe(before);
     expect(users['a@b.md'].passwordResetTokenHash).toBeNull();
     expect(users['a@b.md'].passwordResetExpires).toBeNull();
+    expect(users['a@b.md'].tokenVersion).toBe(1);
   });
 
   it('reset: неизвестный код → BadRequestException', async () => {

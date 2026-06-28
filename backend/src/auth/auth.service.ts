@@ -101,6 +101,7 @@ export class AuthService {
     user.passwordHash = await bcrypt.hash(newPassword, 10);
     user.passwordResetTokenHash = null;
     user.passwordResetExpires = null;
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1; // инвалидируем все сессии
     await user.save();
     return { ok: true };
   }

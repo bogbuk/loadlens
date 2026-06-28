@@ -16,6 +16,7 @@ export class UsersService {
     if (newPassword === currentPassword)
       throw new BadRequestException('новый пароль совпадает со старым');
     user.passwordHash = await bcrypt.hash(newPassword, 10);
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1; // инвалидируем все сессии (включая текущую)
     await user.save();
     return { ok: true };
   }
