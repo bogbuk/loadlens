@@ -12,7 +12,7 @@ const fixture = JSON.parse(
 
 test("parseFindLoads: маппит результаты в unified Load с lane groupKey", () => {
   const loads = DAT_GQL.parseFindLoads(fixture);
-  assert.strictEqual(loads.length, 2);
+  assert.strictEqual(loads.length, 3);
   const a = loads[0];
   assert.strictEqual(a.board, "dat");
   assert.strictEqual(a.loadId, "POST-AAA-1");
@@ -64,6 +64,45 @@ test("поля детали: comments, availability, rateBasis, контакты
   // load 2 — bookable PER_MILE с bookingUrl
   assert.strictEqual(b.rateBasis, "PER_MILE");
   assert.strictEqual(b.bookingUrl, "https://example.test/book");
+});
+
+test("реальная форма: comments-массив → строка, contactMethods/assurable/tia/servicedWhen", () => {
+  const c = DAT_GQL.parseFindLoads(fixture)[2];
+  assert.strictEqual(c.loadId, "POST-CCC-3");
+  // comments приходит МАССИВом — нормализуем в строку через " · "
+  assert.strictEqual(c.comments, "TWIC CARD NEEDED - RATE ALL IN - PU AND DEL FCFS · Load Id:11174602");
+  assert.strictEqual(c.isAssurable, true);
+  assert.strictEqual(c.hasTiaMembership, true);
+  assert.strictEqual(c.creditAsOf, "2026-05-01");
+  assert.strictEqual(c.servicedWhen, "2026-06-29T20:04:21.689Z");
+  assert.strictEqual(c.postingExpiresWhen, "2026-07-03T21:44:17.225Z");
+  assert.strictEqual(c.brokerCity, "Tomball");
+  assert.strictEqual(c.brokerState, "TX");
+  assert.strictEqual(c.preferredContactMethod, "PRIMARY_PHONE");
+  // equipment: гранулярный код DAT "DD" → группа K (подтверждено: поиск classes:["K"]); raw сохранён
+  assert.strictEqual(c.equipment, "K");
+  assert.strictEqual(c.equipmentCode, "DD");
+  assert.strictEqual(c.groupKey, "dat|NEW_YORK_NY>NASHWAUK_MN|K");
+  assert.strictEqual(c.fullPartial, "FULL");
+  assert.strictEqual(c.tripMethod, "ROAD");
+  assert.strictEqual(c.destDeadheadMiles, 12);
+  assert.strictEqual(c.carrierMc, "MC-166960");
+  assert.strictEqual(c.combinedOfficeId, 21143);
+  assert.strictEqual(c.bidCount, 0);
+  // legacy contact.* пустой → берём из contactMethods[] (фолбэк)
+  assert.strictEqual(c.contactPhone, "5550001111");
+  assert.strictEqual(c.contactEmail, "ops@example-hh.test");
+  assert.strictEqual(c.contact, "ops@example-hh.test"); // email приоритетнее phone для PII-поля
+  assert.ok(Array.isArray(c.contactMethods) && c.contactMethods.length === 2);
+});
+
+test("contactMethods/contact-PII режутся sanitizeLoad, бизнес-поля остаются", () => {
+  const LLAPI = require("../api.js");
+  const clean = LLAPI.sanitizeLoad(DAT_GQL.parseFindLoads(fixture)[2]);
+  assert.strictEqual(clean.contact, undefined);
+  assert.strictEqual(clean.contactMethods, undefined);
+  assert.strictEqual(clean.contactEmail, undefined);
+  assert.strictEqual(clean.contactPhone, undefined);
 });
 
 test("isFindLoadsResponse распознаёт ответ; мусор → []", () => {

@@ -69,6 +69,48 @@
               "contact": { "email": "dispatch@example-ls.test", "phone": { "countryCode": "1", "number": "5559876543" } },
               "credit": { "creditScore": 78, "daysToPay": 35, "asOf": "2026-06-11" }
             }
+          },
+          {
+            "__typename": "FreightSearchV4FindLoadsResult",
+            "_comment": "Реальная форма ответа: comments-МАССИВ, contactMethods, isAssurable, hasTiaMembership, servicedWhen, email только в contactMethods (фолбэк).",
+            "resultId": "L.c297a.0.0.SEARCHID+POSTCCC3",
+            "isActive": true,
+            "assetInfo": {
+              "postingId": "POST-CCC-3",
+              "equipmentType": "DD",
+              "origin": { "city": "New York", "stateProv": "NY", "latitude": 40.7, "longitude": -74 },
+              "destination": { "city": "Nashwauk", "stateProv": "MN", "latitude": 47.38, "longitude": -93.17 },
+              "capacity": { "fullPartial": "FULL", "maximumLengthFeet": 53, "maximumWeightPounds": 42000 }
+            },
+            "tripLength": { "miles": 1363, "method": "ROAD" },
+            "originDeadheadMiles": null,
+            "destinationDeadheadMiles": { "miles": 12, "method": "ROAD" },
+            "combinedOfficeId": 21143,
+            "presentationDate": "2026-06-30",
+            "bids": [],
+            "estimatedRatePerMile": 3.5,
+            "isFactorable": true,
+            "isAssurable": true,
+            "isNegotiable": false,
+            "isFromPrivateNetwork": false,
+            "servicedWhen": "2026-06-29T20:04:21.689Z",
+            "postingExpiresWhen": "2026-07-03T21:44:17.225Z",
+            "comments": ["TWIC CARD NEEDED - RATE ALL IN - PU AND DEL FCFS", "Load Id:11174602"],
+            "availability": { "earliestWhen": "2026-06-30", "latestWhen": "2026-07-03" },
+            "rateInfo": { "bookable": null, "nonBookable": { "rateUsd": 4770, "basis": "FLAT" } },
+            "posterDotIds": { "dotNumber": null, "brokerMcNumber": "MC-178439", "carrierMcNumber": "MC-166960" },
+            "posterInfo": {
+              "companyName": "Heavy Haul Co",
+              "city": "Tomball", "state": "TX",
+              "contact": { "email": null, "phone": null },
+              "contactMethods": [
+                { "method": "PRIMARY_PHONE", "value": { "countryCode": "1", "number": "5550001111", "__typename": "PhoneInfo" }, "__typename": "PosterContactMethod" },
+                { "method": "EMAIL", "value": { "emailAddress": "ops@example-hh.test", "__typename": "EmailInfo" }, "__typename": "PosterContactMethod" }
+              ],
+              "preferredContactMethod": "PRIMARY_PHONE",
+              "hasTiaMembership": true,
+              "credit": { "creditScore": 97, "daysToPay": 20, "asOf": "2026-05-01" }
+            }
           }
         ],
         "similarResults": []

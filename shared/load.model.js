@@ -43,10 +43,32 @@ const LLMODEL = (() => {
     "power only": "PO", po: "PO",
     hotshot: "HS", hs: "HS",
   };
+  // DAT One в ответе FindLoads отдаёт ГРАНУЛЯРНЫЙ код трейлера (DD, FD, RGN…), а не код группы
+  // (V/F/R/D/K…) и не длинное имя. Карта специфичный-код→группа. Аддитивна: консультируется ТОЛЬКО
+  // если код не нашёлся в EQUIP выше (поэтому SD/PO/HS и одиночные коды сохраняют прежнее поведение).
+  // DD→K ПОДТВЕРЖДЁН данными (поиск classes:["K"] вернул equipmentType "DD"); прочие — по таблице DAT.
+  // Пополняется по мере наблюдения реальных кодов в перехвате.
+  const DAT_EQUIP_GROUP = {
+    // Vans (Standard)
+    VA: "V", VW: "V", VR: "V", VI: "V", VH: "V", VL: "V", VB: "V", VP: "V", VT: "V", VM: "V", VV: "V", VF: "V", VG: "V", VC: "V", VZ: "V",
+    // Flatbeds
+    FA: "F", FD: "F", FT: "F", FM: "F", FO: "F", FC: "F", FS: "F", FH: "F", FR: "F", FN: "F", FZ: "F", FW: "F",
+    // Reefers
+    RF: "R", RA: "R", RV: "R", RM: "R", RH: "R", RL: "R", RZ: "R", RN: "R",
+    // Decks (Specialized → K): RGN/lowboy/maxi/double-drop
+    DD: "K", RGN: "K", LB: "K", LO: "K", LR: "K", MX: "K", DK: "K",
+    // Decks (Standard → D): step/drop deck
+    DT: "D", SR: "D",
+    // Conestoga / Containers / Tankers
+    CN: "N", CI: "C", CV: "C", CO: "C", TA: "T", TT: "T",
+  };
   function normEquipment(raw) {
     if (!raw) return "?";
     const k = String(raw).trim().toLowerCase();
-    return EQUIP[k] || String(raw).trim().toUpperCase().slice(0, 3);
+    if (EQUIP[k]) return EQUIP[k];
+    const up = String(raw).trim().toUpperCase();
+    if (DAT_EQUIP_GROUP[up]) return DAT_EQUIP_GROUP[up];
+    return up.slice(0, 3);
   }
 
   // rate: "$2,150" -> 2150, "$2150.00" -> 2150, "Call"/"" -> null

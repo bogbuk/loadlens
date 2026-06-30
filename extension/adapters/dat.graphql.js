@@ -24,6 +24,39 @@ const DAT_GQL = (() => {
 
   function point(p) { return p || {}; }
 
+  // comments в реальном ответе DAT — МАССИВ строк (в синтетике была строка). Нормализуем к строке.
+  function normComments(c) {
+    if (c == null) return null;
+    if (Array.isArray(c)) {
+      const s = c.map((x) => String(x).trim()).filter(Boolean).join(" · ");
+      return s || null;
+    }
+    const s = String(c).trim();
+    return s || null;
+  }
+
+  // poster.contactMethods[] → нормализованные email/phone (структурный канал контакта).
+  // Реальная схема: { method, value: { emailAddress | countryCode/extension/number } }.
+  // Это PII — НЕ уходит в крауд (sanitizeLoad режет), используется локально (карточка/preferred-канал).
+  function extractContacts(poster) {
+    const out = { email: null, phone: null, methods: [], preferred: poster.preferredContactMethod || null };
+    const list = Array.isArray(poster.contactMethods) ? poster.contactMethods : [];
+    for (const m of list) {
+      const v = (m && m.value) || {};
+      const type = String(v.__typename || "");
+      if (type === "EmailInfo" || v.emailAddress) {
+        const e = v.emailAddress || null;
+        if (e && !out.email) out.email = e;
+        out.methods.push({ method: m.method || "EMAIL", email: e });
+      } else if (type === "PhoneInfo" || v.number != null) {
+        const num = v.number != null ? String(v.number) : null;
+        if (num && !out.phone) out.phone = num;
+        out.methods.push({ method: m.method || "PHONE", phone: num });
+      }
+    }
+    return out;
+  }
+
   // один FreightSearchV4FindLoadsResult → unified Load (+ broker-trust поля)
   function mapResult(result) {
     if (!result || !result.assetInfo) return null;
@@ -36,6 +69,10 @@ const DAT_GQL = (() => {
     const ri = result.rateInfo || {};
     const contact = poster.contact || {};
     const phone = contact.phone || {};
+    // структурный contactMethods[] (новее legacy contact), с фолбэком на legacy contact.*
+    const cm = extractContacts(poster);
+    const email = contact.email || cm.email || null;
+    const phoneNum = (phone.number != null ? String(phone.number) : null) || cm.phone || null;
 
     const load = (typeof LLMODEL !== "undefined" ? LLMODEL.buildLoad : globalThis.LLMODEL.buildLoad)({
       loadId: a.postingId || result.resultId,
@@ -49,7 +86,7 @@ const DAT_GQL = (() => {
       lengthFt: cap.maximumLengthFeet,
       brokerMc: dot.brokerMcNumber || dot.carrierMcNumber || null,
       brokerName: poster.companyName,
-      contact: contact.email || (phone.number ? String(phone.number) : null), // PII → режется в sanitizeLoad
+      contact: email || phoneNum, // PII → режется в sanitizeLoad
     }, "dat");
     if (!load) return null;
 
@@ -58,21 +95,52 @@ const DAT_GQL = (() => {
     load.estimatedRatePerMile = result.estimatedRatePerMile ?? null;
     load.creditScore = credit.creditScore ?? null;
     load.daysToPay = credit.daysToPay ?? null;
+    load.creditAsOf = credit.asOf ?? null;              // дата актуальности кредит-данных
     load.isFactorable = !!result.isFactorable;
+    load.isAssurable = !!result.isAssurable;            // DAT Assurance (гарантия оплаты) — trust-сигнал
     load.isNegotiable = !!result.isNegotiable;
+    load.hasTiaMembership = !!poster.hasTiaMembership;  // членство в TIA — broker-trust сигнал
     load.fromPrivateNetwork = !!result.isFromPrivateNetwork;
+    load.servicedWhen = result.servicedWhen || null;          // когда пост был обновлён (свежесть)
+    load.postingExpiresWhen = result.postingExpiresWhen || null;
+    load.presentationDate = result.presentationDate || null;
+
+    // equipment: сохраняем СЫРОЙ гранулярный код DAT рядом с нормализованной группой (ничего не теряем)
+    load.equipmentCode = a.equipmentType || null;
+    load.fullPartial = cap.fullPartial || null;               // FULL / PARTIAL / BOTH
+    load.tripMethod = (result.tripLength && result.tripLength.method) || null; // ROAD / PCMILER
+    load.destDeadheadMiles = (result.destinationDeadheadMiles && result.destinationDeadheadMiles.miles) ?? null;
+
+    // идентификаторы постера/офиса (не PII) — для дедупа/идентичности брокера
+    load.dotNumber = dot.dotNumber ?? null;
+    load.carrierMc = dot.carrierMcNumber ?? null;
+    load.freightForwarderMc = dot.freightForwarderMcNumber ?? null;
+    load.combinedOfficeId = result.combinedOfficeId ?? null;
+    load.headquartersId = poster.headquartersId ?? null;
+    load.posterUserId = poster.userId ?? null;
+
+    // booking / конкуренция / обфускация
+    load.bidCount = Array.isArray(result.bids) ? result.bids.length : 0;
+    load.isObfuscated = !!result.isObfuscated;
+    load.redactionReasons = result.redactionReasons || null;
+    load.unmetPreferences = result.unmetPreferences || null;
 
     // поля для карточки детали (локально; contact-PII не уходит на сервер — sanitizeLoad его не берёт)
     const bk = ri.bookable || {};
     load.rateBasis = (bk.rate && bk.rate.basis) || (ri.nonBookable && ri.nonBookable.basis) || null;
     load.bookingUrl = bk.bookingUrl || null;
+    load.bookingMethod = bk.bookingMethod || null;            // BOOK_NOW / ...
     load.bookNow = !!(result.integrations && result.integrations.bookNow);
-    load.comments = result.comments || null;
+    load.comments = normComments(result.comments);
     load.availability = result.availability
       ? { earliest: result.availability.earliestWhen || null, latest: result.availability.latestWhen || null }
       : null;
-    load.contactEmail = contact.email || null;
-    load.contactPhone = phone.number != null ? String(phone.number) : null;
+    load.brokerCity = poster.city || null;
+    load.brokerState = poster.state || null;
+    load.contactEmail = email;
+    load.contactPhone = phoneNum;
+    load.preferredContactMethod = cm.preferred;        // PRIMARY_PHONE / EMAIL / ...
+    load.contactMethods = cm.methods.length ? cm.methods : null; // структурные каналы (PII, локально)
     return load;
   }
 
