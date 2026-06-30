@@ -144,10 +144,13 @@ const DAT_GQL = (() => {
     return load;
   }
 
-  // Полный ответ FindLoads → Load[] (results + similarResults). Толерантен к форме/ошибкам.
-  function parseFindLoads(json) {
+  // Полный ответ FindLoads → { loads, searchId, hasNext }. Толерантен к форме/ошибкам.
+  // searchId одинаков для всех страниц одного поиска (пагинация/fetchMore), меняется на новый поиск —
+  // это сигнал accumulate-vs-reset для авто-скролла (см. loads-accumulator.js). hasNext = есть курсор.
+  function parseFindLoadsResult(json) {
     const fl = json && json.data && json.data.freightSearchV4 && json.data.freightSearchV4.findLoads;
-    if (!fl || (fl.__typename && fl.__typename !== "FreightSearchV4FindLoadsSuccess")) return [];
+    if (!fl || (fl.__typename && fl.__typename !== "FreightSearchV4FindLoadsSuccess"))
+      return { loads: [], searchId: null, hasNext: false };
     const rows = []
       .concat(fl.results || [])
       .concat(fl.similarResults || []);
@@ -155,19 +158,22 @@ const DAT_GQL = (() => {
     for (const r of rows) {
       const load = mapResult(r);
       if (!load) continue;
-      if (seen.has(load.loadId)) continue;   // дедуп по postingId
+      if (seen.has(load.loadId)) continue;   // дедуп по postingId (внутри одного ответа)
       seen.add(load.loadId);
       out.push(load);
     }
-    return out;
+    return { loads: out, searchId: fl.searchId || null, hasNext: !!(fl.cursors && fl.cursors.next) };
   }
+
+  // Обратносовместимая обёртка: только Load[] (потребители, которым searchId не нужен).
+  function parseFindLoads(json) { return parseFindLoadsResult(json).loads; }
 
   // Это FindLoads-ответ? (для перехватчика сети)
   function isFindLoadsResponse(json) {
     return !!(json && json.data && json.data.freightSearchV4 && json.data.freightSearchV4.findLoads);
   }
 
-  return { parseFindLoads, mapResult, resolveRate, isFindLoadsResponse };
+  return { parseFindLoads, parseFindLoadsResult, mapResult, resolveRate, isFindLoadsResponse };
 })();
 
 if (typeof module !== "undefined" && module.exports) module.exports = DAT_GQL;

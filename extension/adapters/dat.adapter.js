@@ -97,6 +97,34 @@
       usable(b) && /\b(search|refresh)\b/i.test((b.textContent || "").trim())) || null;
   }
 
+  // ---- авто-скролл: догрузить все страницы выдачи (DAT lazy-load при прокрутке вниз) ----
+  // Контейнер не захардкожен (CDK-viewport DAT не зафиксирован) — авто-детект ближайшего
+  // скроллируемого предка строк устойчивее к смене вёрстки. ToS: имитируем скролл юзера в его сессии.
+  function isScrollable(el) {
+    if (!el) return false;
+    const sh = el.scrollHeight || 0, ch = el.clientHeight || 0;
+    if (sh <= ch) return false;
+    let oy = "";
+    try { if (typeof getComputedStyle === "function") oy = getComputedStyle(el).overflowY || ""; } catch (_) { /* нет */ }
+    if (!oy && el.style) oy = el.style.overflowY || "";
+    return /(auto|scroll|overlay)/.test(oy);
+  }
+  // от первой строки результата вверх по предкам → первый скроллируемый; фолбэк — scrollingElement
+  function findScrollContainer(root) {
+    root = root || (typeof document !== "undefined" ? document : null);
+    if (!root) return null;
+    const first = root.querySelector(DAT_SELECTORS.row);
+    let el = first ? first.parentElement : null;
+    while (el) { if (isScrollable(el)) return el; el = el.parentElement; }
+    return (typeof document !== "undefined" && document.scrollingElement) || null;
+  }
+  // один шаг прокрутки вниз; возвращает метрики для детекта роста (новые страницы → растёт scrollHeight)
+  function scrollStep(container) {
+    if (!container) return { scrollTop: 0, scrollHeight: 0 };
+    try { container.scrollTop = container.scrollHeight; } catch (_) { /* нет */ }
+    return { scrollTop: container.scrollTop || 0, scrollHeight: container.scrollHeight || 0 };
+  }
+
   const DAT_ADAPTER = {
     board: "dat",
     hostMatch: "dat.com",
@@ -135,6 +163,10 @@
     // Данные DAT берём из GraphQL-перехвата, не из DOM.
     collect() { return []; },
 
+    // ---- авто-скролл (для накопления всех страниц текущей выдачи) ----
+    findScrollContainer() { return findScrollContainer(typeof document !== "undefined" ? document : null); },
+    scrollStep(container) { return scrollStep(container); },
+
     // ---- авто-пилот ----
     // Кликнуть родную кнопку Search/Refresh DAT. true — кнопка нашлась и кликнута.
     clickRefresh() {
@@ -169,6 +201,7 @@
     module.exports = {
       DAT_ADAPTER, DAT_SELECTORS, REFRESH_SELECTORS, SORT_SELECTORS,
       resultIdOf, domRowKey, sortKey, readSortOptions, pickSortOption, findRefreshButton,
+      isScrollable, findScrollContainer, scrollStep,
     };
   }
 })();

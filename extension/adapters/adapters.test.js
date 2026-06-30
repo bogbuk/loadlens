@@ -4,7 +4,7 @@ const assert = require("node:assert");
 // Порядок require: сначала зависимости-глобалы, потом адаптеры (регистрируются по сайд-эффекту).
 require("../../shared/load.model.js");
 const LLADAPT = require("./adapters.js");
-const { DAT_ADAPTER, resultIdOf, domRowKey, sortKey, readSortOptions, pickSortOption, findRefreshButton } = require("./dat.adapter.js");
+const { DAT_ADAPTER, resultIdOf, domRowKey, sortKey, readSortOptions, pickSortOption, findRefreshButton, isScrollable, findScrollContainer, scrollStep } = require("./dat.adapter.js");
 const { TRUCKSTOP_ADAPTER, TRUCKSTOP_SELECTORS } = require("./truckstop.adapter.js");
 
 // Лёгкий DOM-шим для Truckstop parseRow (карта {selector: text}).
@@ -182,4 +182,29 @@ test("DAT_ADAPTER.clickRefresh кликает кнопку Search (document-ши
   delete global.document;
   assert.strictEqual(ok, true);
   assert.strictEqual(btn._clicks, 1);
+});
+
+test("isScrollable: предок со скроллом (overflow + scrollHeight>clientHeight)", () => {
+  assert.strictEqual(isScrollable({ scrollHeight: 2000, clientHeight: 600, style: { overflowY: "auto" } }), true);
+  assert.strictEqual(isScrollable({ scrollHeight: 2000, clientHeight: 600, style: { overflowY: "visible" } }), false); // не скроллится
+  assert.strictEqual(isScrollable({ scrollHeight: 500, clientHeight: 600, style: { overflowY: "scroll" } }), false);  // нет переполнения
+  assert.strictEqual(isScrollable(null), false);
+});
+
+test("findScrollContainer: ближайший скроллируемый предок строки результата", () => {
+  const scroller = { scrollHeight: 3000, clientHeight: 600, style: { overflowY: "auto" }, parentElement: null };
+  const mid = { scrollHeight: 600, clientHeight: 600, style: {}, parentElement: scroller };       // не скроллится → пропуск
+  const row = { parentElement: mid };
+  const root = { querySelector: (sel) => (sel.includes("row-container") ? row : null) };
+  assert.strictEqual(findScrollContainer(root), scroller);
+  // нет строк → фолбэк null (в браузере был бы document.scrollingElement)
+  assert.strictEqual(findScrollContainer({ querySelector: () => null }), null);
+});
+
+test("scrollStep ставит scrollTop в конец и возвращает метрики", () => {
+  const c = { scrollTop: 0, scrollHeight: 4200, clientHeight: 600 };
+  const m = scrollStep(c);
+  assert.strictEqual(c.scrollTop, 4200);
+  assert.deepStrictEqual(m, { scrollTop: 4200, scrollHeight: 4200 });
+  assert.deepStrictEqual(scrollStep(null), { scrollTop: 0, scrollHeight: 0 });
 });

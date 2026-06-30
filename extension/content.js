@@ -28,10 +28,13 @@
   let activeDriver = null;       // выбранный водитель (LLDRV.pickActive)
   let activeEquipment = null;    // фильтр прицепа активного водителя (null = без фильтра)
 
-  let gqlLoads = [];              // грузы из перехваченного ответа DAT FindLoads (inject.js)
-  // авто-пилот: фоновый таб сам кликает Search DAT и удерживает сортировку (см. spec 2026-06-22).
-  // ToS: НЕ вызываем API DAT — кликаем её же UI-кнопку как пользователь; по умолчанию ВЫКЛ, opt-in.
-  let autoRefresh = { on: false, intervalMs: 60000 }; // base; jitter = intervalMs → [base, 2·base)
+  let gqlLoads = [];              // грузы текущей выдачи (накопленные по страницам, см. accState)
+  let accState = (typeof LLACC !== "undefined") ? LLACC.emptyState() : { searchId: null, byId: new Map() };
+  let scrolling = false;         // авто-скролл выдачи в процессе (гард от параллельных запусков)
+  // авто-пилот: фоновый таб сам кликает Search DAT, удерживает сортировку и доскролливает выдачу
+  // до конца (см. spec 2026-06-22). ToS: НЕ вызываем API DAT — кликаем/скроллим её же UI как
+  // пользователь в своей сессии; по умолчанию ВЫКЛ, opt-in.
+  let autoRefresh = { on: false, intervalMs: 60000, scroll: true, maxSteps: 40 }; // base; jitter=intervalMs → [base,2·base)
   let sortPref = null;           // {field, dir:'asc'|'desc'} — удерживаемая сортировка DAT
   let pendingSortReapply = false;// true сразу после нашего clickRefresh → переприменить сорт по новой выдаче
   let expandedChainSig = null;   // сигнатура раскрытой цепочки (route path), переживает re-render
@@ -554,6 +557,7 @@
       autoRefresh.on = ar.checked;
       if (typeof LLTAB !== "undefined") LLTAB.setAutorefresh(sessionStorage, ar.checked);
       scheduleAuto();
+      if (ar.checked && autoRefresh.scroll) scrollToLoadAll(); // доскроллить уже открытую выдачу сразу
     };
     const sf = bd.querySelector("#ll-sort-f");
     if (sf) sf.onchange = () => persistSort({ field: sf.value || null });
@@ -795,6 +799,31 @@
       }
     }, delay);
   }
+  // ---- авто-скролл: доскроллить выдачу до конца, чтобы DAT lazy-load'нул все страницы ----
+  // Данные копятся событийно (inject → message → LLACC.accumulate); скролл лишь провоцирует fetchMore
+  // приложения DAT. Стоп: нет роста K=2 шага подряд или достигнут maxSteps. Гард scrolling — без гонок.
+  const SCROLL_STEP_BASE = 700, SCROLL_STEP_JITTER = 500, SCROLL_DRY = 2;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  async function scrollToLoadAll() {
+    if (scrolling || !autoRefresh.on || !autoRefresh.scroll) return;
+    const container = adapter && adapter.findScrollContainer && adapter.findScrollContainer();
+    if (!container) { log("авто-скролл: контейнер не найден"); return; }
+    scrolling = true;
+    try {
+      let dry = 0, prevSize = accState.byId.size, prevH = 0;
+      const maxSteps = autoRefresh.maxSteps || 40;
+      for (let i = 0; i < maxSteps; i++) {
+        if (!autoRefresh.on || !autoRefresh.scroll) break;
+        const m = adapter.scrollStep(container) || {};
+        await sleep(nextDelay(SCROLL_STEP_BASE, SCROLL_STEP_JITTER)); // дать DAT догрузить страницу
+        const size = accState.byId.size, h = m.scrollHeight || 0;
+        if (size > prevSize || h > prevH) { dry = 0; prevSize = size; prevH = h; }
+        else if (++dry >= SCROLL_DRY) break;                          // выдача исчерпана
+      }
+      log("авто-скролл готово:", accState.byId.size, "грузов");
+    } finally { scrolling = false; }
+  }
+
   // применить удерживаемую сортировку через родной дропдаун DAT (вручную или после авто-рефреша)
   function applySortPref() {
     const key = desiredSortKey(sortPref);
@@ -828,6 +857,8 @@
       autoRefresh = {
         on: (typeof LLTAB !== "undefined") && LLTAB.getAutorefresh(sessionStorage),
         intervalMs: (ll_autorefresh && ll_autorefresh.intervalMs) || 60000,
+        scroll: !ll_autorefresh || ll_autorefresh.autoscroll !== false, // дефолт ВКЛ
+        maxSteps: (ll_autorefresh && ll_autorefresh.maxSteps) || 40,
       };
       if (ll_sort && ll_sort.field) sortPref = { field: ll_sort.field, dir: ll_sort.dir === "asc" ? "asc" : "desc" };
     } catch { /* дефолт */ }
@@ -858,6 +889,8 @@
         if (ch.ll_autorefresh) {
           const v = ch.ll_autorefresh.newValue;
           autoRefresh.intervalMs = (v && v.intervalMs) || 60000; // on — per-tab, из попапа не меняем
+          autoRefresh.scroll = !v || v.autoscroll !== false;
+          autoRefresh.maxSteps = (v && v.maxSteps) || 40;
           scheduleAuto();
         }
         if (ch.ll_sort) {
@@ -875,12 +908,16 @@
       const d = e.data;
       if (!d || d.source !== "loadlens" || d.type !== "dat-findloads") return;
       if (typeof DAT_GQL !== "undefined") {
-        const parsed = DAT_GQL.parseFindLoads(d.payload);
-        log("приём dat-findloads → parseFindLoads:", parsed.length, "грузов", parsed.length ? "" : "(пусто — схема DAT могла измениться)");
-        if (parsed.length) {
-          gqlLoads = parsed; schedule();
+        const res = DAT_GQL.parseFindLoadsResult(d.payload);
+        log("приём dat-findloads → parse:", res.loads.length, "грузов, searchId", res.searchId || "—", res.loads.length ? "" : "(пусто — схема DAT могла измениться)");
+        if (res.loads.length) {
+          // накапливаем по searchId: та же выдача (пагинация) доливает, новый поиск сбрасывает
+          const acc = LLACC.accumulate(accState, res.loads, res.searchId);
+          accState = acc.state; gqlLoads = acc.loads; schedule();
           // только сразу после НАШЕГО clickRefresh переприменяем удерживаемую сортировку (не на каждый ответ DAT)
           if (pendingSortReapply) { pendingSortReapply = false; applySortPref(); }
+          // первая страница новой выдачи → запустить доскролл остальных (гард scrolling от повторов)
+          if (autoRefresh.on && autoRefresh.scroll && !scrolling) scrollToLoadAll();
         }
       } else {
         log("приём dat-findloads, но DAT_GQL не загружен");

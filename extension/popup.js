@@ -46,6 +46,7 @@ async function renderSettings() {
     '<button type="button" class="linkbtn" id="s-equip-none">Сброс</button></span></div>' +
     '<h4>Авто-пилот таба DAT</h4>' +
     `<div class="row"><span class="k">Интервал, сек (≥60)</span><input id="s-ar-int" type="number" min="60" step="10" value="${Math.round((ar.intervalMs || 60000) / 1000)}"></div>` +
+    `<div class="row"><span class="k">Авто-скролл (подтянуть все страницы)</span><input id="s-ar-scroll" type="checkbox"${ar.autoscroll !== false ? " checked" : ""} style="width:auto"></div>` +
     `<div class="row"><span class="k">Сортировка</span><select id="s-sort-f">` +
     ['<option value="">— не менять —</option>'].concat(SORT_FIELDS.map((s) =>
       `<option value="${s.field}"${sort.field === s.field ? " selected" : ""}>${escA(s.label)}</option>`)).join("") +
@@ -59,7 +60,7 @@ async function renderSettings() {
     '<button id="s-save">Сохранить</button>' +
     '<div class="note">Целевая $/mi — порог «выгодно» (green): груз green, если его gross $/mile ≥ цели своего бакета. Cost/mile — нижняя граница убытка (red).</div>' +
     '<div class="note">«Отображение на странице» применяется сразу ко всем вкладкам DAT/Truckstop (без кнопки «Сохранить»).</div>' +
-    '<div class="note">Авто-пилот включается отдельно на каждой вкладке выдачи DAT (тумблер «Авто-рефреш» в шапке панели). Здесь — общий интервал (60–120 с с джиттером) и удерживаемая сортировка.</div>';
+    '<div class="note">Авто-пилот включается отдельно на каждой вкладке выдачи DAT (тумблер «Авто-рефреш» в шапке панели). Здесь — общий интервал (60–120 с с джиттером), удерживаемая сортировка и авто-скролл (доскролл выдачи, чтобы DAT подгрузил все страницы; панель копит их по searchId).</div>';
   document.getElementById("s-save").onclick = save;
   wireEquipChips();
   // «Отображение на странице» — instant-apply (без кнопки «Сохранить»); content.js слушает storage.onChanged
@@ -106,10 +107,11 @@ async function save() {
   await chrome.storage.local.set({ ll_targets: readTargets(), ll_equip_filter: LLEQUIP.normalize(equipCodes) });
   // авто-пилот: интервал не реже 60с; сорт = поле+направление (пусто → не удерживать)
   const intSec = Math.max(60, parseInt(document.getElementById("s-ar-int").value, 10) || 60);
+  const autoscroll = document.getElementById("s-ar-scroll").checked;
   const sortField = document.getElementById("s-sort-f").value || null;
   await chrome.storage.local.set({
-    // on — per-tab (sessionStorage в content.js), попап хранит только интервал-параметр
-    ll_autorefresh: { intervalMs: intSec * 1000 },
+    // on — per-tab (sessionStorage в content.js), попап хранит интервал + авто-скролл
+    ll_autorefresh: { intervalMs: intSec * 1000, autoscroll },
     ll_sort: sortField ? { field: sortField, dir: document.getElementById("s-sort-d").value === "asc" ? "asc" : "desc" } : { field: null },
   });
   await LLHOS.save(LLHOS.fromHours({ driveH, dutyH, cycleH }));

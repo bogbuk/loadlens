@@ -105,6 +105,18 @@ test("contactMethods/contact-PII режутся sanitizeLoad, бизнес-по�
   assert.strictEqual(clean.contactPhone, undefined);
 });
 
+test("parseFindLoadsResult отдаёт searchId/hasNext; parseFindLoads — те же loads", () => {
+  const res = DAT_GQL.parseFindLoadsResult(fixture);
+  assert.strictEqual(res.searchId, "synthetic-search-1");
+  assert.strictEqual(res.hasNext, false);                       // в фикстуре нет cursors.next
+  assert.strictEqual(res.loads.length, 3);
+  assert.deepStrictEqual(res.loads, DAT_GQL.parseFindLoads(fixture)); // обёртка = .loads
+  // hasNext=true когда есть курсор; мусор → пустой результат без падения
+  assert.strictEqual(DAT_GQL.parseFindLoadsResult({ data: { freightSearchV4: { findLoads: {
+    __typename: "FreightSearchV4FindLoadsSuccess", searchId: "S9", results: [], cursors: { next: "abc" } } } } }).hasNext, true);
+  assert.deepStrictEqual(DAT_GQL.parseFindLoadsResult({ data: {} }), { loads: [], searchId: null, hasNext: false });
+});
+
 test("isFindLoadsResponse распознаёт ответ; мусор → []", () => {
   assert.strictEqual(DAT_GQL.isFindLoadsResponse(fixture), true);
   assert.strictEqual(DAT_GQL.isFindLoadsResponse({ data: {} }), false);

@@ -101,6 +101,14 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   Convoy: GraphQL/REST DAT с токеном напрямую по-прежнему НЕЛЬЗЯ. Сорт-дропдаун (`applySort`) — селекторы
   ★ ЗАГЛУШКИ до живой сессии. Настройки — `ll_autorefresh`/`ll_sort` (popup «Авто-пилот» + контрол в
   шапке панели). Спека — `docs/superpowers/specs/2026-06-22-dat-autopilot-refresh-sort-design.md`.
+- **Авто-скролл + накопление выдачи по `searchId`.** Выдача DAT пагинируется (`cursors.next`, `limit:150`):
+  за экран приходит не всё. `DAT_GQL.parseFindLoadsResult` отдаёт `{loads, searchId, hasNext}`; чистый
+  `LLACC.accumulate` (`extension/loads-accumulator.js`) копит страницы — тот же `searchId` доливает по
+  `loadId` (last-write-wins), новый `searchId` (наш клик SEARCH/reload) сбрасывает, `sid=null` → перезапись.
+  `content.scrollToLoadAll` доскролливает выдачу (`adapter.findScrollContainer` авто-детектит контейнер,
+  `scrollStep` шагает; стоп по «сухим» шагам/`maxSteps=40`), провоцируя `fetchMore` приложения DAT — своих
+  запросов не шлём. Гейт: авто-пилот ВКЛ + `ll_autorefresh.autoscroll` (дефолт ВКЛ). **Виртуализация DAT:**
+  построчные бейджи — только видимые строки, **панель — полный набор** (данные из перехвата JSON, не из DOM).
 - **HOS-правила** (11h/14h/30min/70h-8d, split sleeper) живут в `shared/hos-calculator.js` +
   упрощённая мультисменная forward-модель в `planner.stepHos`. Обязательный сон не штрафует ранг.
 - **Broker-trust бейдж** (`LLSCORE.brokerBadge`): good/ok/risk по `creditScore` (≥90 good, <75 risk)
