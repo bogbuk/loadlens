@@ -17,7 +17,7 @@
   let baseCostPerMile = 1.80; // «базовая» (диспетчерская) настройка; не мутируется водителем
   let costPerMile = 1.80;     // текущий (resolveDriverContext → applyDriverContext)
   let targets = LLSCORE.DEFAULTS.targets; // целевые $/mi по бакетам дистанции (ll_targets); порог green
-  let equipFilter = null;     // ручной фильтр прицепа из попапа (ll_equip_filter); null = без фильтра
+  let equipFilter = null;     // ручной фильтр прицепа из попапа (ll_equip_filter): string[] | null; null = без фильтра
   const _freshHos = (typeof LLHOS !== "undefined") ? LLHOS.fresh() : { remainingDrive: 660, remainingOnDuty: 840, remainingCycle: 4200 };
   let baseHos = { ..._freshHos }; // «базовый» HOS (диспетчерские часы из storage/popup)
   let hosState = { ..._freshHos }; // текущий (resolveDriverContext → applyDriverContext)
@@ -85,8 +85,8 @@
   function laneKeyOf(l) { return `${l.originMarket}>${l.destMarket}|${l.equipment}`; }
   // целевой $/mi для груза по его trip-милям (бакет из ll_targets); порог green в profitBadge
   function targetFor(l) { return LLSCORE.targetForMiles(l.loadedMiles, targets); }
-  // ручной equipment-фильтр из попапа: груз проходит, если фильтр не задан или совпадает прицеп
-  function passEquip(l) { return !equipFilter || l.equipment === equipFilter; }
+  // ручной equipment-фильтр из попапа: груз проходит, если фильтр не задан или прицеп в наборе
+  function passEquip(l) { return LLEQUIP.matches(equipFilter, l.equipment); }
   function fetchLanes(loads) {
     if (typeof LLAPI === "undefined") return;
     const keys = new Map();
@@ -518,7 +518,7 @@
           `${esc(d.name)}${d.currentMarket ? " · " + esc(d.currentMarket) : ""}${d.equipment ? " · " + esc(d.equipment) : ""}</option>`).join("") +
         `</select></div>` : "") +
       row("Грузов в выдаче", String(loads.length)) +
-      (equipFilter ? row("Фильтр прицепа", esc(equipFilter)) : "") +
+      (equipFilter ? row("Фильтр прицепа", esc(equipFilter.join(", "))) : "") +
       row("Рынок старта", start ? esc(start) : "—") +
       row("Дизель", "$" + dieselPrice.toFixed(2) + "/гал") +
       `<div class="ll-cfg">Cost/mi: <input id="ll-cpm" type="number" step="0.05" value="${costPerMile}" style="width:60px"> ` +
@@ -818,7 +818,7 @@
     try {
       const { ll_targets, ll_equip_filter, ll_autorefresh, ll_sort } = await chrome.storage.local.get(["ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort"]);
       if (Array.isArray(ll_targets) && ll_targets.length) targets = ll_targets;
-      if (ll_equip_filter) equipFilter = ll_equip_filter;
+      equipFilter = LLEQUIP.normalize(ll_equip_filter);
       // intervalMs — глобальный параметр из попапа; on — per-tab (sessionStorage), дефолт выкл.
       autoRefresh = {
         on: (typeof LLTAB !== "undefined") && LLTAB.getAutorefresh(sessionStorage),
@@ -847,7 +847,7 @@
         if (ch.ll_cpm && ch.ll_cpm.newValue > 0) baseCostPerMile = ch.ll_cpm.newValue; // обновляем базу; render→applyDriverContext применит
         if (ch.ll_hos && ch.ll_hos.newValue) baseHos = ch.ll_hos.newValue;              // аналогично для HOS
         if (ch.ll_targets) targets = (Array.isArray(ch.ll_targets.newValue) && ch.ll_targets.newValue.length) ? ch.ll_targets.newValue : LLSCORE.DEFAULTS.targets;
-        if (ch.ll_equip_filter) equipFilter = ch.ll_equip_filter.newValue || null;
+        if (ch.ll_equip_filter) equipFilter = LLEQUIP.normalize(ch.ll_equip_filter.newValue);
         if (ch.ll_autorefresh) {
           const v = ch.ll_autorefresh.newValue;
           autoRefresh.intervalMs = (v && v.intervalMs) || 60000; // on — per-tab, из попапа не меняем

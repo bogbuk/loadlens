@@ -26,6 +26,14 @@
   .acc .btns { display:flex; gap:8px; } .acc .btns button { margin-top:8px; }
   .linkbtn { background:none; border:none; padding:0; color:#1d4ed8; font:inherit; cursor:pointer; text-decoration:underline; }
   .note { color:#9aa6b2; font-size:11px; margin-top:6px; }
+  .chips { display:flex; flex-wrap:wrap; gap:5px; margin:4px 0 2px; }
+  .chip { width:auto; margin:0; padding:5px 9px; min-width:30px; border:1px solid #e7ebef; background:#f5f7f9; color:#6b7785; border-radius:99px; font-weight:700; font-size:12px; cursor:pointer; transition:background .12s,color .12s,border-color .12s; }
+  .chip:hover { background:#eef1f4; }
+  .chip.on { background:#1d4ed8; border-color:#1d4ed8; color:#fff; }
+  .chip.on:hover { background:#1b45bd; }
+  .chips-bar { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:2px; }
+  .chips-bar .note { margin-top:0; }
+  .chips-actions { white-space:nowrap; color:#9aa6b2; font-size:11px; }
   .settings-wrap { padding-top: 6px; }
   .settings-wrap > summary { cursor: pointer; font-size: 11px; text-transform: uppercase; letter-spacing: .3px; color:#1e3a8a; font-weight:700; list-style: revert; padding: 4px 0; }
 </style>
@@ -43,6 +51,7 @@
   <script src="api.js"></script>
   <script src="hos.js"></script>
   <script src="drivers.js"></script>
+  <script src="equip-filter.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

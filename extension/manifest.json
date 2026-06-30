@@ -38,6 +38,7 @@
         "alerts.js",
         "csv.js",
         "tabstate.js",
+        "equip-filter.js",
         "content.js"
       ],
       "css": ["styles.css"],

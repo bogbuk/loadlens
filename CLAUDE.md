@@ -35,6 +35,7 @@ extension/                  MV3-расширение (грузит vendor/* → 
   geo.js, hos.js            обёртки: дистанции (backend+haversine), HOS-состояние водителя
   drivers.js (LLDRV)        парк диспетчера: resolveDriverContext (чистая, выбор контекста планировщика) + per-device активный водитель (ll_active_driver)
   alerts.js (LLALERT)       релей green+passEquip грузов в Telegram: keyFor/toPayload (бизнес-поля + дата пикапа + контакт брокера — PII по явному решению, только в DM) + push (гейт linked/enabled, session-дедуп). Вызывается из content.render
+  equip-filter.js (LLEQUIP) чистый normalize/matches фильтра прицепа (ll_equip_filter): string[]|null, мультивыбор, обратно-совместим со старой строкой
   popup.*                   настройки водителя (cost/mile, HOS-часы) + аккаунт + секция «Парк» (CRUD водителей) + секция «Telegram-уведомления» (Pro)
   vendor/                   ★ АВТОКОПИИ из shared/ (load.model, scoring, planner, markets.seed). `npm run sync:shared`
 backend/src/                NestJS, synchronize:true (миграций нет)
@@ -143,7 +144,8 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   (`LLSCORE.targetForMiles` по таблице `DEFAULTS.targets`: ≤500mi→$7, ≤1000→$6, 1000+→$5; конфиг
   в попапе `ll_targets`); **amber** между. Цель задаётся per-груз по его `loadedMiles` и имеет
   приоритет над медианой lane (медиана остаётся фолбэком green, когда `targetRpm` не передан, и
-  показывается как «рынок $X»). Ручной фильтр прицепа `ll_equip_filter` прячет грузы в панели.
+  показывается как «рынок $X»). Ручной фильтр прицепа `ll_equip_filter` (мультивыбор, `string[]|null`,
+  логика в `LLEQUIP.normalize/matches`; чипы-тумблеры в попапе) прячет грузы в панели.
   `metric` груза = RPM (аналог цены в PriceLens).
 - Backend: `synchronize:true` (миграций нет, MVP). Новые колонки — идемпотентный
   `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` в `main.ts`, т.к. synchronize не меняет существующие таблицы.

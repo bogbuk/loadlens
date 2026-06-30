@@ -26,6 +26,7 @@ async function renderSettings() {
   const targets = Array.isArray(ll_targets) && ll_targets.length ? ll_targets : DEFAULT_TARGETS;
   const ar = (ll_autorefresh && typeof ll_autorefresh === "object") ? ll_autorefresh : { on: false, intervalMs: 60000 };
   const sort = (ll_sort && ll_sort.field) ? { field: ll_sort.field, dir: ll_sort.dir === "asc" ? "asc" : "desc" } : { field: "", dir: "desc" };
+  const equipSel = new Set(LLEQUIP.normalize(ll_equip_filter) || []);
   const hos = await LLHOS.load();
   setEl.innerHTML =
     '<h4>Параметры водителя</h4>' +
@@ -36,9 +37,13 @@ async function renderSettings() {
     '<h4>Целевые ставки по дистанции</h4>' +
     targets.map(targetRow).join("") +
     '<h4>Тип трейлера (фильтр)</h4>' +
-    `<div class="row"><span class="k">Показывать только</span><select id="s-equip">` +
-    ['<option value="">— все —</option>'].concat(EQUIP_TYPES.map((e) => equipOption(e, ll_equip_filter))).join("") +
-    '</select></div>' +
+    `<div class="chips" id="s-equip">` +
+    EQUIP_TYPES.map((e) =>
+      `<button type="button" class="chip${equipSel.has(e.code) ? " on" : ""}" data-code="${escA(e.code)}" title="${escA(e.label)}">${escA(e.code)}</button>`).join("") +
+    '</div>' +
+    '<div class="chips-bar"><span class="note" id="s-equip-sum"></span>' +
+    '<span class="chips-actions"><button type="button" class="linkbtn" id="s-equip-all">Все</button> · ' +
+    '<button type="button" class="linkbtn" id="s-equip-none">Сброс</button></span></div>' +
     '<h4>Авто-пилот таба DAT</h4>' +
     `<div class="row"><span class="k">Интервал, сек (≥60)</span><input id="s-ar-int" type="number" min="60" step="10" value="${Math.round((ar.intervalMs || 60000) / 1000)}"></div>` +
     `<div class="row"><span class="k">Сортировка</span><select id="s-sort-f">` +
@@ -52,6 +57,23 @@ async function renderSettings() {
     '<div class="note">Целевая $/mi — порог «выгодно» (green): груз green, если его gross $/mile ≥ цели своего бакета. Cost/mile — нижняя граница убытка (red).</div>' +
     '<div class="note">Авто-пилот включается отдельно на каждой вкладке выдачи DAT (тумблер «Авто-рефреш» в шапке панели). Здесь — общий интервал (60–120 с с джиттером) и удерживаемая сортировка.</div>';
   document.getElementById("s-save").onclick = save;
+  wireEquipChips();
+}
+// чипы-тумблеры фильтра прицепа: клик переключает .on, ссылки Все/Сброс, живая сводка
+function wireEquipChips() {
+  const wrap = document.getElementById("s-equip");
+  const sum = document.getElementById("s-equip-sum");
+  const refresh = () => {
+    const on = [...wrap.querySelectorAll(".chip.on")].map((c) => c.dataset.code);
+    sum.textContent = on.length ? "Только: " + on.join(", ") : "Показываются все прицепы";
+  };
+  wrap.querySelectorAll(".chip").forEach((c) => {
+    c.onclick = () => { c.classList.toggle("on"); refresh(); };
+  });
+  const setAll = (on) => { wrap.querySelectorAll(".chip").forEach((c) => c.classList.toggle("on", on)); refresh(); };
+  document.getElementById("s-equip-all").onclick = () => setAll(true);
+  document.getElementById("s-equip-none").onclick = () => setAll(false);
+  refresh();
 }
 function settingRow(label, id, val, step) {
   return `<div class="row"><span class="k">${label}</span>` +
@@ -73,7 +95,8 @@ async function save() {
   const dutyH = parseFloat(document.getElementById("s-duty").value);
   const cycleH = parseFloat(document.getElementById("s-cycle").value);
   if (cpm > 0) await chrome.storage.local.set({ ll_cpm: cpm });
-  await chrome.storage.local.set({ ll_targets: readTargets(), ll_equip_filter: document.getElementById("s-equip").value || null });
+  const equipCodes = [...document.querySelectorAll("#s-equip .chip.on")].map((c) => c.dataset.code);
+  await chrome.storage.local.set({ ll_targets: readTargets(), ll_equip_filter: LLEQUIP.normalize(equipCodes) });
   // авто-пилот: интервал не реже 60с; сорт = поле+направление (пусто → не удерживать)
   const intSec = Math.max(60, parseInt(document.getElementById("s-ar-int").value, 10) || 60);
   const sortField = document.getElementById("s-sort-f").value || null;
