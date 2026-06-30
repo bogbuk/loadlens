@@ -20,8 +20,8 @@ const SORT_FIELDS = [
 ];
 
 async function renderSettings() {
-  const { ll_cpm, ll_targets, ll_equip_filter, ll_autorefresh, ll_sort } =
-    await chrome.storage.local.get(["ll_cpm", "ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort"]);
+  const { ll_cpm, ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_panel, ll_hide_badges } =
+    await chrome.storage.local.get(["ll_cpm", "ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_panel", "ll_hide_badges"]);
   const cpm = ll_cpm != null ? ll_cpm : 1.80;
   const targets = Array.isArray(ll_targets) && ll_targets.length ? ll_targets : DEFAULT_TARGETS;
   const ar = (ll_autorefresh && typeof ll_autorefresh === "object") ? ll_autorefresh : { on: false, intervalMs: 60000 };
@@ -53,11 +53,18 @@ async function renderSettings() {
     `<div class="row"><span class="k">Направление</span><select id="s-sort-d">` +
     `<option value="desc"${sort.dir === "desc" ? " selected" : ""}>Highest → Lowest</option>` +
     `<option value="asc"${sort.dir === "asc" ? " selected" : ""}>Lowest → Highest</option></select></div>` +
+    '<h4>Отображение на странице</h4>' +
+    `<div class="row"><span class="k">Скрыть панель на странице</span><input id="s-hide-panel" type="checkbox"${ll_hide_panel ? " checked" : ""} style="width:auto"></div>` +
+    `<div class="row"><span class="k">Скрыть бейджи в таблице</span><input id="s-hide-badges" type="checkbox"${ll_hide_badges ? " checked" : ""} style="width:auto"></div>` +
     '<button id="s-save">Сохранить</button>' +
     '<div class="note">Целевая $/mi — порог «выгодно» (green): груз green, если его gross $/mile ≥ цели своего бакета. Cost/mile — нижняя граница убытка (red).</div>' +
+    '<div class="note">«Отображение на странице» применяется сразу ко всем вкладкам DAT/Truckstop (без кнопки «Сохранить»).</div>' +
     '<div class="note">Авто-пилот включается отдельно на каждой вкладке выдачи DAT (тумблер «Авто-рефреш» в шапке панели). Здесь — общий интервал (60–120 с с джиттером) и удерживаемая сортировка.</div>';
   document.getElementById("s-save").onclick = save;
   wireEquipChips();
+  // «Отображение на странице» — instant-apply (без кнопки «Сохранить»); content.js слушает storage.onChanged
+  document.getElementById("s-hide-panel").onchange = (e) => chrome.storage.local.set({ ll_hide_panel: e.target.checked });
+  document.getElementById("s-hide-badges").onchange = (e) => chrome.storage.local.set({ ll_hide_badges: e.target.checked });
 }
 // чипы-тумблеры фильтра прицепа: клик переключает .on, ссылки Все/Сброс, живая сводка
 function wireEquipChips() {

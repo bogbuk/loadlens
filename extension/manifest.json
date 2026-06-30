@@ -39,6 +39,7 @@
         "csv.js",
         "tabstate.js",
         "equip-filter.js",
+        "visibility.js",
         "content.js"
       ],
       "css": ["styles.css"],

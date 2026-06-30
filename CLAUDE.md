@@ -36,7 +36,8 @@ extension/                  MV3-расширение (грузит vendor/* → 
   drivers.js (LLDRV)        парк диспетчера: resolveDriverContext (чистая, выбор контекста планировщика) + per-device активный водитель (ll_active_driver)
   alerts.js (LLALERT)       релей green+passEquip грузов в Telegram: keyFor/toPayload (бизнес-поля + дата пикапа + контакт брокера — PII по явному решению, только в DM) + push (гейт linked/enabled, session-дедуп). Вызывается из content.render
   equip-filter.js (LLEQUIP) чистый normalize/matches фильтра прицепа (ll_equip_filter): string[]|null, мультивыбор, обратно-совместим со старой строкой
-  popup.*                   настройки водителя (cost/mile, HOS-часы) + аккаунт + секция «Парк» (CRUD водителей) + секция «Telegram-уведомления» (Pro)
+  visibility.js (LLVIS)     чистый badgesVisible/panelVisible/fabVisible: сводит hintsOff(per-tab) + ll_hide_panel/ll_hide_badges(глоб.попап) + panelCollapsed в решения «рисовать/нет»
+  popup.*                   настройки водителя (cost/mile, HOS-часы) + секция «Отображение на странице» (instant-apply тумблеры ll_hide_panel/ll_hide_badges) + аккаунт + секция «Парк» (CRUD водителей) + секция «Telegram-уведомления» (Pro)
   vendor/                   ★ АВТОКОПИИ из shared/ (load.model, scoring, planner, markets.seed). `npm run sync:shared`
 backend/src/                NestJS, synchronize:true (миграций нет)
   loads/                    POST /loads — ingest+upsert; GET /loads?origin=&equipment= — крауд-грузы рынка (onward-плечи цепочек, без PII; read — Premium-гард)

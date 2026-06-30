@@ -13,6 +13,8 @@
 
   let panelCollapsed = false;
   let hintsOff = false; // per-tab: скрыть наши подсказки (бейджи + панель) на этой вкладке
+  let hidePanel = false;  // глобальная настройка попапа (ll_hide_panel): скрыть панель на странице
+  let hideBadges = false; // глобальная настройка попапа (ll_hide_badges): скрыть построчные бейджи
   let dieselPrice = 3.95;
   let baseCostPerMile = 1.80; // «базовая» (диспетчерская) настройка; не мутируется водителем
   let costPerMile = 1.80;     // текущий (resolveDriverContext → applyDriverContext)
@@ -491,15 +493,16 @@
     if (typeof LLALERT !== "undefined") LLALERT.push(greens.map((d) => d.l)).catch(() => {});
 
     clearBadges();
+    const vis = { hintsOff, hideBadges, hidePanel, panelCollapsed };
     // построчные бейджи: матчим видимые DOM-строки с грузами (DAT — по resultId, TS — parseRow).
-    // При hintsOff бейджи не рисуем (подсказки скрыты на этой вкладке).
-    if (!hintsOff) {
+    if (LLVIS.badgesVisible(vis)) {
       (adapter.anchor ? adapter.anchor(loads) : []).forEach((p) => badgeRow(p.anchor || p.row, p.load));
     }
 
-    if (panelCollapsed || hintsOff) {
+    if (!LLVIS.panelVisible(vis)) {
       const p = document.getElementById("ll-panel"); if (p) p.remove();
-      showFab();
+      if (LLVIS.fabVisible(vis)) showFab();
+      else { const fab = document.getElementById("ll-fab"); if (fab) fab.remove(); }
       return;
     }
     const fab = document.getElementById("ll-fab"); if (fab) fab.remove();
@@ -816,9 +819,11 @@
     baseHos = { ...hosState }; // зафиксировать базу после загрузки из storage
     try { const { ll_cpm } = await chrome.storage.local.get("ll_cpm"); if (ll_cpm > 0) { costPerMile = ll_cpm; baseCostPerMile = ll_cpm; } } catch { /* дефолт */ }
     try {
-      const { ll_targets, ll_equip_filter, ll_autorefresh, ll_sort } = await chrome.storage.local.get(["ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort"]);
+      const { ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_panel, ll_hide_badges } = await chrome.storage.local.get(["ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_panel", "ll_hide_badges"]);
       if (Array.isArray(ll_targets) && ll_targets.length) targets = ll_targets;
       equipFilter = LLEQUIP.normalize(ll_equip_filter);
+      hidePanel = !!ll_hide_panel;
+      hideBadges = !!ll_hide_badges;
       // intervalMs — глобальный параметр из попапа; on — per-tab (sessionStorage), дефолт выкл.
       autoRefresh = {
         on: (typeof LLTAB !== "undefined") && LLTAB.getAutorefresh(sessionStorage),
@@ -848,6 +853,8 @@
         if (ch.ll_hos && ch.ll_hos.newValue) baseHos = ch.ll_hos.newValue;              // аналогично для HOS
         if (ch.ll_targets) targets = (Array.isArray(ch.ll_targets.newValue) && ch.ll_targets.newValue.length) ? ch.ll_targets.newValue : LLSCORE.DEFAULTS.targets;
         if (ch.ll_equip_filter) equipFilter = LLEQUIP.normalize(ch.ll_equip_filter.newValue);
+        if (ch.ll_hide_panel) hidePanel = !!ch.ll_hide_panel.newValue;
+        if (ch.ll_hide_badges) hideBadges = !!ch.ll_hide_badges.newValue;
         if (ch.ll_autorefresh) {
           const v = ch.ll_autorefresh.newValue;
           autoRefresh.intervalMs = (v && v.intervalMs) || 60000; // on — per-tab, из попапа не меняем
