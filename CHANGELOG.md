@@ -2,6 +2,16 @@
 
 All notable user-facing changes to the LoadLens browser extension.
 
+## 0.3.5 — 2026-06-30
+
+### New
+- **Auto-pilot now loads the whole board, not just the first screen.** When enabled, the dedicated tab scrolls the results to the bottom so the load board lazy-loads every page, and the panel keeps the complete set of loads for the current search instead of only what fit on screen. Stays opt-in; you can turn the scrolling off separately in the popup.
+- **Hide the panel and the in-table badges independently.** The display section now has two separate toggles, so you can keep the on-row badges while hiding the side panel, or vice-versa.
+- **Trailer-type filter is now multi-select.** Pick several equipment types at once with toggle chips instead of a single choice.
+
+### Changed
+- **Richer load details from the board.** Each load now surfaces more of the board's own data (payment-assurance and TIA-membership signals, broker location, pickup window, structured broker contact), improving scoring and the detail card.
+
 ## 0.3.4 — 2026-06-28
 
 ### Changed
