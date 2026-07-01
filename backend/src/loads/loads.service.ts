@@ -108,8 +108,10 @@ export class LoadsService {
     const where: any = {
       lastSeen: { [Op.gt]: new Date(Date.now() - CROWD_WINDOW_HOURS * 3600 * 1000) },
     };
+    // origin is required; a blank/whitespace value must not fall through to an unfiltered window.
     const originMatch = buildMarketMatch(origin);
-    if (originMatch) where.originMarket = originMatch;
+    if (!originMatch) return [];
+    where.originMarket = originMatch;
     if (opts.dest) {
       const destMatch = buildMarketMatch(opts.dest);
       if (destMatch) where.destMarket = destMatch;

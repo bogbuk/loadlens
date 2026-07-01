@@ -4,8 +4,9 @@ import { Op } from 'sequelize';
 const RE_META = /[.^$*+?()[\]{}|\\]/g;
 const escapeRe = (s: string): string => s.replace(RE_META, '\\$&');
 
-// City fragment: escape metachars, then turn whitespace runs into `[ _]+`
-// so a multi-word city matches both "Fort Worth" and "FORT_WORTH".
+// City fragment: escape metachars FIRST (spaces are not metachars so they survive), THEN turn
+// whitespace runs into `[ _]+`. Order matters: substituting first would let escapeRe mangle the
+// injected `[ _]+` into `\[ _\]\+`. This lets a multi-word city match both "Fort Worth" and "FORT_WORTH".
 const cityPat = (city: string): string => escapeRe(city.trim()).replace(/\s+/g, '[ _]+');
 
 /**

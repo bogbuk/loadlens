@@ -101,6 +101,14 @@ describe('LoadsService.partnerSearch', () => {
     await svc.partnerSearch('Atlanta', {});
     expect(findAll.mock.calls[0][0].where.originMarket[Op.iRegexp]).toBe('^Atlanta[,_ ]');
   });
+
+  it('пустой/пробельный origin → [] без обращения к БД', async () => {
+    const findAll = jest.fn().mockResolvedValue([]);
+    const svc = new LoadsService({ findAll } as any, { query: jest.fn() } as any);
+    const res = await svc.partnerSearch('   ', {});
+    expect(res).toEqual([]);
+    expect(findAll).not.toHaveBeenCalled();
+  });
 });
 
 describe('LoadsService.near', () => {
