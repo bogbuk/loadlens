@@ -6,6 +6,7 @@ import { IngestLoadsDto } from './dto/ingest.dto';
 import { loadSeed } from '../common/seed';
 import { nearbyMarkets } from '../geo/nearby';
 import { computeLiveness } from './freshness';
+import { buildMarketMatch } from './market-match';
 
 const CROWD_WINDOW_HOURS = 72;
 
@@ -105,10 +106,14 @@ export class LoadsService {
   ): Promise<PartnerLoad[]> {
     const lim = Math.min(Math.max(1, opts.limit ?? 100), 200);
     const where: any = {
-      originMarket: origin,
       lastSeen: { [Op.gt]: new Date(Date.now() - CROWD_WINDOW_HOURS * 3600 * 1000) },
     };
-    if (opts.dest) where.destMarket = opts.dest;
+    const originMatch = buildMarketMatch(origin);
+    if (originMatch) where.originMarket = originMatch;
+    if (opts.dest) {
+      const destMatch = buildMarketMatch(opts.dest);
+      if (destMatch) where.destMarket = destMatch;
+    }
     if (opts.equipment) where.equipment = opts.equipment;
     const rows = await this.model.findAll({ where, order: [['lastSeen', 'DESC']], limit: lim });
     const now = Date.now();
