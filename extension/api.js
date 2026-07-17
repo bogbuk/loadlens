@@ -1,23 +1,53 @@
 /* LoadLens API client + анонимный clientId + JWT-аккаунт. Грузится перед content.js.
-   Аналог PriceLens PLAPI. PII (контакты/телефоны) режется в sanitizeLoad перед отправкой. */
+   Аналог PriceLens PLAPI. sanitizeLoad — whitelist + нормализация полей перед отправкой в крауд-БД.
+   С 2026-07-17 (осознанное решение) в крауд уходит ВСЁ, что извлекает парсер, включая контакты
+   брокера и comments; наружу через читающие эндпоинты контакты по-прежнему не отдаются. */
 const LLAPI = (() => {
   "use strict";
   const BASE = (globalThis.LL_BACKEND || "https://loadlens.krait.studio") + "/api/v1";
 
-  // Whitelist полей груза, уходящих на сервер. contact/телефоны/имена диспетчеров — НЕ входят.
+  // Whitelist полей груза, уходящих на сервер (полный набор DAT_GQL.mapResult).
   const SAFE_FIELDS = [
     "board", "loadId", "originMarket", "destMarket", "equipment", "groupKey",
     "rate", "loadedMiles", "deadheadMiles", "weight", "brokerMc", "brokerName",
+    // гео/груз
+    "originCity", "originState", "destCity", "destState",
+    "lengthFt", "equipmentCode", "fullPartial", "tripMethod", "destDeadheadMiles", "rateBasis",
+    // broker-trust
+    "creditScore", "daysToPay", "creditAsOf", "brokerCity", "brokerState",
+    // флаги
+    "isFactorable", "isAssurable", "isNegotiable", "hasTiaMembership",
+    "fromPrivateNetwork", "isObfuscated", "bookNow",
+    // booking / конкуренция
+    "bookingMethod", "bookingUrl", "bidCount",
+    // даты (ISO-строки)
+    "servicedWhen", "postingExpiresWhen", "presentationDate",
+    // идентификаторы постера/офиса
+    "dotNumber", "carrierMc", "freightForwarderMc", "combinedOfficeId", "headquartersId", "posterUserId",
+    // рынок / PII (по решению 2026-07-17)
+    "estimatedRatePerMile", "comments", "contactEmail", "contactPhone", "preferredContactMethod",
   ];
-  // грубый детектор личного контакта в имени брокера — такие поля обнуляем
-  const PII_RE = /(\+?\d[\d\s().-]{6,}\d)|@|whatsapp|telegram|viber/i;
+  // id-поля из схемы DAT приходят то числом, то строкой — в БД храним TEXT, приводим к строке
+  const ID_FIELDS = ["dotNumber", "carrierMc", "freightForwarderMc",
+                     "combinedOfficeId", "headquartersId", "posterUserId"];
+  // лимиты длины строк = MaxLength в LoadItemDto (иначе 400 на весь батч)
+  const CLAMP = { comments: 500, bookingUrl: 500, contactEmail: 120, brokerName: 120,
+                  brokerCity: 80, preferredContactMethod: 24 };
 
   function sanitizeLoad(load) {
     const out = {};
     for (const k of SAFE_FIELDS) if (load[k] != null) out[k] = load[k];
-    if (out.brokerName && PII_RE.test(out.brokerName)) delete out.brokerName;
     // board/markets/equipment/groupKey обязательны
     if (!out.board || !out.originMarket || !out.destMarket || !out.equipment || !out.groupKey) return null;
+    for (const k of ID_FIELDS) if (out[k] != null) out[k] = String(out[k]).slice(0, 20);
+    for (const [k, max] of Object.entries(CLAMP))
+      if (typeof out[k] === "string") out[k] = out[k].replace(/[\n\r]+/g, " ").trim().slice(0, max) || undefined;
+    if (out.contactPhone) out.contactPhone = String(out.contactPhone).replace(/[^\d+().\- ]/g, "").slice(0, 24);
+    // availability {earliest,latest} → плоские pickup-поля
+    if (load.availability) {
+      if (load.availability.earliest) out.pickupEarliest = String(load.availability.earliest).slice(0, 40);
+      if (load.availability.latest) out.pickupLatest = String(load.availability.latest).slice(0, 40);
+    }
     return out;
   }
 

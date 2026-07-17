@@ -19,15 +19,22 @@ test("keyFor: семантический ключ, MC только цифры", 
   assert.strictEqual(LLALERT.keyFor(LOAD), "dat|CHICAGO_IL>DALLAS_TX|R|2400|980|123456");
 });
 
-test("toPayload: только бизнес-поля, MC нормализован, без PII-полей", () => {
-  const p = LLALERT.toPayload({ ...LOAD, brokerName: "John +1 555 333", contact: "x" });
+test("toPayload: бизнес-поля + имя брокера, MC нормализован, сырой contact не уходит", () => {
+  const p = LLALERT.toPayload({ ...LOAD, brokerName: "Axle Logistics", contact: "x" });
   assert.deepStrictEqual(p, {
     dedupKey: "dat|CHICAGO_IL>DALLAS_TX|R|2400|980|123456",
     originMarket: "CHICAGO_IL", destMarket: "DALLAS_TX", equipment: "R",
-    rate: 2400, loadedMiles: 980, deadheadMiles: 40, brokerMc: "123456", creditScore: 92,
+    rate: 2400, loadedMiles: 980, deadheadMiles: 40, brokerMc: "123456",
+    brokerName: "Axle Logistics", creditScore: 92,
   });
-  assert.strictEqual(p.brokerName, undefined);
   assert.strictEqual(p.contact, undefined);
+});
+
+test("toPayload: comments пробрасывается, переводы строк схлопываются, длина ограничена", () => {
+  const p = LLALERT.toPayload({ ...LOAD, comments: "Lane.Jones@axlelogistics.com //\n60.25ft long" });
+  assert.strictEqual(p.comments, "Lane.Jones@axlelogistics.com // 60.25ft long");
+  const long = LLALERT.toPayload({ ...LOAD, comments: "x".repeat(500) });
+  assert.strictEqual(long.comments.length, 300);
 });
 
 test("toPayload: дата пикапа и контакт брокера пробрасываются", () => {

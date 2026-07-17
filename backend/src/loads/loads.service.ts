@@ -10,6 +10,20 @@ import { buildMarketMatch } from './market-match';
 
 const CROWD_WINDOW_HOURS = 72;
 
+// Расширенные поля парсера (2026-07-17): 1:1 DTO → колонка модели; upsert перезаписывает свежими.
+// PII (comments/контакты) — только хранение; в CrowdLoad/PartnerLoad не отдаётся.
+const EXTENDED_FIELDS = [
+  'originCity', 'originState', 'destCity', 'destState',
+  'lengthFt', 'equipmentCode', 'fullPartial', 'tripMethod', 'destDeadheadMiles', 'rateBasis',
+  'creditScore', 'daysToPay', 'creditAsOf', 'brokerCity', 'brokerState',
+  'isFactorable', 'isAssurable', 'isNegotiable', 'hasTiaMembership',
+  'fromPrivateNetwork', 'isObfuscated', 'bookNow',
+  'bookingMethod', 'bookingUrl', 'bidCount',
+  'servicedWhen', 'postingExpiresWhen', 'presentationDate', 'pickupEarliest', 'pickupLatest',
+  'dotNumber', 'carrierMc', 'freightForwarderMc', 'combinedOfficeId', 'headquartersId', 'posterUserId',
+  'estimatedRatePerMile', 'comments', 'contactEmail', 'contactPhone', 'preferredContactMethod',
+] as const;
+
 // форма груза для планировщика цепочек (без PII: contact/credit не отдаём)
 export interface CrowdLoad {
   board: string; loadId: string; originMarket: string; destMarket: string;
@@ -60,11 +74,13 @@ export class LoadsService {
       brokerName: it.brokerName ?? null,
       firstSeen: now,
       lastSeen: now,
+      // расширенные поля 1:1 из DTO (полный набор парсера, 2026-07-17)
+      ...Object.fromEntries(EXTENDED_FIELDS.map((f) => [f, it[f] ?? null])),
     }));
     await this.model.bulkCreate(rows, {
       updateOnDuplicate: [
         'rate', 'loadedMiles', 'deadheadMiles', 'rpmCents', 'weight',
-        'brokerMc', 'brokerName', 'groupKey', 'lastSeen',
+        'brokerMc', 'brokerName', 'groupKey', 'lastSeen', ...EXTENDED_FIELDS,
       ],
     });
     // Инкремент seen_count только для уже существовавших грузов: у новых first_seen == now

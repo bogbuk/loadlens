@@ -1,6 +1,7 @@
 /* LoadLens alerts — релей подошедших грузов (green + фильтр прицепа) в Telegram.
-   Только грузы, которые пользователь уже видит в своей сессии (ToS). Контакты/PII не уходят:
-   шлём lane/ставку/мили/RPM/broker MC+кредит. Дедуп: session-Set (сеть) + авторитетный сервер.
+   Только грузы, которые пользователь уже видит в своей сессии (ToS). Шлём lane/ставку/мили/RPM/
+   брокера (имя+MC+кредит), дату пикапа, контакт и комментарий груза — PII уходит в личный DM
+   пользователя по явному решению. Дедуп: session-Set (сеть) + авторитетный сервер.
    Гейт: Pro + привязанный Telegram + включённые алерты (статус кэшируем). */
 const LLALERT = (() => {
   "use strict";
@@ -29,7 +30,9 @@ const LLALERT = (() => {
     };
     if (l.deadheadMiles) item.deadheadMiles = Math.round(l.deadheadMiles);
     if (mc) item.brokerMc = mc;
+    if (l.brokerName) item.brokerName = String(l.brokerName).replace(/[\n\r]+/g, " ").trim().slice(0, 120);
     if (l.creditScore != null && !isNaN(l.creditScore)) item.creditScore = Math.round(l.creditScore);
+    if (l.comments) item.comments = String(l.comments).replace(/[\n\r]+/g, " ").trim().slice(0, 300);
     const pickup = l.availability && l.availability.earliest;
     if (pickup) item.pickupDate = String(pickup).slice(0, 32);
     if (l.contactEmail) item.contactEmail = String(l.contactEmail).slice(0, 120);

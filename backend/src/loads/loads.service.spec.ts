@@ -64,6 +64,37 @@ describe('LoadsService.ingest seen_count', () => {
     expect(repl.board).toBe('dat');
     expect(repl.ids).toEqual(['L1']);
   });
+
+  it('маппит расширенные поля (2026-07-17) и включает их в updateOnDuplicate', async () => {
+    const bulkCreate = jest.fn().mockResolvedValue([]);
+    const svc = new LoadsService({ bulkCreate } as any, { query: jest.fn().mockResolvedValue([]) } as any);
+    await svc.ingest({
+      clientId: 'c1',
+      items: [{
+        board: 'dat', loadId: 'L1', originMarket: 'CHICAGO_IL', destMarket: 'ATLANTA_GA',
+        equipment: 'K', groupKey: 'dat|CHICAGO_IL>ATLANTA_GA|K',
+        originCity: 'Chicago', originState: 'IL', equipmentCode: 'RGN',
+        creditScore: 97, daysToPay: 27.5, isAssurable: true, bookNow: false, bidCount: 0,
+        comments: 'Lane.Jones@axlelogistics.com // 60.25ft long',
+        contactEmail: 'ops@broker.test', contactPhone: '865-398-2058',
+        pickupEarliest: '2026-07-17', dotNumber: '1234567',
+      }],
+    } as any);
+    const row = bulkCreate.mock.calls[0][0][0];
+    expect(row.originCity).toBe('Chicago');
+    expect(row.equipmentCode).toBe('RGN');
+    expect(row.creditScore).toBe(97);
+    expect(row.daysToPay).toBe(27.5);
+    expect(row.isAssurable).toBe(true);
+    expect(row.bookNow).toBe(false);       // false не превращается в null
+    expect(row.bidCount).toBe(0);          // 0 не превращается в null
+    expect(row.comments).toContain('60.25ft long');
+    expect(row.contactEmail).toBe('ops@broker.test');
+    expect(row.pickupEarliest).toBe('2026-07-17');
+    expect(row.destCity).toBeNull();       // не переданные — явный null
+    const upd = bulkCreate.mock.calls[0][1].updateOnDuplicate;
+    expect(upd).toEqual(expect.arrayContaining(['creditScore', 'comments', 'contactEmail', 'pickupEarliest']));
+  });
 });
 
 describe('LoadsService.partnerSearch', () => {

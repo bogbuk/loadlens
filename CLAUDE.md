@@ -31,7 +31,7 @@ extension/                  MV3-расширение (грузит vendor/* → 
     truckstop.adapter.js    DOM-адаптер Truckstop; *_SELECTORS — ★ ЗАГЛУШКИ
     adapters.js             реестр adapterFor(host); __fixtures__/ — фикстуры для тестов
   content.js                источник: gqlLoads (перехват, приоритет) → панель/скоринг/sync; DOM → построчные бейджи
-  api.js (LLAPI)            JWT-клиент + sanitizeLoad (PII-фильтр) + sendLoads/getLane/getMarket/getDistance
+  api.js (LLAPI)            JWT-клиент + sanitizeLoad (whitelist+нормализация; с 2026-07-17 шлёт ВСЁ, вкл. контакты) + sendLoads/getLane/getMarket/getDistance
   geo.js, hos.js            обёртки: дистанции (backend+haversine), HOS-состояние водителя
   drivers.js (LLDRV)        парк диспетчера: resolveDriverContext (чистая, выбор контекста планировщика) + per-device активный водитель (ll_active_driver)
   alerts.js (LLALERT)       релей green+passEquip грузов в Telegram: keyFor/toPayload (бизнес-поля + дата пикапа + контакт брокера — PII по явному решению, только в DM) + push (гейт linked/enabled, session-дедуп). Вызывается из content.render
@@ -40,7 +40,7 @@ extension/                  MV3-расширение (грузит vendor/* → 
   popup.*                   настройки водителя (cost/mile, HOS-часы) + секция «Отображение на странице» (instant-apply тумблеры ll_hide_panel/ll_hide_badges) + аккаунт + секция «Парк» (CRUD водителей) + секция «Telegram-уведомления» (Pro)
   vendor/                   ★ АВТОКОПИИ из shared/ (load.model, scoring, planner, markets.seed). `npm run sync:shared`
 backend/src/                NestJS, synchronize:true (миграций нет)
-  loads/                    POST /loads — ingest+upsert; GET /loads?origin=&equipment= — крауд-грузы рынка (onward-плечи цепочек, без PII; read — Premium-гард)
+  loads/                    POST /loads — ingest+upsert (с 2026-07-17 полный набор полей парсера, вкл. контакты/comments); GET /loads?origin=&equipment= — крауд-грузы рынка (onward-плечи цепочек, БЕЗ PII-полей; read — Premium-гард)
   lanes/                    GET /lanes — топ-lane'ов + сводка (публичный, для дашборда); GET /lanes/:o/:d — median RPM по lane (read — Premium-гард)
   markets/                  GET /markets/:m/strength — сила рынка (крауд-плотность + seed-фолбэк; read — Premium-гард: API-KEY/Pro-JWT)
   geo/                      GET /geo/distance — OSRM-прокси + кэш lane_distances + haversine (read — Premium-гард)
@@ -86,9 +86,14 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   ответы, которые приложение DAT уже загрузило в сессии пользователя (как DOM-overlay у LoadConnect/
   LoadHunter; это и есть граница «читаем то, что пользователь видит»). Автоматический вызов их
   GraphQL/REST с сессионным токеном — путь Convoy, делать НЕЛЬЗЯ без Integrations-партнёрства.
-  Наружу через наш API — только агрегат (median по lane), не дамп. PII (email/phone/контакты) режется
-  в `LLAPI.sanitizeLoad` ДО отправки; `brokerMc`/`creditScore`/`daysToPay` — бизнес-данные, не PII.
-  **Живые DAT-токены в чат/файлы не вставлять и не использовать для скрейпинга.** Прецедент DAT v. Convoy.
+  Наружу через наш API — только агрегат (median по lane), не дамп; `brokerMc`/`creditScore`/`daysToPay` —
+  бизнес-данные, не PII. **Хранение PII (осознанный сдвиг 2026-07-17):** крауд-БД (`POST /loads`)
+  принимает полный набор полей парсера, ВКЛЮЧАЯ `contactEmail`/`contactPhone`/`comments` —
+  `LLAPI.sanitizeLoad` больше не PII-фильтр, а whitelist+нормализация. Граница переехала на чтение:
+  читающие эндпоинты (`GET /loads`/`near`, CrowdLoad/PartnerLoad) PII-поля НЕ отдают — раздача чужих
+  контактов другим пользователям осталась бы редистрибуцией Product Data (отдельное решение, если
+  понадобится). **Живые DAT-токены в чат/файлы не вставлять и не использовать для скрейпинга.**
+  Прецедент DAT v. Convoy.
 - **Авто-пилот таба (осознанный сдвиг ToS).** `content.js` по таймеру обновляет фоновый таб выдачи и
   удерживает сортировку. Кнопка SEARCH — РЕАЛЬНЫЙ селектор `button[data-test="search-button"]`, но DAT
   держит её **disabled, пока критерии поиска не менялись**. Поэтому логика двухступенчатая: если SEARCH
@@ -141,13 +146,14 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   (`/telegram/link` → deep-link `t.me/<bot>?start=<token>` → вебхук `/telegram/webhook/:secret` ловит
   `/start` и пишет `users.telegram_chat_id`) + тумблер `alerts_enabled`. Дедуп **по семантическому
   ключу** (`board|origin>dest|equip|rate|miles|mc`, НЕ по композитному resultId) + TTL 6ч + soft-cap
-  10/10мин (`alert_sends`). Сообщение бота: lane/$/мили/RPM/brokerMC+кредит **+ дата пикапа**
-  (`availability.earliest`) **+ контакт брокера** (`contactEmail`/`contactPhone`) — чтобы диспетчер
-  сразу связался. **ToS/PII (осознанный сдвиг):** контакт брокера — это PII; в **этот** релей он уходит
-  по явному решению (поля `toPayload` → `NotifyItemDto`). Это касается ТОЛЬКО Telegram-DM пользователю,
-  который и так видит контакт в своей сессии. Крауд-база ставок (`POST /loads` через `sanitizeLoad`)
-  контакты по-прежнему **НЕ** получает — там PII режется. Наружу-агрегат (median по lane) контактов не
-  содержит. Фича-флаг = `TELEGRAM_BOT_TOKEN` (нет токена → молчит, как EIA).
+  10/10мин (`alert_sends`). Сообщение бота: lane/$/мили/RPM/**имя брокера**+MC+кредит **+ дата пикапа**
+  (`availability.earliest`) **+ контакт брокера** (`contactEmail`/`contactPhone`) **+ комментарий груза**
+  (`comments`, строка 💬 — часто содержит email/детали типа «60.25ft long») — чтобы диспетчер сразу
+  связался. **ToS/PII (осознанный сдвиг):** контакт/комментарий — это PII; в релей они уходят по явному
+  решению (поля `toPayload` → `NotifyItemDto`), в Telegram-DM пользователю, который и так видит их в
+  своей сессии. Крауд-БД с 2026-07-17 тоже ХРАНИТ контакты/comments (см. пункт ToS/PII выше), но
+  наружу-агрегат (median по lane) и GET-чтения контактов не содержат. Фича-флаг = `TELEGRAM_BOT_TOKEN`
+  (нет токена → молчит, как EIA).
 - **Скоринг:** trueRpm = rate/(loaded+deadhead); бейдж: **red** = netRpm < break-even (cost/mile,
   дефолт $1.80, нижняя граница убытка); **green** = trueRpm ≥ целевой $/mi бакета дистанции
   (`LLSCORE.targetForMiles` по таблице `DEFAULTS.targets`: ≤500mi→$7, ≤1000→$6, 1000+→$5; конфиг

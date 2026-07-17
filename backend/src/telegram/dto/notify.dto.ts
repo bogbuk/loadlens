@@ -30,8 +30,15 @@ export class NotifyItemDto {
   @IsOptional() @IsString() @MaxLength(24) @Matches(/^[0-9]{1,24}$/)
   brokerMc?: string;
 
+  @IsOptional() @IsString() @MaxLength(120) @Matches(/^[^\n\r]{1,120}$/)
+  brokerName?: string;
+
   @IsOptional() @IsInt() @Min(0)
   creditScore?: number;
+
+  // Комментарий груза из выдачи DAT (может содержать email/детали — уходит только в DM пользователя).
+  @IsOptional() @IsString() @MaxLength(300) @Matches(/^[^\n\r]{1,300}$/)
+  comments?: string;
 
   // Дата пикапа из выдачи DAT (availability.earliest) — напр. "2026-06-14". Не PII.
   @IsOptional() @IsString() @MaxLength(32) @Matches(/^[0-9T:\-+.Z ]{1,32}$/)

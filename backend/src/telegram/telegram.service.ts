@@ -27,7 +27,7 @@ function fmtPickup(raw?: string): string | null {
   return `${Number(m[3])} ${mon} ${m[1]}`;
 }
 
-// Текст алерта. Бизнес-поля груза + дата пикапа и контакт брокера (PII — по явному решению).
+// Текст алерта. Бизнес-поля груза + дата пикапа, контакт брокера и комментарий (PII — по явному решению).
 export function formatAlertMessage(l: NotifyItemDto): string {
   const total = (Number(l.loadedMiles) || 0) + (Number(l.deadheadMiles) || 0);
   const rpm = total > 0 ? (Number(l.rate) / total).toFixed(2) : '—';
@@ -37,15 +37,20 @@ export function formatAlertMessage(l: NotifyItemDto): string {
     (dh ? ` +${Math.round(dh)}DH` : '') + ` · $${rpm}/mi`;
   const pickup = fmtPickup(l.pickupDate);
   const dateLine = pickup ? `\n📅 Pickup ${pickup}` : '';
-  const broker = l.brokerMc
-    ? `\nBroker MC${l.brokerMc}` + (l.creditScore != null ? ` · credit ${l.creditScore}` : '')
-    : '';
+  const brokerBits = [
+    l.brokerName || '',
+    l.brokerMc ? `MC${l.brokerMc}` : '',
+    l.creditScore != null ? `credit ${l.creditScore}` : '',
+  ].filter(Boolean);
+  // credit сам по себе (без имени/MC) не показываем — не к чему привязать
+  const broker = (l.brokerName || l.brokerMc) ? `\nBroker ${brokerBits.join(' · ')}` : '';
+  const commentsLine = l.comments ? `\n💬 ${l.comments}` : '';
   const contactBits = [
     l.contactEmail ? `✉️ ${l.contactEmail}` : '',
     l.contactPhone ? `📞 ${l.contactPhone}` : '',
   ].filter(Boolean);
   const contact = contactBits.length ? `\n${contactBits.join(' · ')}` : '';
-  return `${head}${dateLine}\n${line2}${broker}${contact}`;
+  return `${head}${dateLine}\n${line2}${broker}${commentsLine}${contact}`;
 }
 
 // Разбор '/start <token>' из вебхука Telegram. Возвращает токен привязки или null.

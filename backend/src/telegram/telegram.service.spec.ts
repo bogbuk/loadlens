@@ -40,6 +40,21 @@ describe('formatAlertMessage', () => {
     expect(msg).not.toContain('✉️');
     expect(msg).not.toContain('📞');
   });
+
+  it('имя брокера — перед MC; комментарий — отдельной строкой 💬', () => {
+    const msg = formatAlertMessage({
+      ...ITEM, brokerName: 'Axle Logistics', comments: 'Lane.Jones@axlelogistics.com // 60.25ft long',
+    });
+    expect(msg).toContain('Broker Axle Logistics · MC123456 · credit 92');
+    expect(msg).toContain('\n💬 Lane.Jones@axlelogistics.com // 60.25ft long');
+  });
+
+  it('имя брокера без MC — строка Broker всё равно есть; без comments — 💬 скрыт', () => {
+    const msg = formatAlertMessage({ ...ITEM, brokerMc: undefined, creditScore: undefined, brokerName: 'Acme' });
+    expect(msg).toContain('Broker Acme');
+    expect(msg).not.toContain('MC');
+    expect(msg).not.toContain('💬');
+  });
 });
 
 describe('parseStartCommand', () => {

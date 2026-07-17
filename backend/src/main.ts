@@ -15,6 +15,28 @@ async function bootstrap() {
   await sequelize.query(
     'ALTER TABLE loads ADD COLUMN IF NOT EXISTS seen_count INTEGER NOT NULL DEFAULT 1',
   );
+  // Полный набор полей парсера (2026-07-17): synchronize не меняет существующие таблицы —
+  // добавляем идемпотентно. Типы соответствуют load.model.ts.
+  const loadCols: Array<[string, string]> = [
+    ['origin_city', 'TEXT'], ['origin_state', 'TEXT'], ['dest_city', 'TEXT'], ['dest_state', 'TEXT'],
+    ['length_ft', 'INTEGER'], ['equipment_code', 'TEXT'], ['full_partial', 'TEXT'],
+    ['trip_method', 'TEXT'], ['dest_deadhead_miles', 'REAL'], ['rate_basis', 'TEXT'],
+    ['credit_score', 'INTEGER'], ['days_to_pay', 'REAL'], ['credit_as_of', 'TEXT'],
+    ['broker_city', 'TEXT'], ['broker_state', 'TEXT'],
+    ['is_factorable', 'BOOLEAN'], ['is_assurable', 'BOOLEAN'], ['is_negotiable', 'BOOLEAN'],
+    ['has_tia_membership', 'BOOLEAN'], ['from_private_network', 'BOOLEAN'],
+    ['is_obfuscated', 'BOOLEAN'], ['book_now', 'BOOLEAN'],
+    ['booking_method', 'TEXT'], ['booking_url', 'TEXT'], ['bid_count', 'INTEGER'],
+    ['serviced_when', 'TEXT'], ['posting_expires_when', 'TEXT'], ['presentation_date', 'TEXT'],
+    ['pickup_earliest', 'TEXT'], ['pickup_latest', 'TEXT'],
+    ['dot_number', 'TEXT'], ['carrier_mc', 'TEXT'], ['freight_forwarder_mc', 'TEXT'],
+    ['combined_office_id', 'TEXT'], ['headquarters_id', 'TEXT'], ['poster_user_id', 'TEXT'],
+    ['estimated_rate_per_mile', 'REAL'],
+    ['comments', 'TEXT'], ['contact_email', 'TEXT'], ['contact_phone', 'TEXT'],
+    ['preferred_contact_method', 'TEXT'],
+  ];
+  for (const [col, type] of loadCols)
+    await sequelize.query(`ALTER TABLE loads ADD COLUMN IF NOT EXISTS ${col} ${type}`);
   // synchronize не меняет существующие таблицы — Telegram-колонки добавляем идемпотентно.
   await sequelize.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id TEXT');
   await sequelize.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_link_token TEXT');

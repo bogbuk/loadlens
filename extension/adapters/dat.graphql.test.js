@@ -43,12 +43,12 @@ test("broker-trust поля переносятся (MC, credit, daysToPay), PII 
   assert.strictEqual(a.contact, "ops@example-broker.test"); // PII — режется в LLAPI.sanitizeLoad
 });
 
-test("sanitizeLoad режет PII и НЕ шлёт contact, но шлёт brokerMc", () => {
+test("sanitizeLoad: сырой contact не уходит, brokerMc/credit — уходят (полный whitelist 2026-07-17)", () => {
   const LLAPI = require("../api.js");
   const a = DAT_GQL.parseFindLoads(fixture)[0];
   const clean = LLAPI.sanitizeLoad(a);
-  assert.strictEqual(clean.contact, undefined);
-  assert.strictEqual(clean.creditScore, undefined);   // не в whitelist (broker-trust шлём отдельно позже)
+  assert.strictEqual(clean.contact, undefined);       // legacy-агрегат не в whitelist
+  assert.strictEqual(clean.creditScore, 92);          // broker-trust теперь в крауд
   assert.strictEqual(clean.brokerMc, "MC-555000");
   assert.strictEqual(clean.originMarket, "CHICAGO_IL");
 });
@@ -96,13 +96,15 @@ test("реальная форма: comments-массив → строка, conta
   assert.ok(Array.isArray(c.contactMethods) && c.contactMethods.length === 2);
 });
 
-test("contactMethods/contact-PII режутся sanitizeLoad, бизнес-поля остаются", () => {
+test("sanitizeLoad: контакты уходят плоскими полями (решение 2026-07-17), структурный contactMethods — нет", () => {
   const LLAPI = require("../api.js");
   const clean = LLAPI.sanitizeLoad(DAT_GQL.parseFindLoads(fixture)[2]);
-  assert.strictEqual(clean.contact, undefined);
-  assert.strictEqual(clean.contactMethods, undefined);
-  assert.strictEqual(clean.contactEmail, undefined);
-  assert.strictEqual(clean.contactPhone, undefined);
+  assert.strictEqual(clean.contact, undefined);        // legacy-агрегат не в whitelist
+  assert.strictEqual(clean.contactMethods, undefined); // структурный массив не в whitelist
+  assert.strictEqual(clean.contactEmail, "ops@example-hh.test");
+  assert.strictEqual(clean.contactPhone, "5550001111");
+  assert.strictEqual(clean.combinedOfficeId, "21143"); // id приведён к строке
+  assert.strictEqual(clean.equipmentCode, "DD");
 });
 
 test("parseFindLoadsResult отдаёт searchId/hasNext; parseFindLoads — те же loads", () => {
