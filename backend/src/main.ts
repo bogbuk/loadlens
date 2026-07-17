@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { getConnectionToken } from '@nestjs/sequelize';
 import type { Sequelize } from 'sequelize';
+import { json } from 'express';
 import { AppModule } from './app.module';
 import { parseAdminEmails } from './auth/admin-emails';
 
@@ -11,6 +12,9 @@ async function bootstrap() {
     throw new Error('JWT_SECRET обязателен в проде');
 
   const app = await NestFactory.create(AppModule);
+  // POST /loads с полным набором полей (200 грузов × ~2КБ) не влезает в дефолтные 100kb → 413.
+  // Наш парсер регистрируется раньше дефолтного body-parser'а и перекрывает его лимит.
+  app.use(json({ limit: '2mb' }));
   const sequelize = app.get<Sequelize>(getConnectionToken());
   await sequelize.query(
     'ALTER TABLE loads ADD COLUMN IF NOT EXISTS seen_count INTEGER NOT NULL DEFAULT 1',
