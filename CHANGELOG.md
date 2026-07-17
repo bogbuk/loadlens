@@ -2,6 +2,14 @@
 
 All notable user-facing changes to the LoadLens browser extension.
 
+## 0.3.6 — 2026-07-17
+
+### New
+- **Telegram alerts now show the broker's name and the load's comments.** The alert message includes the broker company name next to the MC number, plus a 💬 line with the posting's comments — often the fastest way to spot the contact email and key details like exact trailer length.
+
+### Changed
+- **Richer market data sync.** The extension now syncs the full set of load details it already reads from the board (pickup dates, credit info, equipment specifics, booking signals), improving lane statistics and future scoring.
+
 ## 0.3.5 — 2026-06-30
 
 ### New
