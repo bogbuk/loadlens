@@ -8,9 +8,16 @@ function makeService(rows: any[]) {
   const model = {
     findAll: jest.fn().mockResolvedValue(rows),
     upsert: jest.fn().mockResolvedValue(undefined),
-    destroy: jest.fn().mockResolvedValue(rows.length),
+    // По умолчанию считаем, что удаляются все строки, переданные в where.clientId
+    // (в этих тестах гонки нет). Конкретные тесты на гонку переопределяют это явно.
+    destroy: jest.fn().mockImplementation(({ where }) =>
+      Promise.resolve(Array.isArray(where.clientId) ? where.clientId.length : 1)),
+    // Скоуп по userId + clientId, как в реальной модели: строка с тем же
+    // clientId, но чужим userId, известным устройством считаться не должна.
     findOne: jest.fn().mockImplementation(({ where }) =>
-      Promise.resolve(rows.find((r) => r.clientId === where.clientId) ?? null)),
+      Promise.resolve(
+        rows.find((r) => r.clientId === where.clientId && (r.userId ?? 'u1') === where.userId) ?? null,
+      )),
   };
   const users = { increment: jest.fn().mockResolvedValue(undefined) };
   return { svc: new DevicesService(model as any, users as any), model, users };
@@ -50,6 +57,14 @@ describe('DevicesService.registerOnAuth', () => {
     expect(users.increment).toHaveBeenCalledWith('deviceEvictions', { by: 1, where: { id: 'u1' } });
   });
 
+  it('гонка: строку уже удалил параллельный запрос — destroy вернул 0, счётчик не растёт', async () => {
+    const { svc, model, users } = makeService([row('old', 500), row('mid', 100), row('new', 10)]);
+    model.destroy.mockResolvedValueOnce(0);
+    await svc.registerOnAuth(proUser(), 'fresh');
+    expect(model.destroy).toHaveBeenCalled();
+    expect(users.increment).not.toHaveBeenCalled();
+  });
+
   it('переполнение у free — не удаляем и не считаем', async () => {
     const { svc, model, users } = makeService([row('a', 500), row('b', 100), row('c', 10)]);
     await svc.registerOnAuth(freeUser(), 'dd');
@@ -77,7 +92,16 @@ describe('DevicesService.verifyOnRefresh', () => {
   it('pro с известным устройством — проходит и освежает lastSeenAt', async () => {
     const { svc, model } = makeService([row('a', 10)]);
     await expect(svc.verifyOnRefresh(proUser(), 'a')).resolves.toBeUndefined();
+    expect(model.findOne).toHaveBeenCalledWith({ where: { userId: 'u1', clientId: 'a' } });
     expect(model.upsert).toHaveBeenCalled();
+  });
+
+  it('pro с clientId чужого пользователя — не считается известным устройством, 401 device_limit', async () => {
+    const { svc, model } = makeService([{ ...row('a', 10), userId: 'other-user' }]);
+    await expect(svc.verifyOnRefresh(proUser(), 'a')).rejects.toMatchObject({
+      response: { reason: 'device_limit' },
+    });
+    expect(model.findOne).toHaveBeenCalledWith({ where: { userId: 'u1', clientId: 'a' } });
   });
 
   it('free с неизвестным устройством — не отказываем, просто пишем', async () => {

@@ -42,8 +42,14 @@ export class DevicesService {
     await this.touch(user.id, clientId);
     if (!evict.length) return;
 
-    await this.devices.destroy({ where: { userId: user.id, clientId: evict.map((d) => d.clientId) } });
-    await this.users.increment('deviceEvictions', { by: evict.length, where: { id: user.id } });
+    // Считаем по факту удалённых строк, а не по длине evict: при гонке двух
+    // одновременных входов оба могут решить вытеснить одну и ту же старую
+    // строку, но реально удалит её только один — destroy() вернёт 0 у второго.
+    const deleted = await this.devices.destroy({
+      where: { userId: user.id, clientId: evict.map((d) => d.clientId) },
+    });
+    if (!deleted) return;
+    await this.users.increment('deviceEvictions', { by: deleted, where: { id: user.id } });
   }
 
   // refresh: у pro устройство обязано быть в таблице; отсутствие строки = его вытеснили.
