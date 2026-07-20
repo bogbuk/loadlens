@@ -6,8 +6,10 @@ test("stripComments: убирает построчный комментарий"
   assert.strictEqual(stripComments("const a = 1; // русский коммент").trim(), "const a = 1;");
 });
 
-test("stripComments: убирает блочный комментарий, в т.ч. многострочный", () => {
-  assert.strictEqual(stripComments("/* русский\n   блок */const a = 1;"), "const a = 1;");
+test("stripComments: убирает блочный комментарий, в т.ч. многострочный (переводы строк сохраняются)", () => {
+  // Посимвольный сканер сохраняет \n внутри блочного комментария, чтобы номера строк
+  // в findCyrillic не смещались — поэтому один \n внутри комментария остаётся в выводе.
+  assert.strictEqual(stripComments("/* русский\n   блок */const a = 1;"), "\nconst a = 1;");
 });
 
 test("stripComments: не режет :// внутри URL", () => {
@@ -27,4 +29,27 @@ test("findCyrillic: чистый английский даёт пустой ре
 
 test("findCyrillic: кириллица только в комментарии не считается находкой", () => {
   assert.deepStrictEqual(findCyrillic(stripComments('const a = 1; // коммент')), []);
+});
+
+test("defect 1: // внутри строкового литерала (не после :) не должен обрезать остаток строки", () => {
+  const hits = findCyrillic(stripComments('const label = "info//подробнее";'));
+  assert.strictEqual(hits.length, 1);
+});
+
+test("defect 2: одинокий /* внутри строкового литерала не должен глотать несвязанные строки дальше по файлу", () => {
+  const s = 'const a = "вариант A/*B";\nconst b = "неправильный груз";\nfunction f(){ */ return 1; }';
+  const hits = findCyrillic(stripComments(s));
+  assert.ok(hits.some((h) => h.text.includes("неправильный груз")));
+});
+
+test("defect 3: HTML-комментарии <!-- --> распознаются и срезаются", () => {
+  const hits = findCyrillic(stripComments("<!-- Русский комментарий -->\n<div>hello</div>"));
+  assert.deepStrictEqual(hits, []);
+});
+
+test("stripComments: номера строк не смещаются после срезания многострочного блочного комментария", () => {
+  const src = '/* line1\nline2\nline3 */\nconst a = "привет";';
+  const hits = findCyrillic(stripComments(src));
+  assert.strictEqual(hits.length, 1);
+  assert.strictEqual(hits[0].line, 4);
 });

@@ -14,10 +14,89 @@ const SCOPE = [
   "backend/src",
 ];
 
+// Посимвольный сканер вместо двух регэкспов: регэкспы не понимают границ строковых
+// литералов, поэтому "//" или "/*" внутри строки ошибочно считались началом комментария
+// (резали остаток строки/файла). Состояния: код / "..." / '...' / `...` / построчный
+// комментарий / блочный комментарий / HTML-комментарий <!-- -->. Экранирование \ внутри
+// строк учитывается. Комментарии заменяются пробелами (не пустотой), переводы строк
+// сохраняются как есть — номера строк в findCyrillic не должны смещаться.
+// Упрощение: содержимое шаблонной строки `...` целиком считается строкой — интерполяция
+// ${...} внутри неё рекурсивно не разбирается (в рамках этой задачи это не требуется).
 function stripComments(src) {
-  return String(src)
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  const s = String(src);
+  let out = "";
+  let i = 0;
+  const n = s.length;
+  let state = "code"; // code | dq | sq | tpl | line | block | html
+  while (i < n) {
+    const c = s[i];
+    const c2 = s[i + 1];
+    if (state === "code") {
+      if (c === '"') {
+        state = "dq";
+        out += c;
+        i++;
+      } else if (c === "'") {
+        state = "sq";
+        out += c;
+        i++;
+      } else if (c === "`") {
+        state = "tpl";
+        out += c;
+        i++;
+      } else if (c === "/" && c2 === "/") {
+        state = "line";
+        i += 2;
+      } else if (c === "/" && c2 === "*") {
+        state = "block";
+        i += 2;
+      } else if (c === "<" && s.slice(i, i + 4) === "<!--") {
+        state = "html";
+        i += 4;
+      } else {
+        out += c;
+        i++;
+      }
+    } else if (state === "dq" || state === "sq" || state === "tpl") {
+      const quote = state === "dq" ? '"' : state === "sq" ? "'" : "`";
+      if (c === "\\") {
+        out += c + (c2 !== undefined ? c2 : "");
+        i += 2;
+      } else if (c === quote) {
+        out += c;
+        state = "code";
+        i++;
+      } else {
+        out += c;
+        i++;
+      }
+    } else if (state === "line") {
+      if (c === "\n") {
+        out += c;
+        state = "code";
+        i++;
+      } else {
+        i++;
+      }
+    } else if (state === "block") {
+      if (c === "*" && c2 === "/") {
+        state = "code";
+        i += 2;
+      } else {
+        if (c === "\n") out += c;
+        i++;
+      }
+    } else if (state === "html") {
+      if (c === "-" && s.slice(i, i + 3) === "-->") {
+        state = "code";
+        i += 3;
+      } else {
+        if (c === "\n") out += c;
+        i++;
+      }
+    }
+  }
+  return out;
 }
 
 function findCyrillic(src) {
