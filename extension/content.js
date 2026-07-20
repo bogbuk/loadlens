@@ -463,8 +463,8 @@
       p.id = "ll-panel";
       p.innerHTML = '<div class="hd"><span class="logo">Load<b>Lens</b></span>' +
         '<span class="hd-actions">' +
-        '<button data-act="hints" title="Скрыть подсказки LoadLens на этой вкладке">🙈</button>' +
-        '<button data-act="collapse" title="Свернуть">–</button></span></div><div class="bd"></div>';
+        '<button data-act="hints" title="Hide LoadLens hints on this tab">🙈</button>' +
+        '<button data-act="collapse" title="Collapse">–</button></span></div><div class="bd"></div>';
       document.body.appendChild(p);
       p.querySelector('[data-act="collapse"]').onclick = () => { panelCollapsed = true; render(); };
       p.querySelector('[data-act="hints"]').onclick = () => {
@@ -518,29 +518,29 @@
     const p = buildPanel();
     const bd = p.querySelector(".bd");
     bd.innerHTML =
-      (drivers.length ? `<div class="ll-driver"><span class="k">Водитель</span>` +
+      (drivers.length ? `<div class="ll-driver"><span class="k">Driver</span>` +
         `<select id="ll-driver">` + drivers.map((d) =>
           `<option value="${esc(d.id)}"${activeDriver && d.id === activeDriver.id ? " selected" : ""}>` +
           `${esc(d.name)}${d.currentMarket ? " · " + esc(d.currentMarket) : ""}${d.equipment ? " · " + esc(d.equipment) : ""}</option>`).join("") +
         `</select></div>` : "") +
-      row("Грузов в выдаче", String(loads.length)) +
-      (equipFilter ? row("Фильтр прицепа", esc(equipFilter.join(", "))) : "") +
-      row("Рынок старта", start ? esc(start) : "—") +
-      row("Дизель", "$" + dieselPrice.toFixed(2) + "/гал") +
+      row("Loads in results", String(loads.length)) +
+      (equipFilter ? row("Equipment filter", esc(equipFilter.join(", "))) : "") +
+      row("Origin market", start ? esc(start) : "—") +
+      row("Diesel", "$" + dieselPrice.toFixed(2) + "/gal") +
       `<div class="ll-cfg">Cost/mi: <input id="ll-cpm" type="number" step="0.05" value="${costPerMile}" style="width:60px"> ` +
-      `Старт: <input id="ll-start" type="text" value="${start ? esc(start) : ""}" style="width:110px" placeholder="CHICAGO_IL"></div>` +
-      `<div class="ll-cfg" title="Авто-пилот: фоновый таб сам кликает Search DAT и удерживает сортировку">` +
-        `<label><input type="checkbox" id="ll-ar"${autoRefresh.on ? " checked" : ""}> Авто-рефреш</label> ` +
-        `Сорт: <select id="ll-sort-f"><option value="">—</option>` +
+      `Origin: <input id="ll-start" type="text" value="${start ? esc(start) : ""}" style="width:110px" placeholder="CHICAGO_IL"></div>` +
+      `<div class="ll-cfg" title="Auto-pilot: the background tab clicks DAT's Search itself and holds the sort order">` +
+        `<label><input type="checkbox" id="ll-ar"${autoRefresh.on ? " checked" : ""}> Auto-refresh</label> ` +
+        `Sort: <select id="ll-sort-f"><option value="">—</option>` +
         SORT_FIELDS.map((s) => `<option value="${s.field}"${sortPref && sortPref.field === s.field ? " selected" : ""}>${esc(s.label)}</option>`).join("") +
-        `</select> <button id="ll-sort-dir" title="Направление сортировки">${sortPref && sortPref.dir === "asc" ? "▲ Low" : "▼ High"}</button></div>` +
-      (chains.length ? "<h4>Get-out цепочки</h4>" + chains.map((c) => chainCard(c, chainsCtx)).join("") : "<div class='note'>Цепочки появятся, когда видно достаточно грузов из рынка старта.</div>") +
-      (deals.length ? "<h4>Выгодные сейчас</h4>" + deals.map((d) =>
+        `</select> <button id="ll-sort-dir" title="Sort direction">${sortPref && sortPref.dir === "asc" ? "▲ Low" : "▼ High"}</button></div>` +
+      (chains.length ? "<h4>Get-out chains</h4>" + chains.map((c) => chainCard(c, chainsCtx)).join("") : "<div class='note'>Chains appear once enough loads from the origin market are visible.</div>") +
+      (deals.length ? "<h4>Hot loads</h4>" + deals.map((d) =>
         `<div class="deal"><span class="m">${esc(d.l.originMarket)} → ${esc(d.l.destMarket)} ${esc(d.l.equipment)}</span>` +
         `<span class="p">$${d.b.netRpm.toFixed(2)}/mi</span></div>`).join("") : "") +
-      '<div class="ll-ft"><button data-act="csv" title="Экспорт видимых грузов в CSV">⬇ CSV</button>' +
+      '<div class="ll-ft"><button data-act="csv" title="Export visible loads to CSV">⬇ CSV</button>' +
       '<span class="pro-tag">Pro</span></div>' +
-      '<div class="note">Скоринг учитывает deadhead, топливо и медиану рынка по lane. Ставка с борда — запрос брокера. HOS-бейдж — выполнимость по часам водителя.</div>';
+      '<div class="note">Scoring accounts for deadhead, fuel and the lane market median. The board rate is the broker\'s asking price. The HOS badge shows whether the driver can legally run it.</div>';
 
     const drvSel = bd.querySelector("#ll-driver");
     if (drvSel) drvSel.onchange = async () => {
@@ -582,7 +582,7 @@
           const tag = el.querySelector(".leg-tag");
           if (tag) {
             const prev = tag.textContent;
-            tag.textContent = "груз вне видимой выдачи";
+            tag.textContent = "load not in visible results";
             setTimeout(() => { tag.textContent = prev; }, 1800);
           }
         }
@@ -594,10 +594,10 @@
   async function exportCsv(loads) {
     const me = typeof LLAPI !== "undefined" ? await LLAPI.getMe() : null;
     if (!me || me.plan !== "pro") {
-      alert("Экспорт CSV доступен в Pro. Войдите в аккаунт в попапе LoadLens (иконка расширения).");
+      alert("CSV export is a Pro feature. Sign in from the LoadLens popup (the extension icon).");
       return;
     }
-    if (!loads.length) { alert("Нет грузов для экспорта."); return; }
+    if (!loads.length) { alert("No loads to export."); return; }
     const csv = LLCSV.buildLoadsCsv(loads);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
@@ -626,7 +626,7 @@
     const path = c.legs.map((l) => l.origin).concat(c.finalMarket).join(" → ");
     const h = LLPLAN.horizon(c);
     const caret = open ? "▾" : "▸";
-    const meta = `$${c.chainNetRpm.toFixed(2)}/mi · net $${c.totalNet} · ~${h.days}д · $${h.perDay}/д · HOS ${HOS_ICON[c.hosBadge] || "?"}`;
+    const meta = `$${c.chainNetRpm.toFixed(2)}/mi · net $${c.totalNet} · ~${h.days}d · $${h.perDay}/day · HOS ${HOS_ICON[c.hosBadge] || "?"}`;
     let html = `<div class="chain ll-${c.hosBadge}${open ? " open" : ""}">` +
       `<div class="chain-hd" data-sig="${esc(sig)}">` +
       `<div class="route">${esc(path)} <span class="caret">${caret}</span></div>` +
@@ -642,11 +642,11 @@
     const rpm = (leg.loadedMiles + leg.deadhead) > 0 ? leg.rate / (leg.loadedMiles + leg.deadhead) : 0;
     const route = `${esc(leg.origin)} → ${esc(leg.dest)}`;
     if (isLive) {
-      const idx = `плечо ${i + 1} · ${esc(leg.equipment || "")}`;
+      const idx = `leg ${i + 1} · ${esc(leg.equipment || "")}`;
       const rid = full.resultId != null ? ` data-result="${esc(String(full.resultId))}"` : "";
       const eco = `$${money(leg.rate)} · ${leg.loadedMiles}mi${leg.deadhead ? " +" + leg.deadhead + "dh" : ""} · $${rpm.toFixed(2)}/mi · HOS ${HOS_ICON[leg.hosBadge] || "?"}`;
       return `<div class="leg leg-live"${rid}>` +
-        `<div class="leg-top"><span class="leg-tag live">● СЕЙЧАС В ВЫДАЧЕ ↗</span><span class="leg-idx">${idx}</span></div>` +
+        `<div class="leg-top"><span class="leg-tag live">● LIVE IN RESULTS ↗</span><span class="leg-idx">${idx}</span></div>` +
         `<div class="leg-route">${route}${neighborTag(full)}</div>` +
         `<div class="leg-eco">${esc(eco)}</div>` +
         `<div class="leg-chips">${liveChips(full)}</div></div>`;
@@ -654,7 +654,7 @@
     // forecast (крауд) плечо. laneKeyOf ждёт originMarket/destMarket — у leg поля origin/dest, маппим.
     const laneKey = laneKeyOf({ originMarket: leg.origin, destMarket: leg.dest, equipment: leg.equipment });
     const median = laneCache.has(laneKey) ? laneCache.get(laneKey) : null;
-    const rpmTxt = median != null ? `$${median.toFixed(2)}/mi медиана lane` : `$${rpm.toFixed(2)}/mi`;
+    const rpmTxt = median != null ? `$${median.toFixed(2)}/mi lane median` : `$${rpm.toFixed(2)}/mi`;
     // серверная свежесть, если груз аннотирован /loads/near; иначе fallback на относительное время
     let fresh;
     if (full.liveness != null) {
@@ -664,11 +664,11 @@
       fresh = freshnessText(full.lastSeen);
     }
     const density = (crowdCache.get(leg.origin) || []).length;
-    const densTxt = density ? ` · ~${density} груз. из рынка` : "";
+    const densTxt = density ? ` · ~${density} loads from market` : "";
     const isLast = i === c.legs.length - 1;
-    const strengthTxt = isLast ? ` · финиш ${strengthBar(strengthOf(leg.dest))}` : "";
+    const strengthTxt = isLast ? ` · finish ${strengthBar(strengthOf(leg.dest))}` : "";
     return `<div class="leg leg-fc">` +
-      `<div class="leg-top"><span class="leg-tag fc">◔ ПРОГНОЗ ПО РЫНКУ</span><span class="leg-idx">${esc(fresh)}</span></div>` +
+      `<div class="leg-top"><span class="leg-tag fc">◔ MARKET FORECAST</span><span class="leg-idx">${esc(fresh)}</span></div>` +
       `<div class="leg-route">${route}${neighborTag(full)}</div>` +
       `<div class="leg-eco">${esc(rpmTxt)}${esc(densTxt)}${esc(strengthTxt)} · HOS ${HOS_ICON[leg.hosBadge] || "?"}</div></div>`;
   }
@@ -685,7 +685,7 @@
       const b = LLSCORE.brokerBadge(load);
       if (b.level !== "unknown") {
         const cls = b.level === "good" ? "good" : b.level === "ok" ? "ok" : "risk";
-        const tag = b.level === "good" ? "🛡 надёжный" : b.level === "ok" ? "ок" : "⚠ риск";
+        const tag = b.level === "good" ? "🛡 trusted" : b.level === "ok" ? "ok" : "⚠ risk";
         out.push(`<span class="lchip ${cls}">${esc((load.brokerName ? load.brokerName + " · " : "") + tag + (b.creditScore != null ? " " + b.creditScore + "CS" : ""))}</span>`);
       }
     }
@@ -695,18 +695,18 @@
       const wl = [load.weight ? Math.round(load.weight / 1000) + "klb" : null, load.lengthFt ? load.lengthFt + "ft" : null].filter(Boolean).join(" · ");
       out.push(`<span class="lchip">${esc(wl)}</span>`);
     }
-    if (load.isNegotiable) out.push(`<span class="lchip">торг</span>`);
-    if (load.isFactorable) out.push(`<span class="lchip">факторинг</span>`);
+    if (load.isNegotiable) out.push(`<span class="lchip">negotiable</span>`);
+    if (load.isFactorable) out.push(`<span class="lchip">factoring</span>`);
     if (load.bookNow) out.push(`<span class="lchip book">Book Now</span>`);
     return out.join("");
   }
 
   // короткий crowd-вердикт для чипа плеча
   function crowdShort(rep) {
-    if (rep.level === "good") return "🛡 ок";
-    if (rep.level === "bad") return "⚠ риск";
-    if (rep.level === "thin") return rep.n + " отзыв.";
-    return "смешанно";
+    if (rep.level === "good") return "🛡 ok";
+    if (rep.level === "bad") return "⚠ risk";
+    if (rep.level === "thin") return rep.n + " reviews";
+    return "mixed";
   }
 
   function fmtPickup(av) {
@@ -714,31 +714,31 @@
     const d = new Date(av.earliest);
     if (isNaN(d.getTime())) return null;
     const today = new Date();
-    if (d.toDateString() === today.toDateString()) return "сегодня";
-    return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+    if (d.toDateString() === today.toDateString()) return "today";
+    return d.toLocaleDateString("en-US", { day: "numeric", month: "short" });
   }
 
   function freshnessText(lastSeen) {
-    if (!lastSeen) return "прогноз";
+    if (!lastSeen) return "forecast";
     const d = new Date(lastSeen);
-    if (isNaN(d.getTime())) return "прогноз";
+    if (isNaN(d.getTime())) return "forecast";
     const days = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
-    if (days <= 0) return "видели сегодня";
-    if (days === 1) return "видели вчера";
-    return `видели ${days} дн назад`;
+    if (days <= 0) return "seen today";
+    if (days === 1) return "seen yesterday";
+    return `seen ${days}d ago`;
   }
 
   // Серверная свежесть (0..1) → цветная точка + слово. Бакеты как в спеке.
   function livenessLabel(liveness) {
-    if (liveness > 0.66) return { dot: "🟢", word: "свежо" };
-    if (liveness >= 0.33) return { dot: "🟡", word: "стынет" };
-    return { dot: "🔴", word: "могло уйти" };
+    if (liveness > 0.66) return { dot: "🟢", word: "fresh" };
+    if (liveness >= 0.33) return { dot: "🟡", word: "cooling" };
+    return { dot: "🔴", word: "may be gone" };
   }
 
   // Плечо взято из соседнего рынка (радиус) — тег с крюком. Пусто при точном рынке (0/нет поля).
   function neighborTag(full) {
     const dh = full && full.originDeadheadMi;
-    return dh > 0 ? `<span class="leg-nb">↪ +${Math.round(dh)}mi сосед</span>` : "";
+    return dh > 0 ? `<span class="leg-nb">↪ +${Math.round(dh)}mi nearby</span>` : "";
   }
 
   function strengthBar(s) {
@@ -785,15 +785,15 @@
     autoTimer = setTimeout(() => {
       let clicked = false;
       try { clicked = !!(adapter.clickRefresh && adapter.clickRefresh()); }
-      catch (e) { log("авто-рефреш ошибка", e); }
+      catch (e) { log("auto-refresh error", e); }
       if (clicked) {
         // DAT включила SEARCH (критерии менялись) → клик перезапускает поиск без перезагрузки
-        pendingSortReapply = true; log("авто-рефреш: клик Search");
+        pendingSortReapply = true; log("auto-refresh: clicked Search");
         scheduleAuto();
       } else {
         // SEARCH задизейблена/не найдена (тот же поиск нечего повторять) → перезагружаем страницу.
         // Маркер в sessionStorage: после reload переприменим удерживаемую сортировку к новой выдаче.
-        log("авто-рефреш: Search неактивна → reload страницы");
+        log("auto-refresh: Search disabled → page reload");
         try { sessionStorage.setItem("ll_autopilot_reload", "1"); } catch (_) {}
         try { location.reload(); } catch (_) { scheduleAuto(); } // boot после reload сам перезапустит таймер
       }
@@ -807,7 +807,7 @@
   async function scrollToLoadAll() {
     if (scrolling || !autoRefresh.on || !autoRefresh.scroll) return;
     const container = adapter && adapter.findScrollContainer && adapter.findScrollContainer();
-    if (!container) { log("авто-скролл: контейнер не найден"); return; }
+    if (!container) { log("auto-scroll: container not found"); return; }
     scrolling = true;
     try {
       let dry = 0, prevSize = accState.byId.size, prevH = 0;
@@ -820,14 +820,14 @@
         if (size > prevSize || h > prevH) { dry = 0; prevSize = size; prevH = h; }
         else if (++dry >= SCROLL_DRY) break;                          // выдача исчерпана
       }
-      log("авто-скролл готово:", accState.byId.size, "грузов");
+      log("auto-scroll done:", accState.byId.size, "loads");
     } finally { scrolling = false; }
   }
 
   // применить удерживаемую сортировку через родной дропдаун DAT (вручную или после авто-рефреша)
   function applySortPref() {
     const key = desiredSortKey(sortPref);
-    if (key && adapter.applySort) adapter.applySort(key).then((ok) => log("сорт DAT:", key, ok ? "ok" : "промах")).catch(() => {});
+    if (key && adapter.applySort) adapter.applySort(key).then((ok) => log("DAT sort:", key, ok ? "ok" : "miss")).catch(() => {});
   }
   async function persistSort(patch) {
     const base = sortPref || { field: null, dir: "desc" };
@@ -909,7 +909,7 @@
       if (!d || d.source !== "loadlens" || d.type !== "dat-findloads") return;
       if (typeof DAT_GQL !== "undefined") {
         const res = DAT_GQL.parseFindLoadsResult(d.payload);
-        log("приём dat-findloads → parse:", res.loads.length, "грузов, searchId", res.searchId || "—", res.loads.length ? "" : "(пусто — схема DAT могла измениться)");
+        log("received dat-findloads → parse:", res.loads.length, "loads, searchId", res.searchId || "—", res.loads.length ? "" : "(empty — the DAT schema may have changed)");
         if (res.loads.length) {
           // накапливаем по searchId: та же выдача (пагинация) доливает, новый поиск сбрасывает
           const acc = LLACC.accumulate(accState, res.loads, res.searchId);
@@ -920,7 +920,7 @@
           if (autoRefresh.on && autoRefresh.scroll && !scrolling) scrollToLoadAll();
         }
       } else {
-        log("приём dat-findloads, но DAT_GQL не загружен");
+        log("received dat-findloads, but DAT_GQL is not loaded");
       }
     });
 
