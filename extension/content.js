@@ -54,10 +54,10 @@
   // ---------- сбор строк ----------
   // Источник грузов для панели/скоринга/sync: DAT — GraphQL-перехват (gqlLoads), Truckstop — DOM (collect).
   function currentLoads() {
-    if (gqlLoads.length) { log("currentLoads: источник=GraphQL-перехват,", gqlLoads.length, "грузов"); return gqlLoads; }
+    if (gqlLoads.length) { log("currentLoads: source=GraphQL intercept,", gqlLoads.length, "loads"); return gqlLoads; }
     try {
       const dom = adapter.collect ? uniqueLoads(adapter.collect()) : [];
-      log("currentLoads: источник=DOM-адаптер,", dom.length, "грузов");
+      log("currentLoads: source=DOM adapter,", dom.length, "loads");
       return dom;
     } catch (_) { return []; }
   }
@@ -80,7 +80,7 @@
       const items = [..._pending.values()];
       _pending.clear();
       if (items.length && typeof LLAPI !== "undefined") {
-        log("sync → POST /loads (агрегат после sanitizeLoad):", items.length, "грузов");
+        log("sync → POST /loads (aggregate after sanitizeLoad):", items.length, "loads");
         LLAPI.sendLoads(items).catch(() => {});
       }
     }, 1500);
@@ -185,7 +185,7 @@
     const flags = LLSCORE.redFlags(load, { laneMedian, reputation: repCache.get(String(load.brokerMc)) });
     if (flags.length) {
       const lvl = LLSCORE.redFlagLevel(flags);
-      const fc = chip(lvl === "high" ? "🚩 риск" : "🚩 проверь", "ll-flag " + (lvl === "high" ? "ll-red" : "ll-amber"));
+      const fc = chip(lvl === "high" ? "🚩 risk" : "🚩 check", "ll-flag " + (lvl === "high" ? "ll-red" : "ll-amber"));
       fc.title = flags.map((f) => f.label).join("\n");
       host.appendChild(fc);
     }
@@ -208,17 +208,17 @@
     const m = fleetMatch(load);
     const lvl = m.best ? m.best.hosBadge : "thin";
     const cls = lvl === "green" ? "ll-good" : lvl === "amber" ? "ll-ok" : lvl === "red" ? "ll-risk" : "ll-thin";
-    const txt = m.best ? `👤 ${m.best.name} (${m.feasibleCount}/${m.total})` : `👤 нет (0/${m.total})`;
+    const txt = m.best ? `👤 ${m.best.name} (${m.feasibleCount}/${m.total})` : `👤 none (0/${m.total})`;
     const c = chip(txt, "ll-fleet " + cls);
     c.style.cursor = "pointer";
     c.title = m.matches.map((x) =>
-      `${x.feasible ? "✓" : "✕"} ${x.name}: HOS ${x.hosBadge}${x.equipMatch ? "" : " · прицеп≠"} · DH ${x.deadhead}mi` +
+      `${x.feasible ? "✓" : "✕"} ${x.name}: HOS ${x.hosBadge}${x.equipMatch ? "" : " · equip≠"} · DH ${x.deadhead}mi` +
       `${x.netRpm != null ? " · $" + x.netRpm.toFixed(2) + "/mi" : ""}`).join("\n");
     c.addEventListener("click", (e) => { e.stopPropagation(); e.preventDefault(); openLoadDetail(load); });
     return c;
   }
   function detailChip(load) {
-    const c = chip("ⓘ детали", "ll-detail-chip");
+    const c = chip("ⓘ details", "ll-detail-chip");
     c.style.cursor = "pointer";
     c.addEventListener("click", (e) => { e.stopPropagation(); e.preventDefault(); openLoadDetail(load); });
     return c;
@@ -227,36 +227,36 @@
     const parts = [];
     if (b.creditScore != null) parts.push(b.creditScore + " CS");
     if (b.daysToPay != null) parts.push(b.daysToPay + " DTP");
-    const tag = b.level === "good" ? "🛡 надёжный" : b.level === "ok" ? "брокер ок" : "⚠ риск";
+    const tag = b.level === "good" ? "🛡 trusted" : b.level === "ok" ? "broker ok" : "⚠ risk";
     return tag + (parts.length ? " · " + parts.join(" · ") : "");
   }
 
   const CROWD_CLS = { good: "ll-good", mixed: "ll-ok", bad: "ll-risk", thin: "ll-thin", none: "ll-thin" };
   function crowdText(rep) {
-    if (!rep || !rep.n) return "👥 +отзыв";
+    if (!rep || !rep.n) return "👥 +review";
     if (rep.level === "bad") {
-      const why = rep.doubleBrokered ? `${rep.doubleBrokered}× double-brokered` : `${rep.flaked}× флейк`;
+      const why = rep.doubleBrokered ? `${rep.doubleBrokered}× double-brokered` : `${rep.flaked}× flaked`;
       return `👥 ⚠ ${why} (${rep.n})`;
     }
-    if (rep.level === "good") return `👥 ${rep.paid + rep.noIssue}/${rep.n} ок`;
-    if (rep.level === "thin") return `👥 ${rep.n} отзыв.`;
-    return `👥 смешанно (${rep.n})`;
+    if (rep.level === "good") return `👥 ${rep.paid + rep.noIssue}/${rep.n} ok`;
+    if (rep.level === "thin") return `👥 ${rep.n} reviews`;
+    return `👥 mixed (${rep.n})`;
   }
   function crowdChip(mc) {
     const rep = repCache.get(String(mc));
     const c = chip(crowdText(rep), "ll-broker ll-crowd " + (rep ? CROWD_CLS[rep.level] : "ll-thin"));
     c.style.cursor = "pointer";
-    c.title = "Crowdsourced репутация брокера. Нажми, чтобы оставить отзыв.";
+    c.title = "Crowdsourced broker reputation. Click to leave a review.";
     c.addEventListener("click", (e) => { e.stopPropagation(); e.preventDefault(); openReportMenu(mc, e.clientX, e.clientY); });
     return c;
   }
 
   // ---------- меню отзыва о брокере ----------
   const REPORT_OPTS = [
-    { o: "paid", t: "✅ Заплатил" },
-    { o: "no_issue", t: "👍 Без проблем" },
-    { o: "slow", t: "🐢 Платит медленно" },
-    { o: "flaked", t: "🚫 Слил/отменил" },
+    { o: "paid", t: "✅ Paid" },
+    { o: "no_issue", t: "👍 No issues" },
+    { o: "slow", t: "🐢 Slow pay" },
+    { o: "flaked", t: "🚫 Flaked / canceled" },
     { o: "double_brokered", t: "⛔ Double-broker" },
   ];
   function openReportMenu(mc, x, y) {
@@ -266,14 +266,14 @@
     m.style.left = Math.min(x, window.innerWidth - 200) + "px";
     m.style.top = Math.min(y, window.innerHeight - 220) + "px";
     const title = document.createElement("div");
-    title.className = "hd"; title.textContent = "Отзыв о брокере " + mc;
+    title.className = "hd"; title.textContent = "Broker review " + mc;
     m.appendChild(title);
     REPORT_OPTS.forEach(({ o, t }) => {
       const b = document.createElement("button");
       b.className = "ll-rep-opt"; b.textContent = t;
       b.onclick = async () => {
         m.querySelectorAll("button").forEach((x) => (x.disabled = true));
-        title.textContent = "Отправка…";
+        title.textContent = "Sending…";
         const ok = typeof LLAPI !== "undefined" && await LLAPI.reportBroker(String(mc), o);
         closeReportMenu();
         if (ok) refreshRep(String(mc));
@@ -319,42 +319,42 @@
     hd.append(ttl, x);
     const bd = document.createElement("div"); bd.className = "bd";
 
-    bd.appendChild(drow("Ставка", load.rate != null
+    bd.appendChild(drow("Rate", load.rate != null
       ? `$${load.rate.toLocaleString("en-US")}${load.rateBasis ? " (" + load.rateBasis + ")" : ""}` : "—"));
     bd.appendChild(drow("RPM", [
       trueRpm != null ? `true $${trueRpm.toFixed(2)}` : null,
       profit.netRpm != null ? `net $${profit.netRpm.toFixed(2)}` : null,
       load.estimatedRatePerMile != null ? `DAT est $${Number(load.estimatedRatePerMile).toFixed(2)}` : null,
-      laneMedian != null ? `рынок $${laneMedian.toFixed(2)}` : null,
+      laneMedian != null ? `market $${laneMedian.toFixed(2)}` : null,
     ].filter(Boolean).join(" · ") || "—"));
-    bd.appendChild(drow("Мили", `${load.loadedMiles ?? "—"} груж · ${load.deadheadMiles ?? 0} DH`));
-    if (load.weight) bd.appendChild(drow("Вес", `${load.weight.toLocaleString("en-US")} lbs`));
-    if (load.availability) bd.appendChild(drow("Когда", `${load.availability.earliest || "?"} – ${load.availability.latest || "?"}`));
+    bd.appendChild(drow("Miles", `${load.loadedMiles ?? "—"} loaded · ${load.deadheadMiles ?? 0} DH`));
+    if (load.weight) bd.appendChild(drow("Weight", `${load.weight.toLocaleString("en-US")} lbs`));
+    if (load.availability) bd.appendChild(drow("Available", `${load.availability.earliest || "?"} – ${load.availability.latest || "?"}`));
 
-    bd.appendChild(drow("Оценка", `${profitText(profit)} · HOS ${hosIcon(hos)}${flags.length ? " · 🚩 " + (LLSCORE.redFlagLevel(flags) === "high" ? "риск" : "проверь") : ""}`));
+    bd.appendChild(drow("Score", `${profitText(profit)} · HOS ${hosIcon(hos)}${flags.length ? " · 🚩 " + (LLSCORE.redFlagLevel(flags) === "high" ? "risk" : "check") : ""}`));
     if (flags.length) { const f = document.createElement("div"); f.className = "flags"; f.textContent = flags.map((x) => "• " + x.label).join("\n"); bd.appendChild(f); }
 
     const brokerLine = [load.brokerName, load.brokerMc ? "MC " + load.brokerMc : null,
       broker.creditScore != null ? broker.creditScore + " CS" : null,
       broker.daysToPay != null ? broker.daysToPay + " DTP" : null,
       rep && rep.n ? "crowd: " + crowdText(rep).replace("👥 ", "") : null].filter(Boolean).join(" · ");
-    bd.appendChild(drow("Брокер", brokerLine || "—"));
+    bd.appendChild(drow("Broker", brokerLine || "—"));
 
-    if (load.contactPhone) { const a = document.createElement("a"); a.href = "tel:" + load.contactPhone; a.textContent = load.contactPhone; bd.appendChild(drow("Телефон", a)); }
+    if (load.contactPhone) { const a = document.createElement("a"); a.href = "tel:" + load.contactPhone; a.textContent = load.contactPhone; bd.appendChild(drow("Phone", a)); }
     if (load.contactEmail) { const a = document.createElement("a"); a.href = "mailto:" + load.contactEmail; a.textContent = load.contactEmail; bd.appendChild(drow("Email", a)); }
-    if (load.comments) { const c = document.createElement("div"); c.className = "comments"; c.textContent = load.comments; bd.appendChild(drow("Заметки", c)); }
+    if (load.comments) { const c = document.createElement("div"); c.className = "comments"; c.textContent = load.comments; bd.appendChild(drow("Notes", c)); }
 
     // «Кому подходит» — разбивка по парку (все водители сразу)
     if (drivers.length && typeof LLFLEET !== "undefined") {
       const m = fleetMatch(load);
       const wrap = document.createElement("div"); wrap.className = "fleet-match";
       const h = document.createElement("div"); h.className = "fleet-h";
-      h.textContent = `Кому подходит (${m.feasibleCount}/${m.total})`;
+      h.textContent = `Fits drivers (${m.feasibleCount}/${m.total})`;
       wrap.appendChild(h);
       m.matches.forEach((x) => {
         const r = document.createElement("div"); r.className = "fleet-row ll-" + (x.feasible ? "ok" : "no");
         r.textContent = `${x.feasible ? "✓" : "✕"} ${x.name} · HOS ${x.hosBadge}` +
-          `${x.equipMatch ? "" : " · прицеп≠"} · DH ${x.deadhead}mi` +
+          `${x.equipMatch ? "" : " · equip≠"} · DH ${x.deadhead}mi` +
           `${x.netRpm != null ? " · $" + x.netRpm.toFixed(2) + "/mi" : ""}`;
         wrap.appendChild(r);
       });
@@ -366,20 +366,20 @@
     const bookUrl = safeHttpUrl(load.bookingUrl);   // bookingUrl от брокера — пускаем только http/https
     if (bookUrl) {
       const b = document.createElement("a"); b.href = bookUrl; b.target = "_blank"; b.rel = "noopener noreferrer";
-      b.className = "btn primary"; b.textContent = load.bookNow ? "Book Now ↗" : "Открыть ↗";
+      b.className = "btn primary"; b.textContent = load.bookNow ? "Book Now ↗" : "Open ↗";
       act.appendChild(b);
     }
-    const copyBtn = document.createElement("button"); copyBtn.className = "btn"; copyBtn.textContent = "Копировать";
+    const copyBtn = document.createElement("button"); copyBtn.className = "btn"; copyBtn.textContent = "Copy";
     copyBtn.onclick = () => {
       const txt = `${load.originMarket} → ${load.destMarket} ${load.equipment}\n` +
         `Rate: $${load.rate ?? "?"} ${load.rateBasis || ""} | ${load.loadedMiles ?? "?"}mi +${load.deadheadMiles ?? 0}DH\n` +
         `Broker: ${load.brokerName || "?"} MC ${load.brokerMc || "?"} | ${load.creditScore ?? "?"} CS ${load.daysToPay ?? "?"} DTP\n` +
         (load.contactPhone ? `Tel: ${load.contactPhone}\n` : "") + (load.comments ? `Notes: ${load.comments}` : "");
-      try { navigator.clipboard.writeText(txt); copyBtn.textContent = "Скопировано ✓"; setTimeout(() => (copyBtn.textContent = "Копировать"), 1200); } catch { /* нет доступа */ }
+      try { navigator.clipboard.writeText(txt); copyBtn.textContent = "Copied ✓"; setTimeout(() => (copyBtn.textContent = "Copy"), 1200); } catch { /* нет доступа */ }
     };
     act.appendChild(copyBtn);
     if (load.brokerMc) {
-      const r = document.createElement("button"); r.className = "btn"; r.textContent = "Отзыв о брокере";
+      const r = document.createElement("button"); r.className = "btn"; r.textContent = "Broker review";
       r.onclick = (e) => openReportMenu(String(load.brokerMc), e.clientX, e.clientY);
       act.appendChild(r);
     }
@@ -390,9 +390,9 @@
   }
   function chip(text, cls) { const s = document.createElement("span"); s.className = "ll-chip " + cls; s.textContent = text; return s; }
   function profitText(p) {
-    if (p.level === "unknown") return "— нет ставки";
+    if (p.level === "unknown") return "— no rate";
     const rpm = p.netRpm != null ? "$" + p.netRpm.toFixed(2) + "/mi" : "—";
-    const tag = p.level === "green" ? "▲ выгодно" : p.level === "amber" ? "≈ в плюс" : "▼ убыток";
+    const tag = p.level === "green" ? "▲ profitable" : p.level === "amber" ? "≈ marginal" : "▼ loss";
     return `${tag} · ${rpm}`;
   }
   function hosIcon(level) { return level === "green" ? "✓" : level === "amber" ? "!" : "✕"; }
