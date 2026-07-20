@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LoadLens — load scoring for DAT One / Truckstop",
-  "version": "0.3.6",
+  "version": "0.4.0",
   "description": "Shows how profitable each load is ($/mile after deadhead, fuel and lane market rates).",
   "permissions": ["storage"],
   "host_permissions": [

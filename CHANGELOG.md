@@ -2,6 +2,11 @@
 
 All notable user-facing changes to the LoadLens browser extension.
 
+## 0.4.0 — 2026-07-20
+
+### Changed
+- **The extension is now fully in English.** The popup, the on-page panel, load badges and chips, Get-out chains, the broker review menu, the load detail card, error messages and the Telegram bot's replies all read in English. Pickup dates now use US formatting.
+
 ## 0.3.6 — 2026-07-17
 
 ### New

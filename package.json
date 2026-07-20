@@ -9,8 +9,16 @@
     "test:ext": "node --test extension/*.test.js extension/adapters/*.test.js",
     "check:lang": "node scripts/check-lang.js",
     "test:scripts": "node --test scripts/*.test.js",
-    "test": "npm run sync:shared && npm run check:lang && npm run test:scripts && npm run test:shared && npm run test:ext"
+    "test": "npm run sync:shared && npm run check:lang && npm run test:scripts && npm run test:shared && npm run test:ext",
+    "package:ext": "node scripts/package-ext.js"
   },
-  "keywords": ["dat", "truckstop", "load-board", "trucking", "dispatch", "chrome-extension"],
+  "keywords": [
+    "dat",
+    "truckstop",
+    "load-board",
+    "trucking",
+    "dispatch",
+    "chrome-extension"
+  ],
   "license": "UNLICENSED"
 }
