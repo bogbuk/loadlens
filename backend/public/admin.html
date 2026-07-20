@@ -60,7 +60,7 @@
     </div>
     <table>
       <thead><tr>
-        <th>Email</th><th>Роль</th><th>План</th><th>Статус</th><th>TG</th><th>Алерты</th><th>Создан</th><th></th>
+        <th>Email</th><th>Роль</th><th>План</th><th>Устройств</th><th>Вытеснений</th><th>Статус</th><th>TG</th><th>Алерты</th><th>Создан</th><th></th>
       </tr></thead>
       <tbody id="rows"></tbody>
     </table>
@@ -128,6 +128,7 @@
     function renderCards(s) {
       $('cards').innerHTML = [
         ['Пользователей', s.users ?? '—'], ['Pro', s.proUsers ?? '—'], ['Заблокировано', s.blockedUsers ?? '—'],
+        ['Вытеснений', s.evictions ?? '—'],
         ['Грузов (7д)', s.loads ?? '—'], ['Lane', s.lanes ?? '—'], ['Рынков', s.markets ?? '—'],
         ['Медиана RPM', s.medianRpm != null ? money(s.medianRpm) + '/mi' : '—'],
       ].map(([l, v]) => `<div class="card"><b>${v}</b><span>${l}</span></div>`).join('');
@@ -142,6 +143,8 @@
           <td>${esc(u.email)}</td>
           <td>${u.role === 'admin' ? '<span class="badge admin">admin</span>' : 'user'}</td>
           <td>${u.plan === 'pro' ? '<span class="badge pro">pro</span>' : 'free'}</td>
+          <td>${u.devices ?? 0}</td>
+          <td${u.deviceEvictions > 0 ? ' style="color:#c00;font-weight:600"' : ''}>${u.deviceEvictions ?? 0}</td>
           <td>${u.blocked ? '<span class="badge blocked">blocked</span>' : 'active'}</td>
           <td>${u.telegramLinked ? '✓' : '—'}</td>
           <td>${u.alertsEnabled ? '✓' : '—'}</td>

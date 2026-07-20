@@ -1,8 +1,9 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
+import { Op, col, fn } from 'sequelize';
 import { User } from '../users/user.model';
 import { LanesService } from '../lanes/lanes.service';
+import { UserDevice } from './user-device.model';
 
 export interface AdminUserView {
   email: string;
@@ -11,6 +12,8 @@ export interface AdminUserView {
   blocked: boolean;
   telegramLinked: boolean;
   alertsEnabled: boolean;
+  devices: number;
+  deviceEvictions: number;
   createdAt: Date;
 }
 
@@ -18,10 +21,11 @@ export interface AdminUserView {
 export class AdminService {
   constructor(
     @InjectModel(User) private readonly userModel: typeof User,
+    @InjectModel(UserDevice) private readonly devices: typeof UserDevice,
     private readonly lanes: LanesService,
   ) {}
 
-  private view(u: User): AdminUserView {
+  private view(u: User, devices = 0): AdminUserView {
     return {
       email: u.email,
       plan: u.plan,
@@ -29,6 +33,8 @@ export class AdminService {
       blocked: u.blocked,
       telegramLinked: !!u.telegramChatId,
       alertsEnabled: u.alertsEnabled,
+      devices,
+      deviceEvictions: u.deviceEvictions ?? 0,
       createdAt: (u as any).createdAt,
     };
   }
@@ -36,17 +42,26 @@ export class AdminService {
   async listUsers(q?: string): Promise<AdminUserView[]> {
     const where = q ? { email: { [Op.iLike]: `%${q.trim().toLowerCase()}%` } } : undefined;
     const rows = await this.userModel.findAll({ where, order: [['createdAt', 'DESC']] });
-    return rows.map((u) => this.view(u));
+    // Одним запросом на всю страницу, а не N+1 по пользователям.
+    const counts = await this.devices.findAll({
+      attributes: ['userId', [fn('COUNT', col('id')), 'n']],
+      where: { userId: rows.map((u) => u.id) },
+      group: ['user_id'],
+      raw: true,
+    }) as unknown as Array<{ userId: string; n: string }>;
+    const byUser = new Map(counts.map((c) => [c.userId, Number(c.n)]));
+    return rows.map((u) => this.view(u, byUser.get(u.id) ?? 0));
   }
 
   async stats() {
-    const [users, proUsers, blockedUsers, overview] = await Promise.all([
+    const [users, proUsers, blockedUsers, evictions, overview] = await Promise.all([
       this.userModel.count(),
       this.userModel.count({ where: { plan: 'pro' } }),
       this.userModel.count({ where: { blocked: true } }),
+      this.userModel.sum('deviceEvictions'),
       this.lanes.overview(),
     ]);
-    return { users, proUsers, blockedUsers, ...overview };
+    return { users, proUsers, blockedUsers, evictions: evictions ?? 0, ...overview };
   }
 
   async setPlan(emailRaw: string, plan: 'free' | 'pro') {

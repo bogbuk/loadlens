@@ -7,12 +7,13 @@ describe('AdminService', () => {
   let service: AdminService;
 
   const lanes: any = { overview: jest.fn(() => Promise.resolve({ loads: 10, lanes: 4, markets: 2, medianRpm: 2.1 })) };
+  let devicesModel: any;
 
   beforeEach(() => {
     users = {
-      'a@b.md': { email: 'a@b.md', plan: 'free', role: 'user', blocked: false, telegramChatId: null, alertsEnabled: false, createdAt: new Date('2026-01-01') },
-      'pro@b.md': { email: 'pro@b.md', plan: 'pro', role: 'user', blocked: false, telegramChatId: 'c1', alertsEnabled: true, createdAt: new Date('2026-02-01') },
-      'boss@b.md': { email: 'boss@b.md', plan: 'pro', role: 'admin', blocked: false, telegramChatId: null, alertsEnabled: false, createdAt: new Date('2026-03-01') },
+      'a@b.md': { id: 'u1', email: 'a@b.md', plan: 'free', role: 'user', blocked: false, telegramChatId: null, alertsEnabled: false, deviceEvictions: 0, createdAt: new Date('2026-01-01') },
+      'pro@b.md': { id: 'u2', email: 'pro@b.md', plan: 'pro', role: 'user', blocked: false, telegramChatId: 'c1', alertsEnabled: true, deviceEvictions: 3, createdAt: new Date('2026-02-01') },
+      'boss@b.md': { id: 'u3', email: 'boss@b.md', plan: 'pro', role: 'admin', blocked: false, telegramChatId: null, alertsEnabled: false, deviceEvictions: 0, createdAt: new Date('2026-03-01') },
     };
     for (const u of Object.values(users)) (u as any).save = jest.fn(function (this: any) { return Promise.resolve(this); });
     const userModel: any = {
@@ -32,16 +33,24 @@ describe('AdminService', () => {
         if (where?.blocked !== undefined) list = list.filter((u) => u.blocked === where.blocked);
         return Promise.resolve(list.length);
       }),
+      // sum по deviceEvictions для сводки вытеснений
+      sum: jest.fn((field: string) => {
+        if (field !== 'deviceEvictions') return Promise.resolve(null);
+        const list = Object.values(users) as any[];
+        return Promise.resolve(list.reduce((acc, u) => acc + (u.deviceEvictions ?? 0), 0));
+      }),
     };
-    service = new AdminService(userModel, lanes);
+    // устройства: pro@b.md — 2 активных, у остальных нет
+    devicesModel = { findAll: jest.fn(() => Promise.resolve([{ userId: 'u2', n: '2' }])) };
+    service = new AdminService(userModel, devicesModel, lanes);
   });
 
   it('listUsers: без passwordHash, поля-вьюхи', async () => {
     const list = await service.listUsers();
     expect(list).toHaveLength(3);
     expect(JSON.stringify(list)).not.toContain('passwordHash');
-    expect(list.find((u) => u.email === 'pro@b.md')).toMatchObject({ plan: 'pro', telegramLinked: true, alertsEnabled: true });
-    expect(list.find((u) => u.email === 'a@b.md')).toMatchObject({ telegramLinked: false });
+    expect(list.find((u) => u.email === 'pro@b.md')).toMatchObject({ plan: 'pro', telegramLinked: true, alertsEnabled: true, devices: 2, deviceEvictions: 3 });
+    expect(list.find((u) => u.email === 'a@b.md')).toMatchObject({ telegramLinked: false, devices: 0, deviceEvictions: 0 });
   });
 
   it('listUsers: поиск по подстроке email', async () => {
@@ -49,9 +58,14 @@ describe('AdminService', () => {
     expect(list.map((u) => u.email)).toEqual(['pro@b.md']);
   });
 
-  it('stats: счётчики юзеров + overview lane', async () => {
+  it('listUsers: счётчик устройств одним GROUP BY запросом, не N+1', async () => {
+    await service.listUsers();
+    expect(devicesModel.findAll).toHaveBeenCalledTimes(1);
+  });
+
+  it('stats: счётчики юзеров + overview lane + вытеснения', async () => {
     const s = await service.stats();
-    expect(s).toMatchObject({ users: 3, proUsers: 2, blockedUsers: 0, loads: 10, lanes: 4, markets: 2, medianRpm: 2.1 });
+    expect(s).toMatchObject({ users: 3, proUsers: 2, blockedUsers: 0, evictions: 3, loads: 10, lanes: 4, markets: 2, medianRpm: 2.1 });
   });
 
   it('setPlan: меняет план', async () => {
