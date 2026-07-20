@@ -2,6 +2,11 @@
 
 All notable user-facing changes to the LoadLens browser extension.
 
+## 0.5.0 — 2026-07-20
+
+### Changed
+- **A Pro subscription now covers up to 3 devices.** Signing in on a fourth device signs out the one you haven't used in the longest time. If that happens, the sign-in screen tells you why.
+
 ## 0.4.0 — 2026-07-20
 
 ### Changed
