@@ -53,3 +53,19 @@ test("stripComments: номера строк не смещаются после 
   assert.strictEqual(hits.length, 1);
   assert.strictEqual(hits[0].line, 4);
 });
+
+test("defect 4: \\// на конце regex-литерала не должен приниматься за построчный комментарий", () => {
+  // const ok = /^https?:\/\//.test(url) ? "да" : "нет";
+  const src = 'const ok = /^https?:\\/\\//.test(url) ? "да" : "нет";';
+  const hits = findCyrillic(stripComments(src));
+  assert.strictEqual(hits.length, 1);
+});
+
+test("known limitation (принято как есть): комментарий внутри ${...} шаблонной строки не срезается — ложноположительная находка, не пропуск", () => {
+  // const x = `val ${/* русский коммент внутри интерполяции */ 1}`;
+  const src = 'const x = `val ${/* русский коммент внутри интерполяции */ 1}`;';
+  const hits = findCyrillic(stripComments(src));
+  // Ожидаемо (не баг): интерполяция ${...} не разбирается рекурсивно, поэтому
+  // комментарий внутри неё остаётся текстом шаблонной строки и даёт находку.
+  assert.strictEqual(hits.length, 1);
+});
