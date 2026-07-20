@@ -12,7 +12,11 @@ export class UserDevice extends Model {
   @Column({ type: DataType.UUID, defaultValue: DataType.UUIDV4, primaryKey: true })
   id: string;
 
-  @Column({ type: DataType.UUID, allowNull: false, field: 'user_id' })
+  // FK → users.id; каскад: удаление аккаунта (DELETE /users/me) уносит устройства.
+  @Column({
+    type: DataType.UUID, allowNull: false, field: 'user_id',
+    references: { model: 'users', key: 'id' }, onDelete: 'CASCADE',
+  })
   userId: string;
 
   @Column({ type: DataType.TEXT, allowNull: false, field: 'client_id' })
