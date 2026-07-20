@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { SequelizeModule } from '@nestjs/sequelize';
 import { UsersModule } from '../users/users.module';
 import { LanesModule } from '../lanes/lanes.module';
 import { TelegramModule } from '../telegram/telegram.module';
@@ -9,9 +10,11 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { AdminRoleGuard } from './admin-role.guard';
+import { UserDevice } from './user-device.model';
 
 @Module({
   imports: [
+    SequelizeModule.forFeature([UserDevice]),
     UsersModule,
     LanesModule,
     TelegramModule,

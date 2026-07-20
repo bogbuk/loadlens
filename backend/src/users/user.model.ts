@@ -42,4 +42,9 @@ export class User extends Model {
   // Версия сессий: инкремент инвалидирует все ранее выпущенные токены (смена/сброс пароля).
   @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0, field: 'token_version' })
   tokenVersion: number;
+
+  // Сколько раз у аккаунта вытеснялось устройство сверх лимита. Сигнал шеринга для админки;
+  // автоматических действий по нему НЕ предпринимаем.
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0, field: 'device_evictions' })
+  deviceEvictions: number;
 }
