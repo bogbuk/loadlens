@@ -11,6 +11,7 @@ import { AdminService } from './admin.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { AdminRoleGuard } from './admin-role.guard';
 import { UserDevice } from './user-device.model';
+import { DevicesService } from './devices.service';
 
 @Module({
   imports: [
@@ -21,6 +22,6 @@ import { UserDevice } from './user-device.model';
     JwtModule.register({ secret: process.env.JWT_SECRET || 'dev-secret' }),
   ],
   controllers: [AuthController, AdminController],
-  providers: [AuthService, AdminService, JwtAuthGuard, AdminRoleGuard],
+  providers: [AuthService, AdminService, JwtAuthGuard, AdminRoleGuard, DevicesService],
 })
 export class AuthModule {}
