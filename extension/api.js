@@ -170,7 +170,7 @@ const LLAPI = (() => {
       body: JSON.stringify({ email, password }),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.message || `ошибка ${res.status}`);
+    if (!res.ok) throw new Error(data.message || `error ${res.status}`);
     await setAuth({ accessToken: data.accessToken, refreshToken: data.refreshToken,
                     email: data.user.email, plan: data.user.plan, planTs: Date.now() });
     return data.user;
@@ -225,7 +225,7 @@ const LLAPI = (() => {
         res = await call(auth);
       }
       return res;
-    } catch { throw new Error("сетевая ошибка"); }
+    } catch { throw new Error("network error"); }
   }
 
   // ---- парк водителей (под JWT диспетчера) ----
@@ -235,22 +235,22 @@ const LLAPI = (() => {
   }
   async function createDriver(d) {
     const res = await authedFetch("/drivers", { method: "POST", body: JSON.stringify(d) });
-    if (!res) throw new Error("нужен вход в аккаунт");
+    if (!res) throw new Error("sign in required");
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.message || `ошибка ${res.status}`);
+    if (!res.ok) throw new Error(data.message || `error ${res.status}`);
     return data;
   }
   async function updateDriver(id, patch) {
     const res = await authedFetch(`/drivers/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(patch) });
-    if (!res) throw new Error("нужен вход в аккаунт");
+    if (!res) throw new Error("sign in required");
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.message || `ошибка ${res.status}`);
+    if (!res.ok) throw new Error(data.message || `error ${res.status}`);
     return data;
   }
   async function deleteDriver(id) {
     const res = await authedFetch(`/drivers/${encodeURIComponent(id)}`, { method: "DELETE" });
-    if (!res) throw new Error("нужен вход в аккаунт");
-    if (!res.ok) throw new Error(`ошибка ${res.status}`);
+    if (!res) throw new Error("sign in required");
+    if (!res.ok) throw new Error(`error ${res.status}`);
     return { ok: true };
   }
 
@@ -261,22 +261,22 @@ const LLAPI = (() => {
   }
   async function telegramLink() {
     const res = await authedFetch("/telegram/link", { method: "POST" });
-    if (!res) throw new Error("нужен вход в аккаунт");
+    if (!res) throw new Error("sign in required");
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.message || `ошибка ${res.status}`);
+    if (!res.ok) throw new Error(data.message || `error ${res.status}`);
     return data; // { url, token, configured }
   }
   async function telegramAlerts(enabled) {
     const res = await authedFetch("/telegram/alerts", { method: "PATCH", body: JSON.stringify({ enabled }) });
-    if (!res) throw new Error("нужен вход в аккаунт");
+    if (!res) throw new Error("sign in required");
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.message || `ошибка ${res.status}`);
+    if (!res.ok) throw new Error(data.message || `error ${res.status}`);
     return data;
   }
   async function telegramUnlink() {
     const res = await authedFetch("/telegram/unlink", { method: "POST" });
-    if (!res) throw new Error("нужен вход в аккаунт");
-    if (!res.ok) throw new Error(`ошибка ${res.status}`);
+    if (!res) throw new Error("sign in required");
+    if (!res.ok) throw new Error(`error ${res.status}`);
     return { ok: true };
   }
   // Релей подошедших грузов (green+фильтр) в Telegram. Тихо глотает ошибки — это фоновый канал.
@@ -290,7 +290,7 @@ const LLAPI = (() => {
   // Удаление аккаунта (hard-delete на сервере; водители уходят каскадом). Затем локальный logout.
   async function deleteAccount() {
     const res = await authedFetch("/users/me", { method: "DELETE" });
-    if (!res || !res.ok) throw new Error(res ? `ошибка ${res.status}` : "нужен вход в аккаунт");
+    if (!res || !res.ok) throw new Error(res ? `error ${res.status}` : "sign in required");
     await logout();
     return { ok: true };
   }
@@ -302,7 +302,7 @@ const LLAPI = (() => {
       body: JSON.stringify({ currentPassword, newPassword }),
     });
     if (!res || !res.ok) {
-      const msg = res ? ((await res.json().catch(() => ({}))).message || `ошибка ${res.status}`) : "нужен вход в аккаунт";
+      const msg = res ? ((await res.json().catch(() => ({}))).message || `error ${res.status}`) : "sign in required";
       throw new Error(Array.isArray(msg) ? msg.join(", ") : msg);
     }
     return { ok: true };
@@ -313,7 +313,7 @@ const LLAPI = (() => {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     });
-    if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.message || `ошибка ${res.status}`); }
+    if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.message || `error ${res.status}`); }
     return { ok: true };
   }
 
@@ -324,7 +324,7 @@ const LLAPI = (() => {
     });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
-      const m = d.message || `ошибка ${res.status}`;
+      const m = d.message || `error ${res.status}`;
       throw new Error(Array.isArray(m) ? m.join(", ") : m);
     }
     return { ok: true };
