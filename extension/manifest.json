@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "LoadLens — скоринг грузов для DAT One / Truckstop",
+  "name": "LoadLens — load scoring for DAT One / Truckstop",
   "version": "0.3.6",
-  "description": "Показывает выгодность каждого груза ($/милю с учётом deadhead, топлива и рынка lane).",
+  "description": "Shows how profitable each load is ($/mile after deadhead, fuel and lane market rates).",
   "permissions": ["storage"],
   "host_permissions": [
     "https://*.dat.com/*",
