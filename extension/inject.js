@@ -15,7 +15,7 @@
   const post = (payload) => {
     const fl = payload && payload.data && payload.data.freightSearchV4 && payload.data.freightSearchV4.findLoads;
     const n = (fl && fl.results && fl.results.length) || 0;
-    log("FindLoads перехвачен → постим content.js:", n, "results");
+    log("FindLoads intercepted → posting to content.js:", n, "results");
     window.postMessage({ source: "loadlens", type: "dat-findloads", payload }, window.location.origin);
   };
 
@@ -23,7 +23,7 @@
     if (!url || url.indexOf("one-web-bff/graphql") === -1) return;
     getJson().then((j) => {
       if (j && j.data && j.data.freightSearchV4 && j.data.freightSearchV4.findLoads) post(j);
-      else log("graphql-ответ без freightSearchV4.findLoads (другая operation):", url);
+      else log("graphql response without freightSearchV4.findLoads (different operation):", url);
     }).catch(() => {});
   }
 
@@ -61,5 +61,5 @@
     return origSend.apply(this, a);
   };
 
-  log("перехватчик fetch/XHR установлен (MAIN-world). Включён LL_DEBUG.");
+  log("fetch/XHR interceptor installed (MAIN world). LL_DEBUG is on.");
 })();
