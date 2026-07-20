@@ -29,38 +29,38 @@ async function renderSettings() {
   const equipSel = new Set(LLEQUIP.normalize(ll_equip_filter) || []);
   const hos = await LLHOS.load();
   setEl.innerHTML =
-    '<h4>Параметры водителя</h4>' +
+    '<h4>Driver settings</h4>' +
     settingRow("Cost / mile, $", "s-cpm", cpm, 0.05) +
-    settingRow("Drive left, ч", "s-drive", round1(hos.remainingDrive / 60), 0.5) +
-    settingRow("Duty left, ч", "s-duty", round1(hos.remainingOnDuty / 60), 0.5) +
-    settingRow("Cycle left, ч", "s-cycle", round1(hos.remainingCycle / 60), 1) +
-    '<h4>Целевые ставки по дистанции</h4>' +
+    settingRow("Drive left, h", "s-drive", round1(hos.remainingDrive / 60), 0.5) +
+    settingRow("Duty left, h", "s-duty", round1(hos.remainingOnDuty / 60), 0.5) +
+    settingRow("Cycle left, h", "s-cycle", round1(hos.remainingCycle / 60), 1) +
+    '<h4>Target rates by distance</h4>' +
     targets.map(targetRow).join("") +
-    '<h4>Тип трейлера (фильтр)</h4>' +
+    '<h4>Equipment filter</h4>' +
     `<div class="chips" id="s-equip">` +
     EQUIP_TYPES.map((e) =>
       `<button type="button" class="chip${equipSel.has(e.code) ? " on" : ""}" data-code="${escA(e.code)}" title="${escA(e.label)}">${escA(e.code)}</button>`).join("") +
     '</div>' +
     '<div class="chips-bar"><span class="note" id="s-equip-sum"></span>' +
-    '<span class="chips-actions"><button type="button" class="linkbtn" id="s-equip-all">Все</button> · ' +
-    '<button type="button" class="linkbtn" id="s-equip-none">Сброс</button></span></div>' +
-    '<h4>Авто-пилот таба DAT</h4>' +
-    `<div class="row"><span class="k">Интервал, сек (≥60)</span><input id="s-ar-int" type="number" min="60" step="10" value="${Math.round((ar.intervalMs || 60000) / 1000)}"></div>` +
-    `<div class="row"><span class="k">Авто-скролл (подтянуть все страницы)</span><input id="s-ar-scroll" type="checkbox"${ar.autoscroll !== false ? " checked" : ""} style="width:auto"></div>` +
-    `<div class="row"><span class="k">Сортировка</span><select id="s-sort-f">` +
-    ['<option value="">— не менять —</option>'].concat(SORT_FIELDS.map((s) =>
+    '<span class="chips-actions"><button type="button" class="linkbtn" id="s-equip-all">All</button> · ' +
+    '<button type="button" class="linkbtn" id="s-equip-none">Clear</button></span></div>' +
+    '<h4>DAT tab auto-pilot</h4>' +
+    `<div class="row"><span class="k">Interval, sec (≥60)</span><input id="s-ar-int" type="number" min="60" step="10" value="${Math.round((ar.intervalMs || 60000) / 1000)}"></div>` +
+    `<div class="row"><span class="k">Auto-scroll (pull all pages)</span><input id="s-ar-scroll" type="checkbox"${ar.autoscroll !== false ? " checked" : ""} style="width:auto"></div>` +
+    `<div class="row"><span class="k">Sort</span><select id="s-sort-f">` +
+    ['<option value="">— keep current —</option>'].concat(SORT_FIELDS.map((s) =>
       `<option value="${s.field}"${sort.field === s.field ? " selected" : ""}>${escA(s.label)}</option>`)).join("") +
     `</select></div>` +
-    `<div class="row"><span class="k">Направление</span><select id="s-sort-d">` +
+    `<div class="row"><span class="k">Direction</span><select id="s-sort-d">` +
     `<option value="desc"${sort.dir === "desc" ? " selected" : ""}>Highest → Lowest</option>` +
     `<option value="asc"${sort.dir === "asc" ? " selected" : ""}>Lowest → Highest</option></select></div>` +
-    '<h4>Отображение на странице</h4>' +
-    `<div class="row"><span class="k">Скрыть панель на странице</span><input id="s-hide-panel" type="checkbox"${ll_hide_panel ? " checked" : ""} style="width:auto"></div>` +
-    `<div class="row"><span class="k">Скрыть бейджи в таблице</span><input id="s-hide-badges" type="checkbox"${ll_hide_badges ? " checked" : ""} style="width:auto"></div>` +
-    '<button id="s-save">Сохранить</button>' +
-    '<div class="note">Целевая $/mi — порог «выгодно» (green): груз green, если его gross $/mile ≥ цели своего бакета. Cost/mile — нижняя граница убытка (red).</div>' +
-    '<div class="note">«Отображение на странице» применяется сразу ко всем вкладкам DAT/Truckstop (без кнопки «Сохранить»).</div>' +
-    '<div class="note">Авто-пилот включается отдельно на каждой вкладке выдачи DAT (тумблер «Авто-рефреш» в шапке панели). Здесь — общий интервал (60–120 с с джиттером), удерживаемая сортировка и авто-скролл (доскролл выдачи, чтобы DAT подгрузил все страницы; панель копит их по searchId).</div>';
+    '<h4>On-page display</h4>' +
+    `<div class="row"><span class="k">Hide panel on page</span><input id="s-hide-panel" type="checkbox"${ll_hide_panel ? " checked" : ""} style="width:auto"></div>` +
+    `<div class="row"><span class="k">Hide badges in table</span><input id="s-hide-badges" type="checkbox"${ll_hide_badges ? " checked" : ""} style="width:auto"></div>` +
+    '<button id="s-save">Save</button>' +
+    '<div class="note">Target $/mi is the "profitable" (green) threshold: a load is green when its gross $/mile is at or above the target for its distance bucket. Cost/mile is the break-even line below which a load is a loss (red).</div>' +
+    '<div class="note">"On-page display" applies instantly to all DAT/Truckstop tabs — no need to press Save.</div>' +
+    '<div class="note">Auto-pilot is switched on per DAT results tab (the "Auto-refresh" toggle in the panel header). Set here: the shared interval (60–120s with jitter), the sort order to hold, and auto-scroll (scrolls the results so DAT loads every page; the panel accumulates them by searchId).</div>';
   document.getElementById("s-save").onclick = save;
   wireEquipChips();
   // «Отображение на странице» — instant-apply (без кнопки «Сохранить»); content.js слушает storage.onChanged
@@ -73,7 +73,7 @@ function wireEquipChips() {
   const sum = document.getElementById("s-equip-sum");
   const refresh = () => {
     const on = [...wrap.querySelectorAll(".chip.on")].map((c) => c.dataset.code);
-    sum.textContent = on.length ? "Только: " + on.join(", ") : "Показываются все прицепы";
+    sum.textContent = on.length ? "Only: " + on.join(", ") : "All equipment types shown";
   };
   wrap.querySelectorAll(".chip").forEach((c) => {
     c.onclick = () => { c.classList.toggle("on"); refresh(); };
@@ -116,8 +116,8 @@ async function save() {
   });
   await LLHOS.save(LLHOS.fromHours({ driveH, dutyH, cycleH }));
   const btn = document.getElementById("s-save");
-  btn.textContent = "Сохранено ✓";
-  setTimeout(() => { btn.textContent = "Сохранить"; }, 1200);
+  btn.textContent = "Saved ✓";
+  setTimeout(() => { btn.textContent = "Save"; }, 1200);
 }
 // собирает таблицу бакетов из инпутов: верхняя граница (overflow = null) + целевой $/mi.
 function readTargets() {
