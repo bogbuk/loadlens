@@ -139,26 +139,26 @@ function accRow(user) {
   accEl.innerHTML = '<div class="acc"><div class="who"><span>' + escA(user.email) +
     '</span><span class="plan ' + (user.plan === "pro" ? "pro" : "") + '">' +
     (user.plan === "pro" ? "PRO" : "FREE") + "</span></div>" +
-    '<button id="acc-pwd-btn">Сменить пароль</button>' +
+    '<button id="acc-pwd-btn">Change password</button>' +
     '<div id="acc-pwd"></div>' +
-    '<button id="acc-out">Выйти</button>' +
-    '<button id="acc-del" class="danger">Удалить аккаунт</button></div>';
+    '<button id="acc-out">Sign out</button>' +
+    '<button id="acc-del" class="danger">Delete account</button></div>';
   document.getElementById("acc-pwd-btn").onclick = () => pwdForm(document.getElementById("acc-pwd"));
   document.getElementById("acc-out").onclick = async () => { await LLAPI.logout(); accForm(); renderFleet(null); renderTelegram(null); };
   document.getElementById("acc-del").onclick = async () => {
-    if (!confirm("Удалить аккаунт безвозвратно? Профиль и все водители будут удалены. Активную подписку DAT/Truckstop это не отменяет.")) return;
-    try { await LLAPI.deleteAccount(); accForm("Аккаунт удалён."); renderFleet(null); renderTelegram(null); }
+    if (!confirm("Delete your account permanently? Your profile and all drivers will be removed. This does not cancel your DAT/Truckstop subscription.")) return;
+    try { await LLAPI.deleteAccount(); accForm("Account deleted."); renderFleet(null); renderTelegram(null); }
     catch (e) { accForm(e.message); }
   };
 }
 function accForm(err) {
-  accEl.innerHTML = '<div class="acc"><h4>Аккаунт</h4>' +
+  accEl.innerHTML = '<div class="acc"><h4>Account</h4>' +
     '<input id="acc-email" type="email" placeholder="email" autocomplete="username">' +
-    '<input id="acc-pass" type="password" placeholder="пароль (мин. 8)" autocomplete="current-password">' +
+    '<input id="acc-pass" type="password" placeholder="password (min. 8)" autocomplete="current-password">' +
     '<div class="err">' + escA(err || "") + "</div>" +
-    '<div class="btns"><button id="acc-in">Войти</button><button id="acc-reg">Регистрация</button></div>' +
-    '<div class="note"><button id="acc-forgot" class="linkbtn">Забыл пароль?</button></div>' +
-    '<div class="note">Pro: полные 3-плечевые get-out цепочки + CSV-экспорт грузов.</div></div>';
+    '<div class="btns"><button id="acc-in">Sign in</button><button id="acc-reg">Sign up</button></div>' +
+    '<div class="note"><button id="acc-forgot" class="linkbtn">Forgot password?</button></div>' +
+    '<div class="note">Pro: full 3-leg get-out chains + CSV load export.</div></div>';
   const go = (fn) => async () => {
     const email = document.getElementById("acc-email").value.trim();
     const pass = document.getElementById("acc-pass").value;
@@ -172,17 +172,17 @@ function accForm(err) {
 
 // Шаг 1 сброса: ввод email → запрос кода. Контент статический.
 function resetForm(prefillEmail) {
-  accEl.innerHTML = '<div class="acc"><h4>Сброс пароля</h4>' +
+  accEl.innerHTML = '<div class="acc"><h4>Password reset</h4>' +
     '<input id="rst-email" type="email" placeholder="email" autocomplete="username">' +
     '<div class="err" id="rst-err"></div>' +
-    '<div class="btns"><button id="rst-send">Отправить код</button><button id="rst-cancel">Назад</button></div>' +
-    '<div class="note">Если аккаунт привязан к Telegram, код придёт в бот.</div></div>';
+    '<div class="btns"><button id="rst-send">Send code</button><button id="rst-cancel">Back</button></div>' +
+    '<div class="note">If your account is linked to Telegram, the code will arrive in the bot.</div></div>';
   document.getElementById("rst-email").value = prefillEmail || "";
   document.getElementById("rst-cancel").onclick = () => accForm();
   document.getElementById("rst-send").onclick = async () => {
     const email = document.getElementById("rst-email").value.trim();
     const err = document.getElementById("rst-err");
-    if (!email) { err.textContent = "введите email"; return; }
+    if (!email) { err.textContent = "enter your email"; return; }
     err.textContent = "";
     try { await LLAPI.forgotPassword(email); resetCodeForm(email); }
     catch (e) { err.textContent = e.message; }
@@ -191,20 +191,20 @@ function resetForm(prefillEmail) {
 
 // Шаг 2 сброса: код из Telegram + новый пароль.
 function resetCodeForm(email) {
-  accEl.innerHTML = '<div class="acc"><h4>Введите код</h4>' +
-    '<input id="rst-code" type="text" placeholder="код из Telegram" autocomplete="one-time-code">' +
-    '<input id="rst-new" type="password" placeholder="новый пароль (мин. 8)" autocomplete="new-password">' +
+  accEl.innerHTML = '<div class="acc"><h4>Enter code</h4>' +
+    '<input id="rst-code" type="text" placeholder="code from Telegram" autocomplete="one-time-code">' +
+    '<input id="rst-new" type="password" placeholder="new password (min. 8)" autocomplete="new-password">' +
     '<div class="err" id="rst-err2"></div>' +
-    '<div class="btns"><button id="rst-do">Сбросить</button><button id="rst-back">Назад</button></div></div>';
+    '<div class="btns"><button id="rst-do">Reset</button><button id="rst-back">Back</button></div></div>';
   document.getElementById("rst-back").onclick = () => resetForm(email);
   document.getElementById("rst-do").onclick = async () => {
     const code = document.getElementById("rst-code").value.trim();
     const neu = document.getElementById("rst-new").value;
     const err = document.getElementById("rst-err2");
-    if (!code) { err.textContent = "введите код"; return; }
-    if (neu.length < 8) { err.textContent = "минимум 8 символов"; return; }
+    if (!code) { err.textContent = "enter the code"; return; }
+    if (neu.length < 8) { err.textContent = "minimum 8 characters"; return; }
     err.textContent = "";
-    try { await LLAPI.resetPassword(code, neu); accForm("Пароль сброшен, войдите."); }
+    try { await LLAPI.resetPassword(code, neu); accForm("Password reset — please sign in."); }
     catch (e) { err.textContent = e.message; }
   };
 }
@@ -214,21 +214,21 @@ function pwdForm(box) {
   if (box.dataset.open === "1") { box.dataset.open = "0"; box.innerHTML = ""; return; }
   box.dataset.open = "1";
   box.innerHTML =
-    '<input id="acc-cur" type="password" placeholder="текущий пароль" autocomplete="current-password">' +
-    '<input id="acc-new" type="password" placeholder="новый пароль (мин. 8)" autocomplete="new-password">' +
+    '<input id="acc-cur" type="password" placeholder="current password" autocomplete="current-password">' +
+    '<input id="acc-new" type="password" placeholder="new password (min. 8)" autocomplete="new-password">' +
     '<div class="err" id="acc-pwd-err"></div>' +
-    '<div class="btns"><button id="acc-pwd-save">Сохранить</button></div>';
+    '<div class="btns"><button id="acc-pwd-save">Save</button></div>';
   document.getElementById("acc-pwd-save").onclick = async () => {
     const cur = document.getElementById("acc-cur").value;
     const neu = document.getElementById("acc-new").value;
     const err = document.getElementById("acc-pwd-err");
-    if (cur.length < 8 || neu.length < 8) { err.textContent = "минимум 8 символов"; return; }
+    if (cur.length < 8 || neu.length < 8) { err.textContent = "minimum 8 characters"; return; }
     err.textContent = "";
     try {
       await LLAPI.changePassword(cur, neu);
       // Смена пароля инвалидирует все сессии (включая текущую) — выходим и просим войти заново.
       await LLAPI.logout();
-      accForm("Пароль изменён, войдите снова.");
+      accForm("Password changed — please sign in again.");
       renderFleet(null); renderTelegram(null);
     } catch (e) { err.textContent = e.message; }
   };
@@ -239,13 +239,13 @@ const fleetEl = document.getElementById("fleet");
 
 async function renderFleet(me) {
   if (me === undefined) me = await LLAPI.getMe().catch(() => null);
-  if (!me) { fleetEl.innerHTML = '<h4>Парк водителей</h4><div class="note">Войдите в аккаунт, чтобы вести своих водителей.</div>'; return; }
-  if (me.plan !== "pro") { fleetEl.innerHTML = '<h4>Парк водителей <span class="plan pro">PRO</span></h4><div class="note">Парк водителей и матчинг «все водители сразу» доступны в Pro.</div>'; return; }
+  if (!me) { fleetEl.innerHTML = '<h4>Fleet</h4><div class="note">Sign in to manage your drivers.</div>'; return; }
+  if (me.plan !== "pro") { fleetEl.innerHTML = '<h4>Fleet <span class="plan pro">PRO</span></h4><div class="note">Fleet and match-all-drivers are Pro features.</div>'; return; }
   let list = [];
   try { list = await LLAPI.getDrivers(); } catch { list = []; }
-  fleetEl.innerHTML = '<h4>Парк водителей</h4>' +
-    (list.length ? list.map(driverRow).join("") : '<div class="note">Пока нет водителей. Добавьте первого.</div>') +
-    '<button id="drv-add">+ Добавить водителя</button>';
+  fleetEl.innerHTML = '<h4>Fleet</h4>' +
+    (list.length ? list.map(driverRow).join("") : '<div class="note">No drivers yet — add your first one.</div>') +
+    '<button id="drv-add">+ Add driver</button>';
   list.forEach((d) => {
     fleetEl.querySelector(`[data-del="${d.id}"]`).onclick = async () => {
       try { await LLAPI.deleteDriver(d.id); renderFleet(); }
@@ -289,10 +289,10 @@ function driverRow(d) {
     `<div class="row"><span class="k">${escA(d.name || "")}</span>` +
     `<span><input data-mkt="${eid}" type="text" value="${escA(d.currentMarket || "")}" placeholder="CHICAGO_IL" style="width:96px">` +
     `<select data-eq="${eid}">${opts}</select>` +
-    `<button data-del="${eid}" title="Удалить" style="width:auto;margin:0 0 0 4px;padding:4px 8px">✕</button></span></div>` +
+    `<button data-del="${eid}" title="Delete" style="width:auto;margin:0 0 0 4px;padding:4px 8px">✕</button></span></div>` +
     `<div class="row" style="font-size:11px">` +
     `<span class="k" style="min-width:0">$/mi</span>` +
-    `<span><input data-cpm="${eid}" type="number" step="0.05" min="0" value="${escA(d.costPerMile ?? "")}" placeholder="общий" style="width:44px">` +
+    `<span><input data-cpm="${eid}" type="number" step="0.05" min="0" value="${escA(d.costPerMile ?? "")}" placeholder="default" style="width:44px">` +
     `<span style="margin-left:4px">Drive</span><input data-drive="${eid}" type="number" step="0.5" min="0" max="11" value="${driveH}" style="width:34px">` +
     `<span style="margin-left:2px">Duty</span><input data-duty="${eid}" type="number" step="0.5" min="0" max="14" value="${dutyH}" style="width:34px">` +
     `<span style="margin-left:2px">Cyc</span><input data-cycle="${eid}" type="number" step="1" min="0" max="70" value="${cycleH}" style="width:34px"></span>` +
@@ -310,48 +310,48 @@ async function renderTelegram(me) {
   if (me === undefined) me = await LLAPI.getMe().catch(() => null);
   if (!me) { tgEl.innerHTML = ""; return; }
   if (me.plan !== "pro") {
-    tgEl.innerHTML = '<h4>Telegram-уведомления <span class="plan pro">PRO</span></h4>' +
-      '<div class="note">Алерты о выгодных грузах по вашему фильтру — в Pro.</div>';
+    tgEl.innerHTML = '<h4>Telegram alerts <span class="plan pro">PRO</span></h4>' +
+      '<div class="note">Alerts for profitable loads matching your filter are a Pro feature.</div>';
     return;
   }
   const st = await LLAPI.telegramStatus().catch(() => null);
-  if (!st) { tgEl.innerHTML = '<h4>Telegram-уведомления</h4><div class="note">Не удалось получить статус.</div>'; return; }
+  if (!st) { tgEl.innerHTML = '<h4>Telegram alerts</h4><div class="note">Could not load status.</div>'; return; }
   if (!st.configured) {
-    tgEl.innerHTML = '<h4>Telegram-уведомления</h4><div class="note">Бот ещё не настроен на сервере.</div>';
+    tgEl.innerHTML = '<h4>Telegram alerts</h4><div class="note">The bot is not configured on the server.</div>';
     return;
   }
   if (!st.linked) {
-    tgEl.innerHTML = '<h4>Telegram-уведомления</h4>' +
-      '<div class="note">Подключите Telegram, чтобы получать выгодные грузы (green + ваш фильтр прицепа) личным сообщением.</div>' +
-      '<button id="tg-link">Подключить Telegram</button>';
+    tgEl.innerHTML = '<h4>Telegram alerts</h4>' +
+      '<div class="note">Connect Telegram to receive profitable loads (green + your equipment filter) as a direct message.</div>' +
+      '<button id="tg-link">Connect Telegram</button>';
     document.getElementById("tg-link").onclick = async () => {
       try {
         const r = await LLAPI.telegramLink();
         if (r.url) { chrome.tabs.create({ url: r.url }); }
-        else alert("Бот не настроен на сервере.");
+        else alert("The bot is not configured on the server.");
       } catch (e) { alert(e.message); }
     };
     return;
   }
-  tgEl.innerHTML = '<h4>Telegram-уведомления</h4>' +
-    '<div class="row"><span class="k">Статус</span><span>привязан ✓</span></div>' +
-    `<div class="row"><span class="k">Слать алерты</span>` +
+  tgEl.innerHTML = '<h4>Telegram alerts</h4>' +
+    '<div class="row"><span class="k">Status</span><span>linked ✓</span></div>' +
+    `<div class="row"><span class="k">Send alerts</span>` +
     `<input id="tg-toggle" type="checkbox"${st.enabled ? " checked" : ""} style="width:auto"></div>` +
-    '<button id="tg-unlink" class="danger">Отвязать Telegram</button>' +
-    '<div class="note">1 груз = 1 сообщение, дубли отсекаются. Только пока открыта вкладка DAT.</div>';
+    '<button id="tg-unlink" class="danger">Disconnect Telegram</button>' +
+    '<div class="note">One load = one message, duplicates filtered out. Works only while a DAT tab is open.</div>';
   document.getElementById("tg-toggle").onchange = async (e) => {
     try { await LLAPI.telegramAlerts(e.target.checked); }
     catch (err) { alert(err.message); e.target.checked = !e.target.checked; }
   };
   document.getElementById("tg-unlink").onclick = async () => {
-    if (!confirm("Отвязать Telegram? Алерты перестанут приходить.")) return;
+    if (!confirm("Disconnect Telegram? Alerts will stop.")) return;
     try { await LLAPI.telegramUnlink(); renderTelegram(me); }
     catch (e) { alert(e.message); }
   };
 }
 
 async function addDriver() {
-  const name = prompt("Имя водителя:");
+  const name = prompt("Driver name:");
   if (!name || !name.trim()) return;
   try { await LLAPI.createDriver({ name: name.trim() }); renderFleet(); }
   catch (e) { alert(e.message); }
