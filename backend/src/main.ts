@@ -10,6 +10,10 @@ import { parseAdminEmails } from './auth/admin-emails';
 async function bootstrap() {
   if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET)
     throw new Error('JWT_SECRET is required in production');
+  // Без DATABASE_URL Sequelize молча уходит на дефолт (unix-сокет + БД по имени юзера ОС) —
+  // с synchronize:true это значит создать схему LoadLens в чужой/личной базе разработчика.
+  // Падаем до инициализации Sequelize, а не после.
+  if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
 
   const app = await NestFactory.create(AppModule);
   // POST /loads с полным набором полей (200 грузов × ~2КБ) не влезает в дефолтные 100kb → 413.
