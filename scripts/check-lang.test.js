@@ -1,6 +1,9 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const { stripComments, findCyrillic } = require("./check-lang.js");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const { stripComments, findCyrillic, expand, scan } = require("./check-lang.js");
 
 test("stripComments: убирает построчный комментарий", () => {
   assert.strictEqual(stripComments("const a = 1; // русский коммент").trim(), "const a = 1;");
@@ -94,4 +97,112 @@ test("known limitation (принято как есть): комментарий 
   // Ожидаемо (не баг): интерполяция ${...} не разбирается рекурсивно, поэтому
   // комментарий внутри неё остаётся текстом шаблонной строки и даёт находку.
   assert.strictEqual(hits.length, 1);
+});
+
+test('findCyrillic: JSON-конвенция "_comment" — dev-комментарий (не user-facing), не считается находкой', () => {
+  const src = '{\n  "_comment": "Русский dev-комментарий про сид-данные",\n  "strength": 0.5\n}';
+  assert.deepStrictEqual(findCyrillic(src), []);
+});
+
+test('findCyrillic: "_comment" не глотает кириллицу в соседних реальных строках', () => {
+  const src = '{\n  "_comment": "Комментарий",\n  "label": "Русский label"\n}';
+  const hits = findCyrillic(src);
+  assert.strictEqual(hits.length, 1);
+  assert.strictEqual(hits[0].line, 3);
+});
+
+// --- expand(): что именно попадает под обход SCOPE — здесь и был пропущенный дефект
+// (allowlist из 6 файлов вместо директории), findCyrillic/stripComments его не ловили.
+
+test("expand: рекурсивно обходит директорию, фильтрует по расширению и исключает .test.js/.spec.ts", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "check-lang-expand-"));
+  try {
+    fs.mkdirSync(path.join(dir, "sub"));
+    fs.writeFileSync(path.join(dir, "a.js"), "const a = 1;");
+    fs.writeFileSync(path.join(dir, "a.test.js"), "const a = 1;");
+    fs.writeFileSync(path.join(dir, "a.spec.ts"), "const a = 1;");
+    fs.writeFileSync(path.join(dir, "a.css"), "body { content: 'x'; }");
+    fs.writeFileSync(path.join(dir, "a.png"), "binary");
+    fs.writeFileSync(path.join(dir, "sub", "b.html"), "<div></div>");
+    const files = expand(dir).map((f) => path.basename(f)).sort();
+    assert.deepStrictEqual(files, ["a.css", "a.js", "b.html"]);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("expand: пропускает служебные директории (node_modules/.git/.superpowers/.claude)", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "check-lang-expand-excl-"));
+  try {
+    for (const d of ["node_modules", ".git", ".superpowers", ".claude"]) {
+      fs.mkdirSync(path.join(dir, d));
+      fs.writeFileSync(path.join(dir, d, "cyr.js"), 'const s = "привет";');
+    }
+    fs.writeFileSync(path.join(dir, "keep.js"), "const a = 1;");
+    const files = expand(dir).map((f) => path.basename(f));
+    assert.deepStrictEqual(files, ["keep.js"]);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("expand: EXCLUDE_PATHS (extension/vendor, backend/shared — автокопии) не обходятся", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "check-lang-expand-vendor-"));
+  const cwd = process.cwd();
+  try {
+    fs.mkdirSync(path.join(dir, "extension", "vendor"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "extension", "vendor", "cyr.js"), 'const s = "привет";');
+    fs.mkdirSync(path.join(dir, "extension", "content"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "extension", "content", "keep.js"), "const a = 1;");
+    fs.mkdirSync(path.join(dir, "backend", "shared"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "backend", "shared", "cyr.js"), 'const s = "привет";');
+    process.chdir(dir);
+    const files = ["extension", "backend/shared"].flatMap(expand).sort();
+    assert.deepStrictEqual(files, [path.join("extension", "content", "keep.js")]);
+  } finally {
+    process.chdir(cwd);
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("expand: путь к одиночному файлу возвращается как есть", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "check-lang-expand-file-"));
+  try {
+    const f = path.join(dir, "single.js");
+    fs.writeFileSync(f, "const a = 1;");
+    assert.deepStrictEqual(expand(f), [f]);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("expand: несуществующий путь даёт пустой список (не бросает)", () => {
+  assert.deepStrictEqual(expand(path.join(os.tmpdir(), "check-lang-does-not-exist-xyz")), []);
+});
+
+// --- scan(): сквозной happy-path expand+findCyrillic — именно это гоняет `npm run check:lang`.
+
+test("scan: находит непереведённые строки в реальных файлах и пропускает test-файлы/комментарии", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "check-lang-scan-"));
+  try {
+    fs.writeFileSync(path.join(dir, "bad.js"), 'const s = "привет"; // и комментарий тоже кириллицей');
+    fs.writeFileSync(path.join(dir, "bad.test.js"), 'const s = "привет";');
+    fs.writeFileSync(path.join(dir, "ok.js"), 'const s = "hello"; // русский коммент ок');
+    const hits = scan([dir]);
+    assert.strictEqual(hits.length, 1);
+    assert.strictEqual(path.basename(hits[0].file), "bad.js");
+    assert.strictEqual(hits[0].line, 1);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("scan: чистая директория без кириллицы в user-facing коде даёт пустой результат", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "check-lang-scan-clean-"));
+  try {
+    fs.writeFileSync(path.join(dir, "ok.js"), 'const s = "hello"; // русский коммент');
+    assert.deepStrictEqual(scan([dir]), []);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });

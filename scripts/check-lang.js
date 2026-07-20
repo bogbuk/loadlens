@@ -3,16 +3,18 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-// Файлы в объёме локализации. backend/src берётся рекурсивно, .spec.ts исключены.
+// Директории в объёме локализации — обходятся рекурсивно, .spec.ts/.test.js исключены.
 const SCOPE = [
-  "extension/manifest.json",
-  "extension/popup.html",
-  "extension/popup.js",
-  "extension/content.js",
-  "extension/api.js",
-  "extension/inject.js",
+  "extension",
+  "shared",
   "backend/src",
 ];
+
+// Каталоги, которые не обходим вообще: extension/vendor и backend/shared — автокопии
+// из shared/ (npm run sync:shared), проверка дала бы дубли находок из канона; node_modules/
+// .git/.superpowers/.claude — не наш код.
+const EXCLUDE_PATHS = new Set(["extension/vendor", "backend/shared"]);
+const EXCLUDE_DIR_NAMES = new Set(["node_modules", ".git", ".superpowers", ".claude"]);
 
 // Посимвольный сканер вместо двух регэкспов: регэкспы не понимают границ строковых
 // литералов, поэтому "//" или "/*" внутри строки ошибочно считались началом комментария
@@ -162,21 +164,32 @@ function stripComments(src) {
   return out;
 }
 
+// JSON не поддерживает нативные комментарии. Проектная конвенция — dev-facing описание
+// в поле "_comment" (seed/фикстуры), это НЕ user-facing текст. stripComments не умеет
+// резать это (не JS/HTML-комментарий), поэтому findCyrillic пропускает такие строки
+// отдельно — тот же смысл, что и у обычного комментария, просто в JSON-синтаксисе.
+const JSON_COMMENT_KEY = /^"_comment"\s*:/;
+
 function findCyrillic(src) {
   const out = [];
   String(src).split("\n").forEach((text, i) => {
-    if (/[А-Яа-яЁё]/.test(text)) out.push({ line: i + 1, text: text.trim() });
+    const trimmed = text.trim();
+    if (JSON_COMMENT_KEY.test(trimmed)) return;
+    if (/[А-Яа-яЁё]/.test(text)) out.push({ line: i + 1, text: trimmed });
   });
   return out;
 }
 
 function expand(target) {
+  const normalized = String(target).split(path.sep).join("/");
+  if (EXCLUDE_PATHS.has(normalized)) return [];
   const abs = path.resolve(target);
   if (!fs.existsSync(abs)) return [];
   if (!fs.statSync(abs).isDirectory()) return [target];
   return fs.readdirSync(abs)
+    .filter((e) => !EXCLUDE_DIR_NAMES.has(e))
     .flatMap((e) => expand(path.join(target, e)))
-    .filter((f) => /\.(ts|js|html|json)$/.test(f) && !/\.spec\.ts$/.test(f) && !/\.test\.js$/.test(f));
+    .filter((f) => /\.(ts|js|html|json|css)$/.test(f) && !/\.spec\.ts$/.test(f) && !/\.test\.js$/.test(f));
 }
 
 function scan(files) {
@@ -198,4 +211,4 @@ if (require.main === module) {
   console.log("check:lang — чисто, кириллицы в user-facing коде нет");
 }
 
-module.exports = { SCOPE, stripComments, findCyrillic, scan };
+module.exports = { SCOPE, EXCLUDE_PATHS, EXCLUDE_DIR_NAMES, stripComments, findCyrillic, expand, scan };
