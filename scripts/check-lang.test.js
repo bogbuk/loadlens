@@ -61,6 +61,32 @@ test("defect 4: \\// на конце regex-литерала не должен п
   assert.strictEqual(hits.length, 1);
 });
 
+test("defect 5: regex-литерал с кавычкой внутри не сбивает чётность кавычек для остатка файла", () => {
+  // popup.js:2 — реальный живой случай: /[&<>"]/ содержит " внутри regex-класса.
+  const src = [
+    'const escA = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", \'"\': "&quot;" }[c]));',
+    "// ---- настройки ----",
+  ].join("\n");
+  const stripped = stripComments(src);
+  assert.ok(!/настройки/.test(stripped));
+});
+
+test("defect 5: деление не принимается за regex-литерал", () => {
+  const hits = findCyrillic(stripComments('const r = (a) / b; const s = "текст";'));
+  assert.strictEqual(hits.length, 1);
+});
+
+test("defect 5: unescaped / внутри regex-класса [...] не закрывает литерал раньше времени", () => {
+  const hits = findCyrillic(stripComments('const re = /[a/b]/; const s = "текст";'));
+  assert.strictEqual(hits.length, 1);
+});
+
+test("defect 4 (регресс): \\/\\/ на конце regex-литерала по-прежнему не режется как построчный комментарий", () => {
+  const src = 'const ok = /^https?:\\/\\//.test(url) ? "да" : "нет";';
+  const hits = findCyrillic(stripComments(src));
+  assert.strictEqual(hits.length, 1);
+});
+
 test("known limitation (принято как есть): комментарий внутри ${...} шаблонной строки не срезается — ложноположительная находка, не пропуск", () => {
   // const x = `val ${/* русский коммент внутри интерполяции */ 1}`;
   const src = 'const x = `val ${/* русский коммент внутри интерполяции */ 1}`;';
