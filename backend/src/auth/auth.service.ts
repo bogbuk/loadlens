@@ -6,6 +6,7 @@ import { User } from '../users/user.model';
 import { parseAdminEmails } from './admin-emails';
 import { TelegramService } from '../telegram/telegram.service';
 import { genResetCode, sha256 } from './reset-code';
+import { DevicesService } from './devices.service';
 
 const ACCESS_TTL = '15m';
 const REFRESH_TTL = '7d';
@@ -18,6 +19,7 @@ export class AuthService {
     @InjectModel(User) private readonly userModel: typeof User,
     private readonly jwt: JwtService,
     private readonly telegram: TelegramService,
+    private readonly devices: DevicesService,
   ) {}
 
   private async tokens(user: User) {
@@ -30,16 +32,17 @@ export class AuthService {
 
   private publicUser(u: User) { return { email: u.email, plan: u.plan }; }
 
-  async register(emailRaw: string, password: string) {
+  async register(emailRaw: string, password: string, clientId: string | null) {
     const email = emailRaw.trim().toLowerCase();
     if (await this.userModel.findOne({ where: { email } }))
       throw new ConflictException('email is already registered');
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await this.userModel.create({ email, passwordHash });
+    await this.devices.registerOnAuth(user, clientId);
     return { ...(await this.tokens(user)), user: this.publicUser(user) };
   }
 
-  async login(emailRaw: string, password: string) {
+  async login(emailRaw: string, password: string, clientId: string | null) {
     const email = emailRaw.trim().toLowerCase();
     const user = await this.userModel.findOne({ where: { email } });
     if (!user || !(await bcrypt.compare(password, user.passwordHash)))
@@ -50,10 +53,11 @@ export class AuthService {
       user.role = 'admin';
       await this.userModel.update({ role: 'admin' }, { where: { email } });
     }
+    await this.devices.registerOnAuth(user, clientId);
     return { ...(await this.tokens(user)), user: this.publicUser(user) };
   }
 
-  async refresh(refreshToken: string) {
+  async refresh(refreshToken: string, clientId: string | null) {
     let payload: { sub: string; type: string; tv?: number };
     try { payload = await this.jwt.verifyAsync(refreshToken); }
     catch { throw new UnauthorizedException('invalid refresh token'); }
@@ -62,6 +66,7 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('user not found');
     if (user.blocked) throw new ForbiddenException('account is blocked');
     if ((payload.tv ?? 0) !== user.tokenVersion) throw new UnauthorizedException('session is no longer valid');
+    await this.devices.verifyOnRefresh(user, clientId);
     return { ...(await this.tokens(user)), user: this.publicUser(user) };
   }
 
