@@ -7,6 +7,8 @@
     "sync:shared": "node scripts/sync-shared.js",
     "test:shared": "node --test shared/*.test.js",
     "test:ext": "node --test extension/*.test.js extension/adapters/*.test.js",
+    "check:lang": "node scripts/check-lang.js",
+    "test:scripts": "node --test scripts/*.test.js",
     "test": "npm run sync:shared && npm run test:shared && npm run test:ext"
   },
   "keywords": ["dat", "truckstop", "load-board", "trucking", "dispatch", "chrome-extension"],
