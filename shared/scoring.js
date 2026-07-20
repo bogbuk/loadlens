@@ -100,12 +100,12 @@ const LLSCORE = (() => {
     const lowCredit = load.creditScore != null && Number(load.creditScore) < o.creditRisk;
 
     if (aboveMarket) flags.push({ code: "rate_above_market", sev: "med",
-      label: `ставка $${rpm.toFixed(2)}/mi сильно выше рынка ($${laneMedian.toFixed(2)})` });
-    if (!load.brokerMc) flags.push({ code: "no_mc", sev: "med", label: "нет MC-номера брокера" });
+      label: `rate $${rpm.toFixed(2)}/mi far above market ($${laneMedian.toFixed(2)})` });
+    if (!load.brokerMc) flags.push({ code: "no_mc", sev: "med", label: "no broker MC number" });
     if (aboveMarket && lowCredit) flags.push({ code: "bait_combo", sev: "high",
-      label: `приманка: ставка выше рынка + низкий credit (${load.creditScore})` });
+      label: `bait: rate above market + low credit (${load.creditScore})` });
     if (ctx.reputation && ctx.reputation.level === "bad") flags.push({ code: "crowd_bad", sev: "high",
-      label: ctx.reputation.doubleBrokered ? "crowd: double-brokered" : "crowd: флейкал" });
+      label: ctx.reputation.doubleBrokered ? "crowd: double-brokered" : "crowd: flaked" });
     return flags;
   }
 

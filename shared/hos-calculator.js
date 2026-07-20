@@ -397,7 +397,7 @@ class HOSCalculator {
       const limit = effectiveDrivingLimit / 60;
       violations.push({
         type: "DRIVING_LIMIT",
-        message: `Превышен лимит вождения: ${Math.round(currentShift.drivingTime / 60)}h из ${limit}h`,
+        message: `Driving limit exceeded: ${Math.round(currentShift.drivingTime / 60)}h of ${limit}h`,
         severity: "critical",
       });
     }
@@ -405,7 +405,7 @@ class HOSCalculator {
     if (currentShift.elapsedTime > this.ON_DUTY_LIMIT) {
       violations.push({
         type: "ON_DUTY_LIMIT",
-        message: `Превышен лимит смены: ${Math.round(currentShift.elapsedTime / 60)}h из 14h`,
+        message: `Shift limit exceeded: ${Math.round(currentShift.elapsedTime / 60)}h of 14h`,
         severity: "critical",
       });
     }
@@ -413,7 +413,7 @@ class HOSCalculator {
     if (cycleData.totalTime > this.CYCLE_LIMIT) {
       violations.push({
         type: "CYCLE_LIMIT",
-        message: `Превышен лимит цикла: ${Math.round(cycleData.totalTime / 60)}h из ${this.CYCLE_LIMIT / 60}h`,
+        message: `Cycle limit exceeded: ${Math.round(cycleData.totalTime / 60)}h of ${this.CYCLE_LIMIT / 60}h`,
         severity: "critical",
       });
     }
@@ -460,7 +460,7 @@ class HOSCalculator {
     if (hasViolation) {
       return {
         type: "BREAK_REQUIRED",
-        message: `Требуется 30-минутный перерыв после 8 часов вождения`,
+        message: `30-minute break required after 8 hours of driving`,
         severity: "warning",
       };
     }
@@ -725,15 +725,15 @@ function processLogbook(
     const { jsonFormat = false, silent = false } = options;
 
     if (!silent) {
-      console.log("=== HOS Calculator для Node.js ===\n");
+      console.log("=== HOS Calculator for Node.js ===\n");
     }
 
     const fileContent = fs.readFileSync(filePath, "utf8");
     const logbookData = JSON.parse(fileContent);
 
     if (!silent) {
-      console.log("✓ Logbook загружен");
-      console.log(`  Всего записей: ${logbookData.length}\n`);
+      console.log("✓ Logbook loaded");
+      console.log(`  Total records: ${logbookData.length}\n`);
     }
 
     const adapter = customMapping
@@ -748,7 +748,7 @@ function processLogbook(
     const driverIds = adapter.getDriverIds(logbookData);
 
     if (!silent) {
-      console.log(`✓ Найдено водителей: ${driverIds.length}`);
+      console.log(`✓ Drivers found: ${driverIds.length}`);
       console.log(`  IDs: ${driverIds.join(", ")}\n`);
     }
 
@@ -774,7 +774,7 @@ function processLogbook(
 
     return results;
   } catch (error) {
-    console.error("❌ Ошибка:", error.message);
+    console.error("❌ Error:", error.message);
     process.exit(1);
   }
 }

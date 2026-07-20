@@ -185,7 +185,7 @@
     const flags = LLSCORE.redFlags(load, { laneMedian, reputation: repCache.get(String(load.brokerMc)) });
     if (flags.length) {
       const lvl = LLSCORE.redFlagLevel(flags);
-      const fc = chip(lvl === "high" ? "🚩 risk" : "🚩 check", "ll-flag " + (lvl === "high" ? "ll-red" : "ll-amber"));
+      const fc = chip(lvl === "high" ? "🚩 risk" : "🚩 verify", "ll-flag " + (lvl === "high" ? "ll-red" : "ll-amber"));
       fc.title = flags.map((f) => f.label).join("\n");
       host.appendChild(fc);
     }
@@ -212,7 +212,7 @@
     const c = chip(txt, "ll-fleet " + cls);
     c.style.cursor = "pointer";
     c.title = m.matches.map((x) =>
-      `${x.feasible ? "✓" : "✕"} ${x.name}: HOS ${x.hosBadge}${x.equipMatch ? "" : " · equip≠"} · DH ${x.deadhead}mi` +
+      `${x.feasible ? "✓" : "✕"} ${x.name}: HOS ${x.hosBadge}${x.equipMatch ? "" : " · equipment mismatch"} · DH ${x.deadhead}mi` +
       `${x.netRpm != null ? " · $" + x.netRpm.toFixed(2) + "/mi" : ""}`).join("\n");
     c.addEventListener("click", (e) => { e.stopPropagation(); e.preventDefault(); openLoadDetail(load); });
     return c;
@@ -239,7 +239,7 @@
       return `👥 ⚠ ${why} (${rep.n})`;
     }
     if (rep.level === "good") return `👥 ${rep.paid + rep.noIssue}/${rep.n} ok`;
-    if (rep.level === "thin") return `👥 ${rep.n} reviews`;
+    if (rep.level === "thin") return `👥 ${rep.n} ${rep.n === 1 ? "review" : "reviews"}`;
     return `👥 mixed (${rep.n})`;
   }
   function crowdChip(mc) {
@@ -331,7 +331,7 @@
     if (load.weight) bd.appendChild(drow("Weight", `${load.weight.toLocaleString("en-US")} lbs`));
     if (load.availability) bd.appendChild(drow("Available", `${load.availability.earliest || "?"} – ${load.availability.latest || "?"}`));
 
-    bd.appendChild(drow("Score", `${profitText(profit)} · HOS ${hosIcon(hos)}${flags.length ? " · 🚩 " + (LLSCORE.redFlagLevel(flags) === "high" ? "risk" : "check") : ""}`));
+    bd.appendChild(drow("Score", `${profitText(profit)} · HOS ${hosIcon(hos)}${flags.length ? " · 🚩 " + (LLSCORE.redFlagLevel(flags) === "high" ? "risk" : "verify") : ""}`));
     if (flags.length) { const f = document.createElement("div"); f.className = "flags"; f.textContent = flags.map((x) => "• " + x.label).join("\n"); bd.appendChild(f); }
 
     const brokerLine = [load.brokerName, load.brokerMc ? "MC " + load.brokerMc : null,
@@ -354,7 +354,7 @@
       m.matches.forEach((x) => {
         const r = document.createElement("div"); r.className = "fleet-row ll-" + (x.feasible ? "ok" : "no");
         r.textContent = `${x.feasible ? "✓" : "✕"} ${x.name} · HOS ${x.hosBadge}` +
-          `${x.equipMatch ? "" : " · equip≠"} · DH ${x.deadhead}mi` +
+          `${x.equipMatch ? "" : " · equipment mismatch"} · DH ${x.deadhead}mi` +
           `${x.netRpm != null ? " · $" + x.netRpm.toFixed(2) + "/mi" : ""}`;
         wrap.appendChild(r);
       });
@@ -525,16 +525,16 @@
         `</select></div>` : "") +
       row("Loads in results", String(loads.length)) +
       (equipFilter ? row("Equipment filter", esc(equipFilter.join(", "))) : "") +
-      row("Origin market", start ? esc(start) : "—") +
+      row("Start market", start ? esc(start) : "—") +
       row("Diesel", "$" + dieselPrice.toFixed(2) + "/gal") +
       `<div class="ll-cfg">Cost/mi: <input id="ll-cpm" type="number" step="0.05" value="${costPerMile}" style="width:60px"> ` +
-      `Origin: <input id="ll-start" type="text" value="${start ? esc(start) : ""}" style="width:110px" placeholder="CHICAGO_IL"></div>` +
+      `Start: <input id="ll-start" type="text" value="${start ? esc(start) : ""}" style="width:110px" placeholder="CHICAGO_IL"></div>` +
       `<div class="ll-cfg" title="Auto-pilot: the background tab clicks DAT's Search itself and holds the sort order">` +
         `<label><input type="checkbox" id="ll-ar"${autoRefresh.on ? " checked" : ""}> Auto-refresh</label> ` +
         `Sort: <select id="ll-sort-f"><option value="">—</option>` +
         SORT_FIELDS.map((s) => `<option value="${s.field}"${sortPref && sortPref.field === s.field ? " selected" : ""}>${esc(s.label)}</option>`).join("") +
         `</select> <button id="ll-sort-dir" title="Sort direction">${sortPref && sortPref.dir === "asc" ? "▲ Low" : "▼ High"}</button></div>` +
-      (chains.length ? "<h4>Get-out chains</h4>" + chains.map((c) => chainCard(c, chainsCtx)).join("") : "<div class='note'>Chains appear once enough loads from the origin market are visible.</div>") +
+      (chains.length ? "<h4>Get-out chains</h4>" + chains.map((c) => chainCard(c, chainsCtx)).join("") : "<div class='note'>Chains appear once enough loads from the start market are visible.</div>") +
       (deals.length ? "<h4>Hot loads</h4>" + deals.map((d) =>
         `<div class="deal"><span class="m">${esc(d.l.originMarket)} → ${esc(d.l.destMarket)} ${esc(d.l.equipment)}</span>` +
         `<span class="p">$${d.b.netRpm.toFixed(2)}/mi</span></div>`).join("") : "") +
@@ -666,7 +666,7 @@
     const density = (crowdCache.get(leg.origin) || []).length;
     const densTxt = density ? ` · ~${density} loads from market` : "";
     const isLast = i === c.legs.length - 1;
-    const strengthTxt = isLast ? ` · finish ${strengthBar(strengthOf(leg.dest))}` : "";
+    const strengthTxt = isLast ? ` · dest. market ${strengthBar(strengthOf(leg.dest))}` : "";
     return `<div class="leg leg-fc">` +
       `<div class="leg-top"><span class="leg-tag fc">◔ MARKET FORECAST</span><span class="leg-idx">${esc(fresh)}</span></div>` +
       `<div class="leg-route">${route}${neighborTag(full)}</div>` +
@@ -703,9 +703,9 @@
 
   // короткий crowd-вердикт для чипа плеча
   function crowdShort(rep) {
-    if (rep.level === "good") return "🛡 ok";
+    if (rep.level === "good") return "🛡 trusted";
     if (rep.level === "bad") return "⚠ risk";
-    if (rep.level === "thin") return rep.n + " reviews";
+    if (rep.level === "thin") return rep.n + (rep.n === 1 ? " review" : " reviews");
     return "mixed";
   }
 
