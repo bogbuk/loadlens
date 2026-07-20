@@ -52,7 +52,7 @@ export class AdminService {
   async setPlan(emailRaw: string, plan: 'free' | 'pro') {
     const email = emailRaw.trim().toLowerCase();
     const user = await this.userModel.findOne({ where: { email } });
-    if (!user) throw new NotFoundException('пользователь не найден');
+    if (!user) throw new NotFoundException('user not found');
     user.plan = plan;
     await user.save();
     return { email: user.email, plan: user.plan };
@@ -61,8 +61,8 @@ export class AdminService {
   async setBlocked(emailRaw: string, blocked: boolean) {
     const email = emailRaw.trim().toLowerCase();
     const user = await this.userModel.findOne({ where: { email } });
-    if (!user) throw new NotFoundException('пользователь не найден');
-    if (user.role === 'admin') throw new ForbiddenException('нельзя заблокировать администратора');
+    if (!user) throw new NotFoundException('user not found');
+    if (user.role === 'admin') throw new ForbiddenException('cannot block an administrator');
     user.blocked = blocked;
     await user.save();
     return { email: user.email, blocked: user.blocked };

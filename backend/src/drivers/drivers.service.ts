@@ -21,14 +21,14 @@ export class DriversService {
 
   async update(userId: string, id: string, dto: UpdateDriverDto): Promise<Driver> {
     const row = await this.model.findOne({ where: { id, userId } });
-    if (!row) throw new NotFoundException('водитель не найден');
+    if (!row) throw new NotFoundException('driver not found');
     await row.update(dto as any);
     return row;
   }
 
   async remove(userId: string, id: string): Promise<{ ok: true }> {
     const n = await this.model.destroy({ where: { id, userId } });
-    if (!n) throw new NotFoundException('водитель не найден');
+    if (!n) throw new NotFoundException('driver not found');
     return { ok: true };
   }
 }

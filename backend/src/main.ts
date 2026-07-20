@@ -9,7 +9,7 @@ import { parseAdminEmails } from './auth/admin-emails';
 
 async function bootstrap() {
   if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET)
-    throw new Error('JWT_SECRET обязателен в проде');
+    throw new Error('JWT_SECRET is required in production');
 
   const app = await NestFactory.create(AppModule);
   // POST /loads с полным набором полей (200 грузов × ~2КБ) не влезает в дефолтные 100kb → 413.

@@ -11,7 +11,7 @@ export class ProGuard implements CanActivate {
     const req = ctx.switchToHttp().getRequest();
     const userId = req.user?.userId;
     const user = userId ? await this.users.findByPk(userId) : null;
-    if (!user || user.plan !== 'pro') throw new ForbiddenException('Парк водителей доступен в Pro');
+    if (!user || user.plan !== 'pro') throw new ForbiddenException('Fleet is a Pro feature');
     return true;
   }
 }

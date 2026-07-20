@@ -103,7 +103,7 @@ describe('AuthService', () => {
     users['a@b.md'].telegramChatId = 'chat-1';
     const res = await service.forgot('A@B.md');
     expect(res).toEqual({ ok: true });
-    expect(telegram.sendMessageTo).toHaveBeenCalledWith('chat-1', expect.stringContaining('Код сброса пароля'));
+    expect(telegram.sendMessageTo).toHaveBeenCalledWith('chat-1', expect.stringContaining('LoadLens password reset code'));
     expect(users['a@b.md'].passwordResetTokenHash).toBeTruthy();
     expect(Number(users['a@b.md'].passwordResetExpires)).toBeGreaterThan(Date.now());
     delete process.env.TELEGRAM_BOT_TOKEN;

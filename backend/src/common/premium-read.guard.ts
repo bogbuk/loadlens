@@ -39,6 +39,6 @@ export class PremiumReadGuard implements CanActivate {
       } catch { /* невалидный токен → ниже 403 */ }
     }
 
-    throw new ForbiddenException('Premium-доступ к чтению требует Pro-аккаунт или API-ключ');
+    throw new ForbiddenException('Premium read access requires a Pro account or an API key');
   }
 }

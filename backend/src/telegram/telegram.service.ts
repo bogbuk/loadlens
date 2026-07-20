@@ -142,8 +142,8 @@ export class TelegramService {
       if (this.token) {
         await this.send(
           String(chatId),
-          n ? '✅ LoadLens привязан. Буду слать выгодные грузы по вашему фильтру.'
-            : '⚠️ Ссылка устарела. Откройте «Подключить Telegram» в расширении заново.',
+          n ? "✅ LoadLens is linked. I'll send you profitable loads matching your filter."
+            : '⚠️ This link has expired. Open "Connect Telegram" in the extension again.',
         );
       }
     }

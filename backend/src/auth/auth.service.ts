@@ -33,7 +33,7 @@ export class AuthService {
   async register(emailRaw: string, password: string) {
     const email = emailRaw.trim().toLowerCase();
     if (await this.userModel.findOne({ where: { email } }))
-      throw new ConflictException('email уже зарегистрирован');
+      throw new ConflictException('email is already registered');
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await this.userModel.create({ email, passwordHash });
     return { ...(await this.tokens(user)), user: this.publicUser(user) };
@@ -43,8 +43,8 @@ export class AuthService {
     const email = emailRaw.trim().toLowerCase();
     const user = await this.userModel.findOne({ where: { email } });
     if (!user || !(await bcrypt.compare(password, user.passwordHash)))
-      throw new UnauthorizedException('неверный email или пароль');
-    if (user.blocked) throw new ForbiddenException('аккаунт заблокирован');
+      throw new UnauthorizedException('invalid email or password');
+    if (user.blocked) throw new ForbiddenException('account is blocked');
     // Апгрейд роли: email из ADMIN_EMAIL → admin (покрывает регистрацию после старта приложения).
     if (user.role !== 'admin' && parseAdminEmails(process.env.ADMIN_EMAIL).includes(email)) {
       user.role = 'admin';
@@ -56,18 +56,18 @@ export class AuthService {
   async refresh(refreshToken: string) {
     let payload: { sub: string; type: string; tv?: number };
     try { payload = await this.jwt.verifyAsync(refreshToken); }
-    catch { throw new UnauthorizedException('невалидный refresh-токен'); }
-    if (payload.type !== 'refresh') throw new UnauthorizedException('ожидался refresh-токен');
+    catch { throw new UnauthorizedException('invalid refresh token'); }
+    if (payload.type !== 'refresh') throw new UnauthorizedException('expected a refresh token');
     const user = await this.userModel.findByPk(payload.sub);
-    if (!user) throw new UnauthorizedException('пользователь не найден');
-    if (user.blocked) throw new ForbiddenException('аккаунт заблокирован');
-    if ((payload.tv ?? 0) !== user.tokenVersion) throw new UnauthorizedException('сессия недействительна');
+    if (!user) throw new UnauthorizedException('user not found');
+    if (user.blocked) throw new ForbiddenException('account is blocked');
+    if ((payload.tv ?? 0) !== user.tokenVersion) throw new UnauthorizedException('session is no longer valid');
     return { ...(await this.tokens(user)), user: this.publicUser(user) };
   }
 
   async me(userId: string) {
     const user = await this.userModel.findByPk(userId);
-    if (!user) throw new UnauthorizedException('пользователь не найден');
+    if (!user) throw new UnauthorizedException('user not found');
     return this.publicUser(user);
   }
 
@@ -83,11 +83,11 @@ export class AuthService {
       try {
         await this.telegram.sendMessageTo(
           user.telegramChatId,
-          `Код сброса пароля LoadLens: ${code}\nДействует 30 минут. Если вы не запрашивали сброс — игнорируйте.`,
+          `LoadLens password reset code: ${code}\nValid for 30 minutes. If you didn't request it, ignore this message.`,
         );
       } catch (e) {
         // Доставка не критична — пользователь может повторить запрос. Логируем для ops.
-        this.logger.warn(`не удалось отправить код сброса в Telegram: ${(e as Error)?.message ?? e}`);
+        this.logger.warn(`failed to send reset code via Telegram: ${(e as Error)?.message ?? e}`);
       }
     }
     return { ok: true };
@@ -97,7 +97,7 @@ export class AuthService {
     const hash = sha256(token.trim());
     const user = await this.userModel.findOne({ where: { passwordResetTokenHash: hash } });
     if (!user || user.passwordResetExpires == null || Number(user.passwordResetExpires) < Date.now())
-      throw new BadRequestException('недействительный или истёкший код');
+      throw new BadRequestException('invalid or expired code');
     user.passwordHash = await bcrypt.hash(newPassword, 10);
     user.passwordResetTokenHash = null;
     user.passwordResetExpires = null;

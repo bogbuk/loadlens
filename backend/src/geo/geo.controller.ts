@@ -11,7 +11,7 @@ export class GeoController {
 
   @Get('distance')
   distance(@Query('from') from?: string, @Query('to') to?: string) {
-    if (!from || !to) throw new BadRequestException('from и to обязательны');
+    if (!from || !to) throw new BadRequestException('from and to are required');
     return this.service.distance(from, to);
   }
 }

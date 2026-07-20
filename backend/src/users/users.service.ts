@@ -10,11 +10,11 @@ export class UsersService {
   // Смена своего пароля: нужен текущий пароль (подтверждение владения аккаунтом).
   async changePassword(userId: string, currentPassword: string, newPassword: string) {
     const user = await this.userModel.findByPk(userId);
-    if (!user) throw new UnauthorizedException('пользователь не найден');
+    if (!user) throw new UnauthorizedException('user not found');
     if (!(await bcrypt.compare(currentPassword, user.passwordHash)))
-      throw new BadRequestException('неверный текущий пароль');
+      throw new BadRequestException('current password is incorrect');
     if (newPassword === currentPassword)
-      throw new BadRequestException('новый пароль совпадает со старым');
+      throw new BadRequestException('new password matches the old one');
     user.passwordHash = await bcrypt.hash(newPassword, 10);
     user.tokenVersion = (user.tokenVersion ?? 0) + 1; // инвалидируем все сессии (включая текущую)
     await user.save();

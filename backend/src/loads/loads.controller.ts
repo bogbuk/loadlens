@@ -24,7 +24,7 @@ export class LoadsController {
     @Query('equipment') equipment?: string,
     @Query('limit') limit?: string,
   ) {
-    if (!origin) throw new BadRequestException('origin обязателен');
+    if (!origin) throw new BadRequestException('origin is required');
     return this.service.partnerSearch(origin, {
       dest, equipment,
       limit: limit && Number.isFinite(parseInt(limit, 10)) ? parseInt(limit, 10) : undefined,
@@ -41,7 +41,7 @@ export class LoadsController {
     @Query('radiusMi') radiusMi?: string,
     @Query('since') since?: string,
   ) {
-    if (!market) throw new BadRequestException('market обязателен');
+    if (!market) throw new BadRequestException('market is required');
     return this.service.near(market, {
       equipment,
       radiusMi: radiusMi && Number.isFinite(parseInt(radiusMi, 10)) ? parseInt(radiusMi, 10) : undefined,
@@ -54,7 +54,7 @@ export class LoadsController {
   @UseGuards(PremiumReadGuard)
   @Get()
   byOrigin(@Query('origin') origin?: string, @Query('equipment') equipment?: string, @Query('limit') limit?: string) {
-    if (!origin) throw new BadRequestException('origin обязателен');
+    if (!origin) throw new BadRequestException('origin is required');
     return this.service.byOrigin(origin, equipment, limit ? parseInt(limit, 10) : 100);
   }
 }
