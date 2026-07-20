@@ -359,6 +359,9 @@ async function addDriver() {
 
 renderSettings();
 LLAPI.getMe().then(
-  (u) => { (u ? accRow(u) : accForm()); renderFleet(u || null); renderTelegram(u || null); },
-  () => { accForm(); renderFleet(null); renderTelegram(null); },
+  async (u) => {
+    if (u) accRow(u); else accForm(await LLAPI.takeSignoutMessage());
+    renderFleet(u || null); renderTelegram(u || null);
+  },
+  async () => { accForm(await LLAPI.takeSignoutMessage()); renderFleet(null); renderTelegram(null); },
 );

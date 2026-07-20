@@ -165,8 +165,9 @@ const LLAPI = (() => {
   }
 
   async function credsCall(path, email, password) {
+    const cid = await clientId();
     const res = await fetch(`${BASE}/auth/${path}`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json", "X-Client-Id": cid },
       body: JSON.stringify({ email, password }),
     });
     const data = await res.json().catch(() => ({}));
@@ -179,15 +180,30 @@ const LLAPI = (() => {
   const login = (email, password) => credsCall("login", email, password);
 
   async function refreshTokens(auth) {
+    const cid = await clientId();
     const res = await fetch(`${BASE}/auth/refresh`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json", "X-Client-Id": cid },
       body: JSON.stringify({ refreshToken: auth.refreshToken }),
     });
-    if (!res.ok) { await logout(); return null; }
+    if (!res.ok) {
+      // Причину разлогина сохраняем отдельно: попап покажет её на экране входа.
+      // Различать «токен протух» и «вытеснили» по тексту нельзя — только по reason.
+      const data = await res.json().catch(() => ({}));
+      if (data.reason) await chrome.storage.local.set({ ll_signout: data.message || "" });
+      await logout();
+      return null;
+    }
     const data = await res.json();
     const next = { ...auth, accessToken: data.accessToken, refreshToken: data.refreshToken };
     await setAuth(next);
     return next;
+  }
+
+  // Забирает отложенное сообщение о разлогине и стирает его — показывается один раз.
+  async function takeSignoutMessage() {
+    const { ll_signout } = await chrome.storage.local.get("ll_signout");
+    if (ll_signout) await chrome.storage.local.remove("ll_signout");
+    return ll_signout || "";
   }
 
   async function getMe(force) {
@@ -332,6 +348,7 @@ const LLAPI = (() => {
 
   return { sanitizeLoad, clientId, sendLoads, getLane, getMarket, getDistance, getDiesel,
            getLoadsByOrigin, getLoadsNear, getBrokerReputation, reportBroker, register, login, logout, getMe,
+           takeSignoutMessage,
            getDrivers, createDriver, updateDriver, deleteDriver, deleteAccount, changePassword, forgotPassword, resetPassword,
            telegramStatus, telegramLink, telegramAlerts, telegramUnlink, notifyAlerts };
 })();
