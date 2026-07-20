@@ -59,7 +59,7 @@ function main() {
     fs.copyFileSync(path.join(EXT, f), dst);
   }
 
-  const zip = path.join(DIST, `loadlens-${version}.zip`);
+  const zip = path.join(DIST, `loadlens-extension-${version}.zip`);
   execFileSync("zip", ["-r", "-q", "-X", zip, "."], { cwd: stage });
 
   const kb = (fs.statSync(zip).size / 1024).toFixed(1);
