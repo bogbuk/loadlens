@@ -41,6 +41,35 @@ describe('DevicesService.registerOnAuth', () => {
     });
   });
 
+  // Переходный режим на время раскатки 0.5.0 через Store: старые сборки не шлют заголовок,
+  // и строгий отказ запирает Pro-пользователя наглухо (login и refresh оба отдают 401).
+  describe('DEVICE_ID_REQUIRED=false — мягкий режим', () => {
+    const prev = process.env.DEVICE_ID_REQUIRED;
+    beforeEach(() => { process.env.DEVICE_ID_REQUIRED = 'false'; });
+    afterEach(() => {
+      if (prev === undefined) delete process.env.DEVICE_ID_REQUIRED;
+      else process.env.DEVICE_ID_REQUIRED = prev;
+    });
+
+    it('pro без clientId — не отказываем, но и устройство не пишем', async () => {
+      const { svc, model } = makeService([]);
+      await expect(svc.registerOnAuth(proUser(), null)).resolves.toBeUndefined();
+      expect(model.upsert).not.toHaveBeenCalled();
+    });
+
+    it('pro без clientId на refresh — не отказываем', async () => {
+      const { svc } = makeService([]);
+      await expect(svc.verifyOnRefresh(proUser(), null)).resolves.toBeUndefined();
+    });
+
+    it('pro С clientId — лимит работает как обычно (флаг касается только отсутствия заголовка)', async () => {
+      const { svc, model, users } = makeService([row('old', 500), row('mid', 100), row('new', 10)]);
+      await svc.registerOnAuth(proUser(), 'fresh');
+      expect(model.destroy).toHaveBeenCalled();
+      expect(users.increment).toHaveBeenCalled();
+    });
+  });
+
   it('free без clientId — проходит молча, ничего не пишем', async () => {
     const { svc, model } = makeService([]);
     await expect(svc.registerOnAuth(freeUser(), null)).resolves.toBeUndefined();

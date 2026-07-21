@@ -8,6 +8,15 @@ import { DEVICE_LIMIT, DeviceRow, decideDevices } from './device-limit';
 const MSG_CLIENT_ID = 'Please update the LoadLens extension to continue.';
 const MSG_EVICTED = 'Signed out — your account was used on another device. Pro covers up to 3 devices.';
 
+// Переходный режим на время раскатки расширения через Chrome Web Store. Сборки до 0.5.0 не шлют
+// X-Client-Id, и строгий отказ запирает Pro-пользователя наглухо: и login, и refresh отдают 401,
+// а обновление расширения от него не зависит. При DEVICE_ID_REQUIRED=false такой запрос проходит
+// как free — устройство не регистрируется, лимит на нём не работает, но и блокировки нет.
+// Вернуть в строгий режим (убрать переменную), когда 0.5.0 разойдётся из Store.
+function headerRequired(): boolean {
+  return process.env.DEVICE_ID_REQUIRED !== 'false';
+}
+
 function deny(reason: 'client_id_required' | 'device_limit'): never {
   throw new UnauthorizedException({
     statusCode: 401,
@@ -60,7 +69,7 @@ export class DevicesService {
     // роль admin себе не назначают (см. bootstrap из ADMIN_EMAIL в main.ts / auth.service.ts).
     if (user.role === 'admin') return;
     if (!clientId) {
-      if (user.plan === 'pro') deny('client_id_required');
+      if (user.plan === 'pro' && headerRequired()) deny('client_id_required');
       return; // free без заголовка (старая сборка расширения) — работает как раньше
     }
     const rows = await this.devices.findAll({ where: { userId: user.id } });
@@ -76,7 +85,7 @@ export class DevicesService {
   async verifyOnRefresh(user: User, clientId: string | null): Promise<void> {
     if (user.role === 'admin') return; // см. комментарий в registerOnAuth
     if (!clientId) {
-      if (user.plan === 'pro') deny('client_id_required');
+      if (user.plan === 'pro' && headerRequired()) deny('client_id_required');
       return;
     }
     if (user.plan === 'pro') {
