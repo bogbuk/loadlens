@@ -12,7 +12,7 @@ const VENDOR = path.join(ROOT, "extension", "vendor");
 
 fs.mkdirSync(VENDOR, { recursive: true });
 
-const FILES = ["load.model.js", "scoring.js", "planner.js", "fleet.js"];
+const FILES = ["load.model.js", "scoring.js", "planner.js", "fleet.js", "email-template.js"];
 const BANNER = "/* AUTO-GENERATED копия из /shared — НЕ РЕДАКТИРОВАТЬ. Источник правды: shared/. Пересобрать: npm run sync:shared */\n";
 for (const f of FILES) {
   const src = fs.readFileSync(path.join(SHARED, f), "utf8");

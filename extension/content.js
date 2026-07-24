@@ -20,6 +20,7 @@
   let costPerMile = 1.80;     // текущий (resolveDriverContext → applyDriverContext)
   let targets = LLSCORE.DEFAULTS.targets; // целевые $/mi по бакетам дистанции (ll_targets); порог green
   let equipFilter = null;     // ручной фильтр прицепа из попапа (ll_equip_filter): string[] | null; null = без фильтра
+  let mailTemplate = (typeof LLMAIL !== "undefined") ? LLMAIL.DEFAULT_TEMPLATE : ""; // шаблон письма брокеру (ll_mail_template)
   const _freshHos = (typeof LLHOS !== "undefined") ? LLHOS.fresh() : { remainingDrive: 660, remainingOnDuty: 840, remainingCycle: 4200 };
   let baseHos = { ..._freshHos }; // «базовый» HOS (диспетчерские часы из storage/popup)
   let hosState = { ..._freshHos }; // текущий (resolveDriverContext → applyDriverContext)
@@ -309,6 +310,8 @@
     const rep = repCache.get(String(load.brokerMc));
     const flags = LLSCORE.redFlags(load, { laneMedian, reputation: rep });
     const trueRpm = LLSCORE.trueRpm(load.rate, load.loadedMiles, load.deadheadMiles);
+    // контр-оффер: сколько просить (постированная ставка — стартовая позиция брокера)
+    const offer = LLSCORE.counterOffer(load, { laneMedian, costPerMile });
 
     const d = document.createElement("div");
     d.id = "ll-detail";
@@ -332,6 +335,7 @@
     if (load.availability) bd.appendChild(drow("Available", `${load.availability.earliest || "?"} – ${load.availability.latest || "?"}`));
 
     bd.appendChild(drow("Score", `${profitText(profit)} · HOS ${hosIcon(hos)}${flags.length ? " · 🚩 " + (LLSCORE.redFlagLevel(flags) === "high" ? "risk" : "verify") : ""}`));
+    if (offer.ask != null) bd.appendChild(drow("Ask", offer.script));
     if (flags.length) { const f = document.createElement("div"); f.className = "flags"; f.textContent = flags.map((x) => "• " + x.label).join("\n"); bd.appendChild(f); }
 
     const brokerLine = [load.brokerName, load.brokerMc ? "MC " + load.brokerMc : null,
@@ -369,10 +373,43 @@
       b.className = "btn primary"; b.textContent = load.bookNow ? "Book Now ↗" : "Open ↗";
       act.appendChild(b);
     }
+    // Контакт брокера: письмо с готовым контр-оффером (prefill, Send жмёт пользователь).
+    // Ведущая кнопка выбирается по preferredContactMethod — брокер сам указал канал.
+    const phonePreferred = String(load.preferredContactMethod || "").indexOf("PHONE") >= 0;
+    const hasMail = typeof LLMAIL !== "undefined";
+    const mailBody = hasMail ? LLMAIL.fillTemplate(mailTemplate, load, activeDriver, { counterOffer: offer.script }) : "";
+    const mailSubject = hasMail ? LLMAIL.subjectFor(load) : "";
+
+    if (load.contactEmail && hasMail) {
+      const m = document.createElement("button");
+      m.className = "btn" + (phonePreferred ? "" : " primary");
+      m.textContent = "✉️ Email broker";
+      m.onclick = () => window.open(LLMAIL.gmailComposeUrl(load.contactEmail, mailSubject, mailBody), "_blank", "noopener");
+      act.appendChild(m);
+    }
+    if (load.contactPhone) {
+      const c = document.createElement("a");
+      c.className = "btn" + (phonePreferred || !load.contactEmail ? " primary" : "");
+      c.href = "tel:" + load.contactPhone; c.textContent = "📞 Call";
+      act.appendChild(c);
+    }
+    if (load.contactEmail && hasMail) {
+      const ce = document.createElement("button"); ce.className = "btn"; ce.textContent = "📋 Copy email";
+      ce.onclick = () => {
+        try {
+          navigator.clipboard.writeText(mailSubject + "\n\n" + mailBody);
+          ce.textContent = "Copied ✓"; setTimeout(() => (ce.textContent = "📋 Copy email"), 1200);
+        } catch { /* нет доступа */ }
+      };
+      act.appendChild(ce);
+    }
+
     const copyBtn = document.createElement("button"); copyBtn.className = "btn"; copyBtn.textContent = "Copy";
     copyBtn.onclick = () => {
       const txt = `${load.originMarket} → ${load.destMarket} ${load.equipment}\n` +
         `Rate: $${load.rate ?? "?"} ${load.rateBasis || ""} | ${load.loadedMiles ?? "?"}mi +${load.deadheadMiles ?? 0}DH\n` +
+        (trueRpm != null ? `RPM: true $${trueRpm.toFixed(2)}${laneMedian != null ? ` | market $${laneMedian.toFixed(2)}` : ""}\n` : "") +
+        (offer.script ? `Ask: ${offer.script}\n` : "") +
         `Broker: ${load.brokerName || "?"} MC ${load.brokerMc || "?"} | ${load.creditScore ?? "?"} CS ${load.daysToPay ?? "?"} DTP\n` +
         (load.contactPhone ? `Tel: ${load.contactPhone}\n` : "") + (load.comments ? `Notes: ${load.comments}` : "");
       try { navigator.clipboard.writeText(txt); copyBtn.textContent = "Copied ✓"; setTimeout(() => (copyBtn.textContent = "Copy"), 1200); } catch { /* нет доступа */ }
@@ -848,9 +885,10 @@
     baseHos = { ...hosState }; // зафиксировать базу после загрузки из storage
     try { const { ll_cpm } = await chrome.storage.local.get("ll_cpm"); if (ll_cpm > 0) { costPerMile = ll_cpm; baseCostPerMile = ll_cpm; } } catch { /* дефолт */ }
     try {
-      const { ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_panel, ll_hide_badges } = await chrome.storage.local.get(["ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_panel", "ll_hide_badges"]);
+      const { ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_panel, ll_hide_badges, ll_mail_template } = await chrome.storage.local.get(["ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_panel", "ll_hide_badges", "ll_mail_template"]);
       if (Array.isArray(ll_targets) && ll_targets.length) targets = ll_targets;
       equipFilter = LLEQUIP.normalize(ll_equip_filter);
+      if (typeof ll_mail_template === "string" && ll_mail_template.trim()) mailTemplate = ll_mail_template;
       hidePanel = !!ll_hide_panel;
       hideBadges = !!ll_hide_badges;
       // intervalMs — глобальный параметр из попапа; on — per-tab (sessionStorage), дефолт выкл.
@@ -884,6 +922,10 @@
         if (ch.ll_hos && ch.ll_hos.newValue) baseHos = ch.ll_hos.newValue;              // аналогично для HOS
         if (ch.ll_targets) targets = (Array.isArray(ch.ll_targets.newValue) && ch.ll_targets.newValue.length) ? ch.ll_targets.newValue : LLSCORE.DEFAULTS.targets;
         if (ch.ll_equip_filter) equipFilter = LLEQUIP.normalize(ch.ll_equip_filter.newValue);
+        if (ch.ll_mail_template) {
+          const v = ch.ll_mail_template.newValue;
+          mailTemplate = (typeof v === "string" && v.trim()) ? v : LLMAIL.DEFAULT_TEMPLATE;
+        }
         if (ch.ll_hide_panel) hidePanel = !!ch.ll_hide_panel.newValue;
         if (ch.ll_hide_badges) hideBadges = !!ch.ll_hide_badges.newValue;
         if (ch.ll_autorefresh) {

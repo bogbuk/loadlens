@@ -20,8 +20,9 @@ const SORT_FIELDS = [
 ];
 
 async function renderSettings() {
-  const { ll_cpm, ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_panel, ll_hide_badges } =
-    await chrome.storage.local.get(["ll_cpm", "ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_panel", "ll_hide_badges"]);
+  const { ll_cpm, ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_panel, ll_hide_badges, ll_mail_template } =
+    await chrome.storage.local.get(["ll_cpm", "ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_panel", "ll_hide_badges", "ll_mail_template"]);
+  const mailTpl = (typeof ll_mail_template === "string" && ll_mail_template.trim()) ? ll_mail_template : LLMAIL.DEFAULT_TEMPLATE;
   const cpm = ll_cpm != null ? ll_cpm : 1.80;
   const targets = Array.isArray(ll_targets) && ll_targets.length ? ll_targets : DEFAULT_TARGETS;
   const ar = (ll_autorefresh && typeof ll_autorefresh === "object") ? ll_autorefresh : { on: false, intervalMs: 60000 };
@@ -57,11 +58,17 @@ async function renderSettings() {
     '<h4>On-page display</h4>' +
     `<div class="row"><span class="k">Hide panel on page</span><input id="s-hide-panel" type="checkbox"${ll_hide_panel ? " checked" : ""} style="width:auto"></div>` +
     `<div class="row"><span class="k">Hide badges in table</span><input id="s-hide-badges" type="checkbox"${ll_hide_badges ? " checked" : ""} style="width:auto"></div>` +
+    '<h4>Broker email template</h4>' +
+    `<textarea id="s-mail-tpl" rows="9" style="width:100%;box-sizing:border-box;font:11px/1.4 ui-monospace,monospace">${escA(mailTpl)}</textarea>` +
+    '<div class="chips-bar"><span class="note">Used by "✉️ Email broker" on a load card.</span>' +
+    '<span class="chips-actions"><button type="button" class="linkbtn" id="s-mail-reset">Reset to default</button></span></div>' +
     '<button id="s-save">Save</button>' +
     '<div class="note">Target $/mi is the "profitable" (green) threshold: a load is green when its gross $/mile is at or above the target for its distance bucket. Cost/mile is the break-even line below which a load is a loss (red).</div>' +
     '<div class="note">"On-page display" applies instantly to all DAT/Truckstop tabs — no need to press Save.</div>' +
+    '<div class="note">Email placeholders: {{origin}} {{dest}} {{equipment}} {{rate}} {{rateBasis}} {{loadedMiles}} {{deadheadMiles}} {{trueRpm}} {{pickupDate}} {{brokerName}} {{brokerMc}} {{driverName}} {{counterOffer}}. A line holding only an empty placeholder is dropped — {{counterOffer}} disappears when the rate or miles are unknown.</div>' +
     '<div class="note">Auto-pilot is switched on per DAT results tab (the "Auto-refresh" toggle in the panel header). Set here: the shared interval (60–120s with jitter), the sort order to hold, and auto-scroll (scrolls the results so DAT loads every page; the panel accumulates them by searchId).</div>';
   document.getElementById("s-save").onclick = save;
+  document.getElementById("s-mail-reset").onclick = () => { document.getElementById("s-mail-tpl").value = LLMAIL.DEFAULT_TEMPLATE; };
   wireEquipChips();
   // «Отображение на странице» — instant-apply (без кнопки «Сохранить»); content.js слушает storage.onChanged
   document.getElementById("s-hide-panel").onchange = (e) => chrome.storage.local.set({ ll_hide_panel: e.target.checked });
@@ -105,6 +112,9 @@ async function save() {
   if (cpm > 0) await chrome.storage.local.set({ ll_cpm: cpm });
   const equipCodes = [...document.querySelectorAll("#s-equip .chip.on")].map((c) => c.dataset.code);
   await chrome.storage.local.set({ ll_targets: readTargets(), ll_equip_filter: LLEQUIP.normalize(equipCodes) });
+  // пустой шаблон = «вернуть дефолт» (content.js подставит DEFAULT_TEMPLATE)
+  const tpl = document.getElementById("s-mail-tpl").value;
+  await chrome.storage.local.set({ ll_mail_template: tpl.trim() ? tpl : null });
   // авто-пилот: интервал не реже 60с; сорт = поле+направление (пусто → не удерживать)
   const intSec = Math.max(60, parseInt(document.getElementById("s-ar-int").value, 10) || 60);
   const autoscroll = document.getElementById("s-ar-scroll").checked;

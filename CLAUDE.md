@@ -38,7 +38,7 @@ extension/                  MV3-расширение (грузит vendor/* → 
   equip-filter.js (LLEQUIP) чистый normalize/matches фильтра прицепа (ll_equip_filter): string[]|null, мультивыбор, обратно-совместим со старой строкой
   visibility.js (LLVIS)     чистый badgesVisible/panelVisible/fabVisible: сводит hintsOff(per-tab) + ll_hide_panel/ll_hide_badges(глоб.попап) + panelCollapsed в решения «рисовать/нет»
   popup.*                   настройки водителя (cost/mile, HOS-часы) + секция «Отображение на странице» (instant-apply тумблеры ll_hide_panel/ll_hide_badges) + аккаунт + секция «Парк» (CRUD водителей) + секция «Telegram-уведомления» (Pro)
-  vendor/                   ★ АВТОКОПИИ из shared/ (load.model, scoring, planner, markets.seed). `npm run sync:shared`
+  vendor/                   ★ АВТОКОПИИ из shared/ (load.model, scoring, planner, fleet, email-template, markets.seed). `npm run sync:shared`
 backend/src/                NestJS, synchronize:true (миграций нет)
   loads/                    POST /loads — ingest+upsert (с 2026-07-17 полный набор полей парсера, вкл. контакты/comments); GET /loads?origin=&equipment= — крауд-грузы рынка (onward-плечи цепочек, БЕЗ PII-полей; read — Premium-гард)
   lanes/                    GET /lanes — топ-lane'ов + сводка (публичный, для дашборда); GET /lanes/:o/:d — median RPM по lane (read — Premium-гард)
@@ -51,7 +51,7 @@ backend/src/                NestJS, synchronize:true (миграций нет)
   auth/ users/              register/login/refresh/me, DELETE /users/me (hard-delete + каскад водителей)
                             admin/* (JwtAuthGuard+AdminRoleGuard, role из ADMIN_EMAIL): GET users/stats, PATCH users/:email/plan|block. Страница /admin.html
   shared/markets.seed.json  ★ копия seed для Docker-контекста backend/ (генерит sync:shared)
-shared/                     КАНОН: load.model.js, scoring.js, planner.js, markets.seed.json, hos-calculator.js
+shared/                     КАНОН: load.model.js, scoring.js, planner.js, email-template.js, markets.seed.json, hos-calculator.js
 ```
 
 ★ = требует внимания при правках (см. конвенции).
@@ -67,7 +67,18 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
 
 ## Конвенции (важное)
 
-- **shared/ — единственный источник правды** для `load.model`/`scoring`/`planner`/`markets.seed`.
+- **One-click письмо брокеру + контр-оффер** (`shared/email-template.js` `LLMAIL` + `LLSCORE.counterOffer`):
+  в карточке груза кнопки `✉️ Email broker` / `📞 Call` / `📋 Copy email`; ведущая выбирается по
+  `preferredContactMethod` (брокер сам указал канал). Письмо — **только prefill** через штатный Gmail
+  compose-URL, Send жмёт пользователь (нет content-script в Gmail, нет новых host-permissions, нет
+  авто-отправки — эскалация в авто-outreach требует отдельного решения). Шаблон редактируется в попапе
+  (`ll_mail_template`, пусто → `DEFAULT_TEMPLATE`); строка из одного пустого плейсхолдера выбрасывается
+  целиком (так исчезает `{{counterOffer}}` без данных). `counterOffer` просит минимум +10% к постингу,
+  не ниже рынка и break-even·1.15, с потолком «рынок·1.15», округление до $25. **Гейта Pro нет
+  осознанно** — это table-stakes-фича конкурентов (LoadConnect/LoadHunter/Numeo), гейт резал бы
+  acquisition. ToS/PII-чисто: запросов к DAT не добавляется, юзер сам шлёт письмо на контакт, который
+  видит в своей сессии. Спека — `docs/superpowers/specs/2026-07-24-one-click-broker-email-design.md`.
+- **shared/ — единственный источник правды** для `load.model`/`scoring`/`planner`/`email-template`/`markets.seed`.
   После правки — `npm run sync:shared` (иначе расширение и backend разойдутся). vendor/ и
   backend/shared/ — автокопии, руками не редактировать.
 - **Два источника данных DAT.** (1) ОСНОВНОЙ — перехват собственных GraphQL-ответов приложения DAT

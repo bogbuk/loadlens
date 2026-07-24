@@ -129,3 +129,51 @@ test("redFlags: чистый груз → нет флагов", () => {
   assert.strictEqual(f.length, 0);
   assert.strictEqual(LLSCORE.redFlagLevel(f), "none");
 });
+
+// ---------- counterOffer (контр-оффер: сумма запроса + строка-скрипт) ----------
+
+test("counterOffer: без медианы просит минимум на 10% выше постинга, округляя до $25", () => {
+  const load = { rate: 1850, loadedMiles: 700, deadheadMiles: 150 };
+  const c = LLSCORE.counterOffer(load, { costPerMile: 1.8 });
+  // total=850; minAsk=2035; breakeven*1.15=1759.5 → raw=2035 → ceil25=2050
+  assert.strictEqual(c.ask, 2050);
+  assert.ok(c.ask % 25 === 0);
+  assert.match(c.script, /Offered \$1,850/);
+  assert.match(c.script, /I can do \$2,050/);
+  assert.match(c.script, /\+150mi deadhead/);
+  assert.ok(!/market/.test(c.script), "без медианы в скрипте не должно быть рынка");
+});
+
+test("counterOffer: медиана рынка поднимает запрос и попадает в скрипт", () => {
+  const load = { rate: 1850, loadedMiles: 700, deadheadMiles: 150 };
+  const c = LLSCORE.counterOffer(load, { costPerMile: 1.8, laneMedian: 2.45 });
+  // marketRate = 2.45*850 = 2082.5 > minAsk 2035 → raw=2082.5 → ceil25=2100
+  assert.strictEqual(c.ask, 2100);
+  assert.match(c.script, /market ≈ \$2\.45\/mi/);
+});
+
+test("counterOffer: потолок market*1.15 не даёт просить абсурд при высоком break-even", () => {
+  const load = { rate: 1850, loadedMiles: 700, deadheadMiles: 150 };
+  const c = LLSCORE.counterOffer(load, { costPerMile: 3.0, laneMedian: 2.45 });
+  // breakeven*1.15 = 2932.5, но cap = market*1.15 = 2394.875 → ceil25 = 2400
+  assert.strictEqual(c.ask, 2400);
+});
+
+test("counterOffer: запрос всегда выше постированной ставки, даже если она много выше рынка", () => {
+  const load = { rate: 5000, loadedMiles: 700, deadheadMiles: 150 };
+  const c = LLSCORE.counterOffer(load, { costPerMile: 1.8, laneMedian: 2.45 });
+  assert.ok(c.ask > 5000, `ask=${c.ask} должен быть выше ставки 5000`);
+  assert.strictEqual(c.ask, 5500);
+});
+
+test("counterOffer: без ставки или без миль — null, письмо уйдёт без цены", () => {
+  assert.deepStrictEqual(LLSCORE.counterOffer({ rate: null, loadedMiles: 700 }, { costPerMile: 1.8 }),
+    { ask: null, script: null });
+  assert.deepStrictEqual(LLSCORE.counterOffer({ rate: 1850, loadedMiles: 0, deadheadMiles: 0 }, { costPerMile: 1.8 }),
+    { ask: null, script: null });
+});
+
+test("counterOffer: без deadhead в скрипте нет хвоста про deadhead", () => {
+  const c = LLSCORE.counterOffer({ rate: 1850, loadedMiles: 850, deadheadMiles: 0 }, { costPerMile: 1.8 });
+  assert.ok(!/deadhead/.test(c.script));
+});

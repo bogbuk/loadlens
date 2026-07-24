@@ -113,7 +113,38 @@ const LLSCORE = (() => {
     return flags.some((f) => f.sev === "high") ? "high" : flags.length ? "med" : "none";
   }
 
-  return { DEFAULTS, fuelCost, tollsCost, trueRpm, netRpm, targetForMiles, profitBadge, brokerBadge, redFlags, redFlagLevel };
+  const usd = (n) => "$" + Math.round(n).toLocaleString("en-US");
+
+  // Контр-оффер: сколько просить у брокера и одной строкой — что сказать.
+  // Постированная ставка — стартовая позиция брокера (в среднем 10–30% зазора), поэтому
+  // просим минимум на 10% выше, но не ниже рынка и не ниже break-even с маржой.
+  // ctx = { laneMedian (медиана true $/mi по lane), costPerMile }.
+  // -> { ask, script } либо { ask: null, script: null }, если данных не хватает.
+  function counterOffer(load, ctx = {}) {
+    const none = { ask: null, script: null };
+    const rate = Number(load && load.rate);
+    const total = ((load && load.loadedMiles) || 0) + ((load && load.deadheadMiles) || 0);
+    if (!rate || total <= 0) return none;
+
+    const costPerMile = ctx.costPerMile != null ? Number(ctx.costPerMile) : DEFAULTS.costPerMile;
+    const laneMedian = ctx.laneMedian != null ? Number(ctx.laneMedian) : null;
+    const marketRate = laneMedian != null ? laneMedian * total : null;
+    const minAsk = rate * 1.10;                       // нижняя граница: всегда выше постинга
+
+    let raw = Math.max(minAsk, costPerMile * total * 1.15, marketRate || 0);
+    // потолок «не проси абсурд»: не выше рынка +15%, но и не ниже минимального шага
+    if (marketRate != null) raw = Math.min(raw, Math.max(marketRate * 1.15, minAsk));
+    const ask = Math.ceil(raw / 25) * 25;
+
+    const dh = (load.deadheadMiles || 0);
+    const parts = [];
+    if (laneMedian != null) parts.push(`market ≈ $${laneMedian.toFixed(2)}/mi`);
+    if (dh > 0) parts.push(`+${dh}mi deadhead`);
+    const tail = parts.length ? ` (${parts.join(", ")})` : "";
+    return { ask, script: `Offered ${usd(rate)} — I can do ${usd(ask)}${tail}.` };
+  }
+
+  return { DEFAULTS, fuelCost, tollsCost, trueRpm, netRpm, targetForMiles, profitBadge, brokerBadge, redFlags, redFlagLevel, counterOffer };
 })();
 
 if (typeof module !== "undefined" && module.exports) module.exports = LLSCORE;
