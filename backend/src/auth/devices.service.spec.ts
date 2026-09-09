@@ -135,12 +135,42 @@ describe('DevicesService.verifyOnRefresh', () => {
     });
   });
 
-  it('pro с неизвестным устройством — 401 device_limit', async () => {
-    const { svc } = makeService([row('a', 10)]);
+  // Раскатка 0.5.0: pro входил старой сборкой без X-Client-Id (мягкий режим), строки устройства нет.
+  // Первый refresh уже с заголовком — это НЕ вытеснение: слоты свободны, устройство надо записать.
+  it('pro, неизвестное устройство, таблица пуста — регистрируем, не отказываем', async () => {
+    const { svc, model, users } = makeService([]);
+    await expect(svc.verifyOnRefresh(proUser(), 'fresh')).resolves.toBeUndefined();
+    expect(model.upsert).toHaveBeenCalledWith(expect.objectContaining({ userId: 'u1', clientId: 'fresh' }));
+    expect(users.increment).not.toHaveBeenCalled();
+  });
+
+  it('pro, неизвестное устройство, есть свободный слот — регистрируем, ничего не вытесняем', async () => {
+    const { svc, model, users } = makeService([row('a', 10), row('b', 20)]);
+    await expect(svc.verifyOnRefresh(proUser(), 'fresh')).resolves.toBeUndefined();
+    expect(model.upsert).toHaveBeenCalledWith(expect.objectContaining({ userId: 'u1', clientId: 'fresh' }));
+    expect(model.destroy).not.toHaveBeenCalled();
+    expect(users.increment).not.toHaveBeenCalled();
+  });
+
+  it('pro, неизвестное устройство, слот освобождает только просроченная строка — регистрируем, просроченную удаляем молча', async () => {
+    const { svc, model, users } = makeService([row('ancient', 60 * 24 * 40), row('b', 20), row('c', 30)]);
+    await expect(svc.verifyOnRefresh(proUser(), 'fresh')).resolves.toBeUndefined();
+    expect(model.upsert).toHaveBeenCalledWith(expect.objectContaining({ userId: 'u1', clientId: 'fresh' }));
+    expect(model.destroy).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ userId: 'u1', clientId: ['ancient'] }) }),
+    );
+    expect(users.increment).not.toHaveBeenCalled();
+  });
+
+  // Вытесненное устройство держит валидный refresh-токен: пока слоты заняты — не пускаем.
+  it('pro, неизвестное устройство, слоты заняты — 401 device_limit, ничего не пишем', async () => {
+    const { svc, model } = makeService([row('a', 10), row('b', 20), row('c', 30)]);
     await expect(svc.verifyOnRefresh(proUser(), 'gone')).rejects.toBeInstanceOf(UnauthorizedException);
     await expect(svc.verifyOnRefresh(proUser(), 'gone')).rejects.toMatchObject({
       response: { statusCode: 401, reason: 'device_limit' },
     });
+    expect(model.upsert).not.toHaveBeenCalled();
+    expect(model.destroy).not.toHaveBeenCalled();
   });
 
   it('pro с известным устройством — проходит, освежает lastSeenAt (findAll, не findOne)', async () => {
@@ -150,8 +180,10 @@ describe('DevicesService.verifyOnRefresh', () => {
     expect(model.upsert).toHaveBeenCalled();
   });
 
-  it('pro с clientId чужого пользователя — не считается известным устройством, 401 device_limit', async () => {
-    const { svc, model } = makeService([{ ...row('a', 10), userId: 'other-user' }]);
+  it('pro с clientId чужого пользователя — не считается известным устройством, при занятых слотах 401 device_limit', async () => {
+    const { svc, model } = makeService([
+      { ...row('a', 10), userId: 'other-user' }, row('x', 10), row('y', 20), row('z', 30),
+    ]);
     await expect(svc.verifyOnRefresh(proUser(), 'a')).rejects.toMatchObject({
       response: { statusCode: 401, reason: 'device_limit' },
     });

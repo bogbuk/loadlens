@@ -78,7 +78,11 @@ export class DevicesService {
     await this.trimDevices(user, clientId, current);
   }
 
-  // refresh: у pro устройство обязано быть в таблице; отсутствие строки = его вытеснили.
+  // refresh: у pro неизвестное устройство при ЗАНЯТЫХ слотах = его вытеснили (вытесненное держит
+  // валидный refresh-токен, поэтому одной подписи токена мало). При свободном слоте неизвестное
+  // устройство просто регистрируем: так выглядит pro, который входил старой сборкой без X-Client-Id
+  // (мягкий режим DEVICE_ID_REQUIRED=false) и обновился до 0.5.0 — строки у него нет, но и шеринга нет.
+  // Отказ здесь давал ложное «used on another device» с нулём вытеснений в админке.
   // Подрезаем список и здесь же (не только на login) — иначе устройства, набранные ещё на free,
   // переживают апгрейд в pro навсегда: скользящий refresh-токен обновляется расширением само,
   // без единого обращения к /auth/login.
@@ -90,9 +94,14 @@ export class DevicesService {
     }
     if (user.plan === 'pro') {
       const rows = await this.devices.findAll({ where: { userId: user.id } });
-      const known = rows.find((r) => r.clientId === clientId);
-      if (!known) deny('device_limit');
       const current: DeviceRow[] = rows.map((r) => ({ clientId: r.clientId, lastSeenAt: r.lastSeenAt }));
+      const known = rows.some((r) => r.clientId === clientId);
+      if (!known) {
+        // Есть ли место с учётом просроченных строк (они слот освобождают) — та же чистая функция,
+        // что и при вытеснении: evict непустой = живых устройств уже лимит.
+        const { evict } = decideDevices(current, clientId, user.plan, new Date(), DEVICE_LIMIT);
+        if (evict.length) deny('device_limit');
+      }
       await this.touch(user.id, clientId);
       await this.trimDevices(user, clientId, current);
       return;
