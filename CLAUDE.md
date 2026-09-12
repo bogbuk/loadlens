@@ -115,8 +115,11 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   сессии». Поэтому: по умолчанию **ВЫКЛ** (opt-in), интервал **≥60с с джиттером** (`nextDelay`, дефолт
   60–120с), сортировку переприменяем только после нашего рефреша (`pendingSortReapply`). Это НЕ путь
   Convoy: GraphQL/REST DAT с токеном напрямую по-прежнему НЕЛЬЗЯ. Сорт-дропдаун (`applySort`) — селекторы
-  ★ ЗАГЛУШКИ до живой сессии. Настройки — `ll_autorefresh`/`ll_sort` (popup «Авто-пилот» + контрол в
-  шапке панели). Спека — `docs/superpowers/specs/2026-06-22-dat-autopilot-refresh-sort-design.md`.
+  ★ ЗАГЛУШКИ до живой сессии. Настройки — `ll_autorefresh`/`ll_sort`. **Вкл/выкл (с 2026-09-12):**
+  глобальный тумблер `ll_autorefresh.on` в попапе («Enable on DAT tabs») + per-tab override галкой
+  в шапке панели (`sessionStorage`, `LLTAB.resolveAutorefresh`); побеждает последнее действие —
+  переключение в попапе снимает override на всех вкладках. Раньше `on` был ТОЛЬКО per-tab, и настройки
+  попапа (интервал/скролл) молча ничего не запускали. Спека — `docs/superpowers/specs/2026-06-22-dat-autopilot-refresh-sort-design.md`.
 - **Авто-скролл + накопление выдачи по `searchId`.** Выдача DAT пагинируется (`cursors.next`, `limit:150`):
   за экран приходит не всё. `DAT_GQL.parseFindLoadsResult` отдаёт `{loads, searchId, hasNext}`; чистый
   `LLACC.accumulate` (`extension/loads-accumulator.js`) копит страницы — тот же `searchId` доливает по

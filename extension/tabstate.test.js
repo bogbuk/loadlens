@@ -39,3 +39,24 @@ test("толерантность: null storage и бросающий getItem →
   assert.strictEqual(LLTAB.getAutorefresh(null), false);
   assert.strictEqual(LLTAB.getHintsOff({ getItem: () => { throw new Error("blocked"); } }), false);
 });
+
+// ---- глобальный тумблер (попап) + per-tab override (панель) ----
+test("resolveAutorefresh: без override — берёт глобальный флаг", () => {
+  assert.strictEqual(LLTAB.resolveAutorefresh(fakeSS(), true), true);
+  assert.strictEqual(LLTAB.resolveAutorefresh(fakeSS(), false), false);
+  assert.strictEqual(LLTAB.resolveAutorefresh(fakeSS(), undefined), false);
+  assert.strictEqual(LLTAB.resolveAutorefresh(null, true), true); // нет sessionStorage → глобальный
+});
+
+test("resolveAutorefresh: per-tab override перекрывает глобальный в обе стороны", () => {
+  assert.strictEqual(LLTAB.resolveAutorefresh(fakeSS({ ll_tab_autorefresh: "0" }), true), false);
+  assert.strictEqual(LLTAB.resolveAutorefresh(fakeSS({ ll_tab_autorefresh: "1" }), false), true);
+});
+
+test("clearAutorefresh: снимает override → снова действует глобальный", () => {
+  const ss = fakeSS({ ll_tab_autorefresh: "0" });
+  ss.removeItem = (k) => { delete ss.store[k]; };
+  LLTAB.clearAutorefresh(ss);
+  assert.strictEqual(LLTAB.resolveAutorefresh(ss, true), true);
+  assert.doesNotThrow(() => LLTAB.clearAutorefresh(null));
+});

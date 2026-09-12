@@ -566,7 +566,7 @@
       row("Diesel", "$" + dieselPrice.toFixed(2) + "/gal") +
       `<div class="ll-cfg">Cost/mi: <input id="ll-cpm" type="number" step="0.05" value="${costPerMile}" style="width:60px"> ` +
       `Start: <input id="ll-start" type="text" value="${start ? esc(start) : ""}" style="width:110px" placeholder="CHICAGO_IL"></div>` +
-      `<div class="ll-cfg" title="Auto-pilot: the background tab clicks DAT's Search itself and holds the sort order">` +
+      `<div class="ll-cfg" title="Auto-pilot: the background tab clicks DAT's Search itself and holds the sort order. This checkbox overrides the global switch (extension popup) for this tab only">` +
         `<label><input type="checkbox" id="ll-ar"${autoRefresh.on ? " checked" : ""}> Auto-refresh</label> ` +
         `Sort: <select id="ll-sort-f"><option value="">—</option>` +
         SORT_FIELDS.map((s) => `<option value="${s.field}"${sortPref && sortPref.field === s.field ? " selected" : ""}>${esc(s.label)}</option>`).join("") +
@@ -891,9 +891,10 @@
       if (typeof ll_mail_template === "string" && ll_mail_template.trim()) mailTemplate = ll_mail_template;
       hidePanel = !!ll_hide_panel;
       hideBadges = !!ll_hide_badges;
-      // intervalMs — глобальный параметр из попапа; on — per-tab (sessionStorage), дефолт выкл.
+      // on = глобальный тумблер попапа (ll_autorefresh.on) с per-tab override из панели (sessionStorage).
+      const globalOn = !!(ll_autorefresh && ll_autorefresh.on);
       autoRefresh = {
-        on: (typeof LLTAB !== "undefined") && LLTAB.getAutorefresh(sessionStorage),
+        on: (typeof LLTAB !== "undefined") ? LLTAB.resolveAutorefresh(sessionStorage, globalOn) : globalOn,
         intervalMs: (ll_autorefresh && ll_autorefresh.intervalMs) || 60000,
         scroll: !ll_autorefresh || ll_autorefresh.autoscroll !== false, // дефолт ВКЛ
         maxSteps: (ll_autorefresh && ll_autorefresh.maxSteps) || 40,
@@ -929,10 +930,18 @@
         if (ch.ll_hide_panel) hidePanel = !!ch.ll_hide_panel.newValue;
         if (ch.ll_hide_badges) hideBadges = !!ch.ll_hide_badges.newValue;
         if (ch.ll_autorefresh) {
-          const v = ch.ll_autorefresh.newValue;
-          autoRefresh.intervalMs = (v && v.intervalMs) || 60000; // on — per-tab, из попапа не меняем
+          const v = ch.ll_autorefresh.newValue, prev = ch.ll_autorefresh.oldValue;
+          autoRefresh.intervalMs = (v && v.intervalMs) || 60000;
           autoRefresh.scroll = !v || v.autoscroll !== false;
           autoRefresh.maxSteps = (v && v.maxSteps) || 40;
+          // Глобальный тумблер переключили в попапе → побеждает последнее действие: снимаем per-tab
+          // override и применяем глобальное значение ко всем вкладкам DAT.
+          const on = !!(v && v.on);
+          if (on !== !!(prev && prev.on)) {
+            if (typeof LLTAB !== "undefined") LLTAB.clearAutorefresh(sessionStorage);
+            autoRefresh.on = on;
+            if (on && autoRefresh.scroll) scrollToLoadAll();
+          }
           scheduleAuto();
         }
         if (ch.ll_sort) {

@@ -46,6 +46,8 @@ async function renderSettings() {
     '<span class="chips-actions"><button type="button" class="linkbtn" id="s-equip-all">All</button> · ' +
     '<button type="button" class="linkbtn" id="s-equip-none">Clear</button></span></div>' +
     '<h4>DAT tab auto-pilot</h4>' +
+    `<div class="row"><span class="k">Enable on DAT tabs</span><input id="s-ar-on" type="checkbox"${ar.on ? " checked" : ""} style="width:auto"></div>` +
+    '<div class="note">Applies to every DAT tab; the Auto-refresh checkbox in the on-page panel overrides it for that tab only.</div>' +
     `<div class="row"><span class="k">Interval, sec (≥60)</span><input id="s-ar-int" type="number" min="60" step="10" value="${Math.round((ar.intervalMs || 60000) / 1000)}"></div>` +
     `<div class="row"><span class="k">Auto-scroll (pull all pages)</span><input id="s-ar-scroll" type="checkbox"${ar.autoscroll !== false ? " checked" : ""} style="width:auto"></div>` +
     `<div class="row"><span class="k">Sort</span><select id="s-sort-f">` +
@@ -119,9 +121,10 @@ async function save() {
   const intSec = Math.max(60, parseInt(document.getElementById("s-ar-int").value, 10) || 60);
   const autoscroll = document.getElementById("s-ar-scroll").checked;
   const sortField = document.getElementById("s-sort-f").value || null;
+  const arOn = document.getElementById("s-ar-on").checked;
   await chrome.storage.local.set({
-    // on — per-tab (sessionStorage в content.js), попап хранит интервал + авто-скролл
-    ll_autorefresh: { intervalMs: intSec * 1000, autoscroll },
+    // on — глобальный тумблер (per-tab override живёт в sessionStorage вкладки, см. content.js)
+    ll_autorefresh: { on: arOn, intervalMs: intSec * 1000, autoscroll },
     ll_sort: sortField ? { field: sortField, dir: document.getElementById("s-sort-d").value === "asc" ? "asc" : "desc" } : { field: null },
   });
   await LLHOS.save(LLHOS.fromHours({ driveH, dutyH, cycleH }));
