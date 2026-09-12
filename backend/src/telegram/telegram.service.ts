@@ -30,12 +30,14 @@ function fmtPickup(raw?: string): string | null {
 // Текст алерта. Бизнес-поля груза + дата пикапа, контакт брокера и комментарий (PII — по явному решению).
 export function formatAlertMessage(l: NotifyItemDto): string {
   const total = (Number(l.loadedMiles) || 0) + (Number(l.deadheadMiles) || 0);
+  const hasRate = Number(l.rate) > 0;
   const rpm = total > 0 ? (Number(l.rate) / total).toFixed(2) : '—';
   const dh = Number(l.deadheadMiles) || 0;
   const ruleLine = l.ruleName ? `🎯 ${l.ruleName}\n` : '';
   const head = `${ruleLine}🟢 ${l.originMarket} → ${l.destMarket} · ${l.equipment}`;
-  const line2 = `${money(l.rate)} · ${Math.round(Number(l.loadedMiles) || 0)}mi` +
-    (dh ? ` +${Math.round(dh)}DH` : '') + ` · $${rpm}/mi`;
+  // Груз без опубликованной ставки ("call for rate") — печатаем "rate: ask", $/mi посчитать не из чего.
+  const line2 = `${hasRate ? money(l.rate) : 'rate: ask'} · ${Math.round(Number(l.loadedMiles) || 0)}mi` +
+    (dh ? ` +${Math.round(dh)}DH` : '') + (hasRate ? ` · $${rpm}/mi` : '');
   const pickup = fmtPickup(l.pickupDate);
   const dateLine = pickup ? `\n📅 Pickup ${pickup}` : '';
   const brokerBits = [

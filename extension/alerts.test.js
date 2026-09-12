@@ -48,9 +48,16 @@ test("toPayload: дата пикапа и контакт брокера проб
   assert.strictEqual(p.contactPhone, "555-123-4567");
 });
 
-test("validItem: отсекает без рынка/ставки/миль", () => {
+test("validItem: отсекает без рынка/миль; ставка не обязательна", () => {
   assert.ok(LLALERT.validItem(LLALERT.toPayload(LOAD)));
-  assert.ok(!LLALERT.validItem(LLALERT.toPayload({ ...LOAD, rate: 0 })));
+  assert.ok(!LLALERT.validItem(LLALERT.toPayload({ ...LOAD, loadedMiles: 0 })));
+  assert.ok(!LLALERT.validItem(LLALERT.toPayload({ ...LOAD, originMarket: "" })));
+});
+
+test("validItem: груз без ставки (call for rate) проходит, rate уходит как 0", () => {
+  const p = LLALERT.toPayload({ ...LOAD, rate: null });
+  assert.strictEqual(p.rate, 0);
+  assert.ok(LLALERT.validItem(p));
 });
 
 test("push: гейт — без linked/enabled/configured ничего не шлём", async () => {

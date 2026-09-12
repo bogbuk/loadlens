@@ -61,6 +61,12 @@ describe('formatAlertMessage', () => {
     expect(withRule.startsWith('🎯 Bonded / TWIC\n🟢 CHICAGO_IL → DALLAS_TX · R')).toBe(true);
     expect(formatAlertMessage(ITEM).startsWith('🟢 ')).toBe(true);
   });
+
+  it('груз без ставки (call for rate) — "rate: ask" вместо суммы, без $/mi', () => {
+    const msg = formatAlertMessage({ ...ITEM, rate: 0 });
+    expect(msg).toContain('rate: ask · 980mi +40DH');
+    expect(msg).not.toContain('/mi');
+  });
 });
 
 describe('parseStartCommand', () => {

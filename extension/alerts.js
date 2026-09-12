@@ -43,8 +43,10 @@ const LLALERT = (() => {
     return item;
   }
 
+  // rate не обязателен: DAT часто не публикует ставку ("call for rate"), груз всё равно валиден,
+  // если правило матчит его по другим условиям (ключевые слова, equipment и т.д.).
   function validItem(it) {
-    return it.originMarket && it.destMarket && it.equipment && it.rate > 0 && it.loadedMiles > 0;
+    return it.originMarket && it.destMarket && it.equipment && it.rate >= 0 && it.loadedMiles > 0;
   }
 
   async function refreshStatus(force) {
