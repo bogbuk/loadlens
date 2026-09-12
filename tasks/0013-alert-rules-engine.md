@@ -6,7 +6,7 @@ Status: in_progress
 - [x] LLRULES.normalize / normKeyword / active + тесты
 - [x] LLRULES.matches / select + тесты
 - [x] LLALERT: {load, rule} + ruleName
-- [ ] backend: NotifyItemDto.ruleName + formatAlertMessage
+- [x] backend: NotifyItemDto.ruleName + formatAlertMessage
 - [ ] content.js + manifest: отбор через LLRULES
 - [ ] popup: список правил + редактор
 - [ ] CLAUDE.md
