@@ -50,6 +50,10 @@ export class NotifyItemDto {
 
   @IsOptional() @IsString() @MaxLength(24) @Matches(/^[0-9+().\- ]{5,24}$/)
   contactPhone?: string;
+
+  // Имя сработавшего правила алертов (пользовательская строка из расширения). Печатается первой строкой.
+  @IsOptional() @IsString() @MaxLength(60) @Matches(/^[^\n\r]{1,60}$/)
+  ruleName?: string;
 }
 
 export class NotifyDto {

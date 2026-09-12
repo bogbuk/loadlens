@@ -32,7 +32,8 @@ export function formatAlertMessage(l: NotifyItemDto): string {
   const total = (Number(l.loadedMiles) || 0) + (Number(l.deadheadMiles) || 0);
   const rpm = total > 0 ? (Number(l.rate) / total).toFixed(2) : '—';
   const dh = Number(l.deadheadMiles) || 0;
-  const head = `🟢 ${l.originMarket} → ${l.destMarket} · ${l.equipment}`;
+  const ruleLine = l.ruleName ? `🎯 ${l.ruleName}\n` : '';
+  const head = `${ruleLine}🟢 ${l.originMarket} → ${l.destMarket} · ${l.equipment}`;
   const line2 = `${money(l.rate)} · ${Math.round(Number(l.loadedMiles) || 0)}mi` +
     (dh ? ` +${Math.round(dh)}DH` : '') + ` · $${rpm}/mi`;
   const pickup = fmtPickup(l.pickupDate);

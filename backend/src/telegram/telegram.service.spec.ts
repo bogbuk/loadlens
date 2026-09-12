@@ -55,6 +55,12 @@ describe('formatAlertMessage', () => {
     expect(msg).not.toContain('MC');
     expect(msg).not.toContain('💬');
   });
+
+  it('ruleName — первой строкой 🎯; без него сообщение начинается с 🟢', () => {
+    const withRule = formatAlertMessage({ ...ITEM, ruleName: 'Bonded / TWIC' });
+    expect(withRule.startsWith('🎯 Bonded / TWIC\n🟢 CHICAGO_IL → DALLAS_TX · R')).toBe(true);
+    expect(formatAlertMessage(ITEM).startsWith('🟢 ')).toBe(true);
+  });
 });
 
 describe('parseStartCommand', () => {
