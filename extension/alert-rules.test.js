@@ -64,3 +64,95 @@ test("active: только enabled; принимает сырой storage", () =
   assert.deepStrictEqual(LLRULES.active({ rules }).map((r) => r.id), ["a", "c"]);
   assert.deepStrictEqual(LLRULES.active(null), []);
 });
+
+const LOAD = {
+  board: "dat", originMarket: "LOS ANGELES_CA", destMarket: "DALLAS_TX", equipment: "V",
+  rate: 4000, loadedMiles: 1400, deadheadMiles: 100, brokerMc: "MC-123456", creditScore: 92,
+  comments: "In-Bond shipment, TWIC required. No hazmat.",
+};
+const rule = (over) => LLRULES.normalize({ rules: [{ id: "r", ...over }] }).rules[0];
+const ctx = { equipFilter: null };
+
+test("matches: правило без условий матчит всё, что прошло equipment", () => {
+  assert.ok(LLRULES.matches(rule({}), LOAD, ctx));
+  assert.ok(!LLRULES.matches(rule({}), LOAD, { equipFilter: ["R"] }));       // глобальный фильтр
+  assert.ok(LLRULES.matches(rule({ equipment: ["V"] }), LOAD, { equipFilter: ["R"] })); // своё equipment важнее
+});
+
+test("matches: keywordsAny — нормализованная подстрока; нет comments → false", () => {
+  assert.ok(LLRULES.matches(rule({ keywordsAny: ["inbond"] }), LOAD, ctx));
+  assert.ok(LLRULES.matches(rule({ keywordsAny: ["bonded", "twic"] }), LOAD, ctx));
+  assert.ok(!LLRULES.matches(rule({ keywordsAny: ["airport"] }), LOAD, ctx));
+  assert.ok(!LLRULES.matches(rule({ keywordsAny: ["twic"] }), { ...LOAD, comments: null }, ctx));
+});
+
+test("matches: keywordsNone — исключает; пустые comments проходят", () => {
+  assert.ok(!LLRULES.matches(rule({ keywordsNone: ["hazmat"] }), LOAD, ctx));
+  assert.ok(LLRULES.matches(rule({ keywordsNone: ["team"] }), LOAD, ctx));
+  assert.ok(LLRULES.matches(rule({ keywordsNone: ["hazmat"] }), { ...LOAD, comments: "" }, ctx));
+});
+
+test("matches: AND внутри правила", () => {
+  assert.ok(LLRULES.matches(rule({ keywordsAny: ["twic"], maxDeadhead: 150 }), LOAD, ctx));
+  assert.ok(!LLRULES.matches(rule({ keywordsAny: ["twic"], maxDeadhead: 50 }), LOAD, ctx));
+});
+
+test("matches: minRate / minRpm (с deadhead) / miles", () => {
+  assert.ok(LLRULES.matches(rule({ minRate: 4000 }), LOAD, ctx));
+  assert.ok(!LLRULES.matches(rule({ minRate: 4001 }), LOAD, ctx));
+  // 4000 / (1400 + 100) = 2.67
+  assert.ok(LLRULES.matches(rule({ minRpm: 2.6 }), LOAD, ctx));
+  assert.ok(!LLRULES.matches(rule({ minRpm: 2.7 }), LOAD, ctx));
+  assert.ok(!LLRULES.matches(rule({ minRpm: 1 }), { ...LOAD, loadedMiles: 0, deadheadMiles: 0 }, ctx));
+  assert.ok(LLRULES.matches(rule({ minMiles: 1400, maxMiles: 1400 }), LOAD, ctx));
+  assert.ok(!LLRULES.matches(rule({ minMiles: 1401 }), LOAD, ctx));
+  assert.ok(!LLRULES.matches(rule({ maxMiles: 1399 }), LOAD, ctx));
+});
+
+test("matches: deadheadMiles null → считаем 0, груз проходит maxDeadhead", () => {
+  assert.ok(LLRULES.matches(rule({ maxDeadhead: 10 }), { ...LOAD, deadheadMiles: null }, ctx));
+  assert.ok(!LLRULES.matches(rule({ maxDeadhead: 10 }), LOAD, ctx));
+});
+
+test("matches: destStates по хвосту destMarket", () => {
+  assert.ok(LLRULES.matches(rule({ destStates: ["tx", "ok"] }), LOAD, ctx));
+  assert.ok(!LLRULES.matches(rule({ destStates: ["CA"] }), LOAD, ctx));
+  assert.ok(!LLRULES.matches(rule({ destStates: ["TX"] }), { ...LOAD, destMarket: "" }, ctx));
+});
+
+test("matches: брокер — block побеждает allow; minCredit", () => {
+  assert.ok(LLRULES.matches(rule({ brokersAllow: ["123456"] }), LOAD, ctx));
+  assert.ok(!LLRULES.matches(rule({ brokersAllow: ["999"] }), LOAD, ctx));
+  assert.ok(!LLRULES.matches(rule({ brokersAllow: ["123456"], brokersBlock: ["123456"] }), LOAD, ctx));
+  assert.ok(LLRULES.matches(rule({ brokersBlock: ["999"] }), LOAD, ctx));
+  assert.ok(LLRULES.matches(rule({ brokersBlock: ["999"] }), { ...LOAD, brokerMc: null }, ctx));
+  assert.ok(!LLRULES.matches(rule({ brokersAllow: ["999"] }), { ...LOAD, brokerMc: null }, ctx));
+  assert.ok(LLRULES.matches(rule({ minCredit: 90 }), LOAD, ctx));
+  assert.ok(!LLRULES.matches(rule({ minCredit: 95 }), LOAD, ctx));
+  assert.ok(!LLRULES.matches(rule({ minCredit: 1 }), { ...LOAD, creditScore: null }, ctx));
+});
+
+test("matches: score через badgeFor; при 'any' badgeFor не вызывается", () => {
+  let calls = 0;
+  const bf = (lvl) => ({ equipFilter: null, badgeFor: () => { calls++; return { level: lvl }; } });
+  assert.ok(LLRULES.matches(rule({ score: "any" }), LOAD, bf("red")));
+  assert.strictEqual(calls, 0);
+  assert.ok(LLRULES.matches(rule({ score: "green" }), LOAD, bf("green")));
+  assert.ok(!LLRULES.matches(rule({ score: "green" }), LOAD, bf("amber")));
+  assert.ok(LLRULES.matches(rule({ score: "green_amber" }), LOAD, bf("amber")));
+  assert.ok(!LLRULES.matches(rule({ score: "green_amber" }), LOAD, bf("red")));
+  assert.ok(!LLRULES.matches(rule({ score: "green" }), LOAD, { equipFilter: null })); // нет badgeFor → не матчит
+});
+
+test("select: OR между правилами, первое совпавшее; несовпавшие грузы выпадают", () => {
+  const rules = LLRULES.normalize({ rules: [
+    { id: "kw", name: "Bonded", keywordsAny: ["bonded"], keywordsNone: ["hazmat"] },
+    { id: "rpm", name: "$8+", minRpm: 8 },
+  ] }).rules;
+  const rich = { ...LOAD, comments: "", rate: 15000 };                         // 15000/1500 = 10
+  const dull = { ...LOAD, comments: "" };
+  const hits = LLRULES.select(rules, [LOAD, rich, dull], ctx);
+  assert.deepStrictEqual(hits.map((h) => [h.load, h.rule.id]), [[rich, "rpm"]]); // LOAD: "bonded" не подстрока "inbond", hazmat исключает; rpm 2.67 < 8
+  assert.deepStrictEqual(LLRULES.select([], [LOAD], ctx), []);
+  assert.deepStrictEqual(LLRULES.select(rules, null, ctx), []);
+});

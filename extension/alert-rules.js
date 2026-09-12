@@ -62,7 +62,63 @@ const LLRULES = (() => {
 
   function active(cfg) { return normalize(cfg).rules.filter((r) => r.enabled); }
 
-  return { LIMITS, SCORES, normKeyword, normalize, active };
+  // Груз проходит правило, если все ЗАДАННЫЕ условия выполнены. ctx.badgeFor — ленивый скоринг
+  // (вызывается только при score !== "any"), ctx.equipFilter — глобальный фильтр прицепа.
+  function matches(rule, load, ctx) {
+    ctx = ctx || {};
+    if (!rule || !load) return false;
+    const eqFilter = (rule.equipment && rule.equipment.length) ? rule.equipment : (ctx.equipFilter || null);
+    if (EQ && !EQ.matches(eqFilter, load.equipment)) return false;
+
+    const text = normKeyword(load.comments);
+    if (rule.keywordsAny.length && !(text && rule.keywordsAny.some((w) => text.includes(normKeyword(w))))) return false;
+    if (rule.keywordsNone.length && text && rule.keywordsNone.some((w) => text.includes(normKeyword(w)))) return false;
+
+    const rate = Number(load.rate) || 0;
+    const miles = Number(load.loadedMiles) || 0;
+    const dh = Number(load.deadheadMiles) || 0;          // null → 0: без DH-миль груз не выпадает
+    if (rule.minRate != null && rate < rule.minRate) return false;
+    if (rule.minRpm != null) {
+      const total = miles + dh;                            // та же формула, что LLSCORE.trueRpm
+      if (!(total > 0) || rate / total < rule.minRpm) return false;
+    }
+    if (rule.maxDeadhead != null && dh > rule.maxDeadhead) return false;
+    if (rule.minMiles != null && miles < rule.minMiles) return false;
+    if (rule.maxMiles != null && miles > rule.maxMiles) return false;
+
+    if (rule.destStates.length) {
+      const st = String(load.destMarket || "").split("_").pop();
+      if (!st || !rule.destStates.includes(st)) return false;
+    }
+
+    const mc = String(load.brokerMc || "").replace(/\D+/g, "");
+    if (rule.brokersBlock.length && mc && rule.brokersBlock.includes(mc)) return false;
+    if (rule.brokersAllow.length && !rule.brokersAllow.includes(mc)) return false;
+    if (rule.minCredit != null) {
+      const c = load.creditScore == null ? NaN : Number(load.creditScore);
+      if (isNaN(c) || c < rule.minCredit) return false;
+    }
+
+    if (rule.score !== "any") {
+      const b = typeof ctx.badgeFor === "function" ? ctx.badgeFor(load) : null;
+      const lvl = b && b.level;
+      if (rule.score === "green" && lvl !== "green") return false;
+      if (rule.score === "green_amber" && lvl !== "green" && lvl !== "amber") return false;
+    }
+    return true;
+  }
+
+  // Для каждого груза — первое совпавшее правило. Несовпавшие выпадают.
+  function select(rules, loads, ctx) {
+    const out = [];
+    for (const load of (Array.isArray(loads) ? loads : [])) {
+      const r = (rules || []).find((rule) => matches(rule, load, ctx));
+      if (r) out.push({ load, rule: r });
+    }
+    return out;
+  }
+
+  return { LIMITS, SCORES, normKeyword, normalize, active, matches, select };
 })();
 
 if (typeof module !== "undefined" && module.exports) { module.exports = LLRULES; }
