@@ -2,6 +2,16 @@
 
 All notable user-facing changes to the LoadLens browser extension.
 
+## 0.6.0 — 2026-09-12
+
+### New
+- **Custom Telegram alert rules.** In the popup, build rules that pick exactly which loads reach your Telegram: keywords that must or must not appear in the broker's comments (bonded, in-bond, TWIC, hazmat…), minimum rate per mile, maximum deadhead, destination states, equipment and broker. Rules combine with OR, conditions inside a rule with AND. With no rules, alerts keep working as before: every profitable load matching your equipment filter. Pro feature.
+- **One-click broker email with a counter-offer.** Every load card now has ✉️ Email broker / 📞 Call / 📋 Copy email; the lead button follows the broker's preferred contact method. The email opens as a Gmail draft prefilled with the lane, miles, pickup date and a suggested counter-offer based on the market rate — you review and send it yourself. The template is editable in the popup.
+
+### Changed
+- **Auto-pilot has a real on/off switch in the popup.** "Enable on DAT tabs" turns it on for every DAT results tab; the Auto-refresh checkbox in the on-page panel still overrides it for that tab only. Previously the popup only stored the interval and the auto-pilot had to be enabled tab by tab.
+- **Alerts skip loads with no posted rate.** Postings without a published rate no longer trigger Telegram messages.
+
 ## 0.5.0 — 2026-07-20
 
 ### Changed
