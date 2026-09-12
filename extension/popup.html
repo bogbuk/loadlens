@@ -36,6 +36,14 @@
   .chips-actions { white-space:nowrap; color:#9aa6b2; font-size:11px; }
   .settings-wrap { padding-top: 6px; }
   .settings-wrap > summary { cursor: pointer; font-size: 11px; text-transform: uppercase; letter-spacing: .3px; color:#1e3a8a; font-weight:700; list-style: revert; padding: 4px 0; }
+  .rule { border:1px solid #e7ebef; border-radius:9px; padding:8px 10px; margin-top:8px; }
+  .rule .hd { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .rule .hd b { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rule .sum { color:#6b7785; font-size:11px; margin-top:4px; }
+  .rule input[type=text], .rule select { width:100%; box-sizing:border-box; padding:5px 7px; border:1px solid #e7ebef; border-radius:7px; font:inherit; }
+  .rule .two { display:flex; gap:6px; } .rule .two > * { flex:1; }
+  .rule label { display:block; color:#6b7785; font-size:11px; margin-top:6px; }
+  .rule .actions { display:flex; gap:6px; margin-top:8px; } .rule .actions button { flex:1; }
 </style>
 </head>
 <body>
@@ -53,6 +61,7 @@
   <script src="hos.js"></script>
   <script src="drivers.js"></script>
   <script src="equip-filter.js"></script>
+  <script src="alert-rules.js"></script>
   <script src="visibility.js"></script>
   <script src="popup.js"></script>
 </body>

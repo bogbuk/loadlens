@@ -319,12 +319,134 @@ async function saveField(id, field, value) {
 // ---- Telegram-уведомления (Pro): привязка чата + тумблер алертов ----
 const tgEl = document.getElementById("telegram");
 
+// ---- правила алертов (ll_alert_rules): список карточек + inline-редактор ----
+let rulesCfg = { version: 1, rules: [] };
+let editingRuleId = null;   // id правила в редакторе; "new" — черновик нового
+
+async function loadRules() {
+  const { ll_alert_rules } = await chrome.storage.local.get("ll_alert_rules");
+  rulesCfg = LLRULES.normalize(ll_alert_rules);
+}
+async function saveRules() {
+  rulesCfg = LLRULES.normalize(rulesCfg);
+  await chrome.storage.local.set({ ll_alert_rules: rulesCfg });
+}
+const csv = (arr) => (arr || []).join(", ");
+const splitCsv = (s) => String(s || "").split(",").map((x) => x.trim()).filter(Boolean);
+const numOrNull = (id) => { const v = document.getElementById(id).value; return v === "" ? null : Number(v); };
+
+function ruleSummary(r) {
+  const bits = [];
+  if (r.keywordsAny.length) bits.push(`any: ${csv(r.keywordsAny)}`);
+  if (r.keywordsNone.length) bits.push(`none: ${csv(r.keywordsNone)}`);
+  if (r.minRate != null) bits.push(`≥ $${r.minRate}`);
+  if (r.minRpm != null) bits.push(`≥ $${r.minRpm}/mi`);
+  if (r.maxDeadhead != null) bits.push(`DH ≤ ${r.maxDeadhead}`);
+  if (r.minMiles != null || r.maxMiles != null) bits.push(`${r.minMiles ?? 0}–${r.maxMiles ?? "∞"} mi`);
+  if (r.equipment) bits.push(`equip: ${csv(r.equipment)}`);
+  if (r.destStates.length) bits.push(`to: ${csv(r.destStates)}`);
+  if (r.brokersAllow.length) bits.push(`brokers: ${csv(r.brokersAllow)}`);
+  if (r.brokersBlock.length) bits.push(`block: ${csv(r.brokersBlock)}`);
+  if (r.minCredit != null) bits.push(`credit ≥ ${r.minCredit}`);
+  if (r.score !== "any") bits.push(r.score === "green" ? "green only" : "green + amber");
+  return bits.length ? bits.join(" · ") : "no conditions = every load";
+}
+
+function ruleCard(r) {
+  return `<div class="rule" data-id="${escA(r.id)}"><div class="hd">` +
+    `<input type="checkbox" class="rule-on" style="width:auto"${r.enabled ? " checked" : ""}>` +
+    `<b>${escA(r.name)}</b>` +
+    `<button type="button" class="linkbtn rule-edit">Edit</button>` +
+    `<button type="button" class="linkbtn rule-del">Delete</button></div>` +
+    `<div class="sum">${escA(ruleSummary(r))}</div></div>`;
+}
+
+function ruleForm(r) {
+  const eqSel = new Set(r.equipment || []);
+  const scoreOpt = (v, label) => `<option value="${v}"${r.score === v ? " selected" : ""}>${label}</option>`;
+  return `<div class="rule" data-id="${escA(r.id)}">` +
+    `<label>Name</label><input type="text" id="rf-name" value="${escA(r.name)}" maxlength="${LLRULES.LIMITS.name}">` +
+    `<label>Comments contain any of (comma-separated)</label><input type="text" id="rf-any" value="${escA(csv(r.keywordsAny))}" placeholder="bonded, in-bond, TWIC, airport">` +
+    `<label>Comments must NOT contain</label><input type="text" id="rf-none" value="${escA(csv(r.keywordsNone))}" placeholder="hazmat, team">` +
+    `<div class="two"><div><label>Min rate, $</label><input type="text" id="rf-rate" inputmode="decimal" value="${r.minRate ?? ""}"></div>` +
+    `<div><label>Min $/mi (incl. deadhead)</label><input type="text" id="rf-rpm" inputmode="decimal" value="${r.minRpm ?? ""}"></div></div>` +
+    `<div class="two"><div><label>Max deadhead, mi</label><input type="text" id="rf-dh" inputmode="numeric" value="${r.maxDeadhead ?? ""}"></div>` +
+    `<div><label>Min credit score</label><input type="text" id="rf-credit" inputmode="numeric" value="${r.minCredit ?? ""}"></div></div>` +
+    `<div class="two"><div><label>Min loaded miles</label><input type="text" id="rf-minmi" inputmode="numeric" value="${r.minMiles ?? ""}"></div>` +
+    `<div><label>Max loaded miles</label><input type="text" id="rf-maxmi" inputmode="numeric" value="${r.maxMiles ?? ""}"></div></div>` +
+    `<label>Equipment (none selected = same as global filter)</label><div class="chips" id="rf-equip">` +
+    EQUIP_TYPES.map((e) => `<button type="button" class="chip${eqSel.has(e.code) ? " on" : ""}" data-code="${escA(e.code)}" title="${escA(e.label)}">${escA(e.code)}</button>`).join("") +
+    `</div>` +
+    `<label>Destination states (comma-separated)</label><input type="text" id="rf-states" value="${escA(csv(r.destStates))}" placeholder="TX, OK, ON">` +
+    `<div class="two"><div><label>Brokers allow (MC)</label><input type="text" id="rf-allow" value="${escA(csv(r.brokersAllow))}"></div>` +
+    `<div><label>Brokers block (MC)</label><input type="text" id="rf-block" value="${escA(csv(r.brokersBlock))}"></div></div>` +
+    `<label>Score</label><select id="rf-score">${scoreOpt("any", "Any")}${scoreOpt("green", "Green only")}${scoreOpt("green_amber", "Green or amber")}</select>` +
+    `<div class="note">All filled conditions must match (AND). Rules combine with OR. A rule without conditions matches every load.</div>` +
+    `<div class="actions"><button type="button" id="rf-save">Save rule</button><button type="button" id="rf-cancel">Cancel</button></div></div>`;
+}
+
+function readRuleForm(id) {
+  return {
+    id,
+    name: document.getElementById("rf-name").value,
+    enabled: (rulesCfg.rules.find((r) => r.id === id) || { enabled: true }).enabled,
+    keywordsAny: splitCsv(document.getElementById("rf-any").value),
+    keywordsNone: splitCsv(document.getElementById("rf-none").value),
+    minRate: numOrNull("rf-rate"), minRpm: numOrNull("rf-rpm"),
+    maxDeadhead: numOrNull("rf-dh"), minCredit: numOrNull("rf-credit"),
+    minMiles: numOrNull("rf-minmi"), maxMiles: numOrNull("rf-maxmi"),
+    equipment: [...document.querySelectorAll("#rf-equip .chip.on")].map((c) => c.dataset.code),
+    destStates: splitCsv(document.getElementById("rf-states").value),
+    brokersAllow: splitCsv(document.getElementById("rf-allow").value),
+    brokersBlock: splitCsv(document.getElementById("rf-block").value),
+    score: document.getElementById("rf-score").value,
+  };
+}
+
+function renderRules() {
+  const box = document.getElementById("tg-rules");
+  if (!box) return;
+  const draft = editingRuleId === "new"
+    ? LLRULES.normalize({ rules: [{ id: "new", name: "" }] }).rules[0] : null;
+  const cards = rulesCfg.rules.map((r) => (r.id === editingRuleId ? ruleForm(r) : ruleCard(r))).join("");
+  const full = rulesCfg.rules.length >= LLRULES.LIMITS.rules;
+  box.innerHTML = '<h4>Alert rules</h4>' +
+    (rulesCfg.rules.length ? "" : '<div class="note">No rules: every profitable (green) load matching your equipment filter is sent.</div>') +
+    cards + (draft ? ruleForm(draft) : "") +
+    (editingRuleId || full ? "" : '<button type="button" id="rule-add" style="margin-top:8px">Add rule</button>');
+
+  box.querySelectorAll(".rule-on").forEach((cb) => cb.onchange = async (e) => {
+    const id = e.target.closest(".rule").dataset.id;
+    const r = rulesCfg.rules.find((x) => x.id === id); if (r) { r.enabled = e.target.checked; await saveRules(); renderRules(); }
+  });
+  box.querySelectorAll(".rule-edit").forEach((b) => b.onclick = (e) => { editingRuleId = e.target.closest(".rule").dataset.id; renderRules(); });
+  box.querySelectorAll(".rule-del").forEach((b) => b.onclick = async (e) => {
+    const id = e.target.closest(".rule").dataset.id;
+    if (!confirm("Delete this rule?")) return;
+    rulesCfg.rules = rulesCfg.rules.filter((x) => x.id !== id); await saveRules(); renderRules();
+  });
+  const add = document.getElementById("rule-add");
+  if (add) add.onclick = () => { editingRuleId = "new"; renderRules(); };
+  box.querySelectorAll("#rf-equip .chip").forEach((c) => c.onclick = () => c.classList.toggle("on"));
+  const save = document.getElementById("rf-save");
+  if (save) save.onclick = async () => {
+    const isNew = editingRuleId === "new";
+    const id = isNew ? `r_${Date.now()}` : editingRuleId;
+    const next = readRuleForm(id);
+    if (isNew) rulesCfg.rules.push(next);
+    else rulesCfg.rules = rulesCfg.rules.map((r) => (r.id === id ? next : r));
+    editingRuleId = null; await saveRules(); renderRules();
+  };
+  const cancel = document.getElementById("rf-cancel");
+  if (cancel) cancel.onclick = () => { editingRuleId = null; renderRules(); };
+}
+
 async function renderTelegram(me) {
   if (me === undefined) me = await LLAPI.getMe().catch(() => null);
   if (!me) { tgEl.innerHTML = ""; return; }
   if (me.plan !== "pro") {
     tgEl.innerHTML = '<h4>Telegram alerts <span class="plan pro">PRO</span></h4>' +
-      '<div class="note">Alerts for profitable loads matching your filter are a Pro feature.</div>';
+      '<div class="note">Alerts for profitable loads and custom alert rules (keywords, rate, deadhead, brokers) are a Pro feature.</div>';
     return;
   }
   const st = await LLAPI.telegramStatus().catch(() => null);
@@ -351,7 +473,8 @@ async function renderTelegram(me) {
     `<div class="row"><span class="k">Send alerts</span>` +
     `<input id="tg-toggle" type="checkbox"${st.enabled ? " checked" : ""} style="width:auto"></div>` +
     '<button id="tg-unlink" class="danger">Disconnect Telegram</button>' +
-    '<div class="note">One load = one message, duplicates filtered out. Works only while a DAT tab is open.</div>';
+    '<div class="note">One load = one message, duplicates filtered out. Works only while a DAT tab is open.</div>' +
+    '<div id="tg-rules"></div>';
   document.getElementById("tg-toggle").onchange = async (e) => {
     try { await LLAPI.telegramAlerts(e.target.checked); }
     catch (err) { alert(err.message); e.target.checked = !e.target.checked; }
@@ -361,6 +484,8 @@ async function renderTelegram(me) {
     try { await LLAPI.telegramUnlink(); renderTelegram(me); }
     catch (e) { alert(e.message); }
   };
+  await loadRules();
+  renderRules();
 }
 
 async function addDriver() {

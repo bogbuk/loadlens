@@ -8,7 +8,7 @@ Status: in_progress
 - [x] LLALERT: {load, rule} + ruleName
 - [x] backend: NotifyItemDto.ruleName + formatAlertMessage
 - [x] content.js + manifest: отбор через LLRULES
-- [ ] popup: список правил + редактор
+- [x] popup: список правил + редактор
 - [ ] CLAUDE.md
 ### Verification
 - [ ] npm test (корень) + backend npm test
