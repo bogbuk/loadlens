@@ -36,6 +36,7 @@ extension/                  MV3-расширение (грузит vendor/* → 
   drivers.js (LLDRV)        парк диспетчера: resolveDriverContext (чистая, выбор контекста планировщика) + per-device активный водитель (ll_active_driver)
   alerts.js (LLALERT)       релей green+passEquip грузов в Telegram: keyFor/toPayload (бизнес-поля + дата пикапа + контакт брокера — PII по явному решению, только в DM) + push (гейт linked/enabled, session-дедуп). Вызывается из content.render
   equip-filter.js (LLEQUIP) чистый normalize/matches фильтра прицепа (ll_equip_filter): string[]|null, мультивыбор, обратно-совместим со старой строкой
+  alert-rules.js (LLRULES)  чистые normalize/active/matches/select правил Telegram-алертов (ll_alert_rules): AND внутри правила, OR между; пусто → green+equip. Спека 2026-09-12
   visibility.js (LLVIS)     чистый badgesVisible/panelVisible/fabVisible: сводит hintsOff(per-tab) + ll_hide_panel/ll_hide_badges(глоб.попап) + panelCollapsed в решения «рисовать/нет»
   popup.*                   настройки водителя (cost/mile, HOS-часы) + секция «Отображение на странице» (instant-apply тумблеры ll_hide_panel/ll_hide_badges) + аккаунт + секция «Парк» (CRUD водителей) + секция «Telegram-уведомления» (Pro)
   vendor/                   ★ АВТОКОПИИ из shared/ (load.model, scoring, planner, fleet, email-template, markets.seed). `npm run sync:shared`
@@ -156,6 +157,11 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   Клик → разбивка «Кому подходит» в карточке детали. Считается локально (данные грузов на сервер не шлём).
 - **Telegram-алерты** (`backend/telegram` + `extension/alerts.js` + popup-секция): пока DAT-вкладка
   открыта, `content.render` отдаёт `LLALERT.push` грузы **green+passEquip** (те же, что «Выгодные сейчас»);
+  **с 2026-09-12 — только если нет включённых правил**; при наличии правил (`ll_alert_rules`, редактор в
+  popup) отбор делает `LLRULES.select` (ключевые слова в comments с нормализацией `in-bond`≡`inbond`,
+  min rate/$/mi, max DH, miles, equipment, штаты назначения, MC allow/block, credit, score) — OR между
+  правилами, AND внутри, `deadheadMiles:null`→0. Имя правила уходит как `ruleName` и печатается ботом
+  первой строкой `🎯`. Спека — `docs/superpowers/specs/2026-09-12-alert-rules-engine-design.md`;
   тот шлёт их в `POST /telegram/notify` → бот DM-ит диспетчеру. **Гейт Pro** + привязка Telegram
   (`/telegram/link` → deep-link `t.me/<bot>?start=<token>` → вебхук `/telegram/webhook/:secret` ловит
   `/start` и пишет `users.telegram_chat_id`) + тумблер `alerts_enabled`. Дедуп **по семантическому

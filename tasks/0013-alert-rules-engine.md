@@ -1,6 +1,6 @@
 # Task: движок правил Telegram-алертов
 Date: 2026-09-12
-Status: in_progress
+Status: done
 
 ## Checklist
 - [x] LLRULES.normalize / normKeyword / active + тесты
@@ -9,8 +9,8 @@ Status: in_progress
 - [x] backend: NotifyItemDto.ruleName + formatAlertMessage
 - [x] content.js + manifest: отбор через LLRULES
 - [x] popup: список правил + редактор
-- [ ] CLAUDE.md
+- [x] CLAUDE.md
 ### Verification
-- [ ] npm test (корень) + backend npm test
-- [ ] build backend
-- [ ] commit & push
+- [x] npm test (корень) + backend npm test — 98 / 177
+- [x] build backend — OK
+- [x] commit & push — push: controller after final review
