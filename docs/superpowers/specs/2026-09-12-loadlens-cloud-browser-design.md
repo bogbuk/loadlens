@@ -63,8 +63,10 @@ popup «Cloud» ──JWT──▶ backend /cloud/* ──dockerode mTLS──�
 - В cloud mode `LLTAB.getAutorefresh` игнорируется: авто-пилот **всегда ВКЛ**, чекбокс в панели
   заблокирован с подписью «Cloud». Интервал — `ll_autorefresh.intervalMs` как сейчас (≥60 с, джиттер).
 - Восстановление после рестарта Chromium делает контейнер: `START_URL=https://one.dat.com/search-loads`,
-  DAT сама поднимает последний поиск. **Допущение**, проверяется суточным тестом; если ложно —
-  cloud mode запоминает URL выдачи в `chrome.storage.local`.
+  DAT сама поднимает последний поиск (**проверено спайком 2026-09-12**: сессия DAT, логин LoadLens и
+  поиск пережили пересоздание контейнера; с корня `/` DAT уходит на Dashboard, поэтому URL именно
+  `/search-loads`). Стартовый скрипт образа удаляет `SingletonLock/Socket/Cookie` из профиля: после
+  смены hostname контейнера Chromium иначе блокируется диалогом «profile in use on another computer».
 - **`extension/cloud.js` (`LLCLOUD`)**: чистая `detectState(location, lastFindLoadsAt, now, intervalMs)`
   → `logged_out` (host `login.dat.com`) | `stale` (FindLoads не было > 3 интервалов) | `ok`.
   `POST /cloud/heartbeat {state, loadsSeen, lastFindLoadsAt}` раз в 5 минут; при попадании на страницу
@@ -141,8 +143,8 @@ DAT may restrict accounts used from cloud servers». Наружу через н�
 Спайк `cloud-browser/spike/` (throwaway), задача `tasks/0013-cloud-browser-spike.md`:
 - **Q1 — ответ есть:** одна активная сессия на аккаунт DAT (→ §1).
 - **Q2 — открыт:** логин в DAT с датацентрового IP в Ashburn без капчи/блока. Нужен VPS.
-- **Q3 — открыт:** живучесть сессии без человека при авто-пилоте 60–120 с; RAM за сутки;
-  восстанавливает ли DAT последний поиск после рестарта Chromium.
+- **Q3 — частично:** восстановление поиска после рестарта Chromium — да (см. §4). Открыто:
+  живучесть сессии без человека при авто-пилоте 60–120 с и RAM за сутки.
 
 Раскатка:
 1. Ответы Q2/Q3. Без «да» по Q2 спека не реализуется.
