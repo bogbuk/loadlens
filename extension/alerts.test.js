@@ -73,3 +73,23 @@ test("push: новый груз уходит; повтор в той же сес
   assert.strictEqual(r2.sent, 0);
   assert.strictEqual(_sent.length, 1);            // второго запроса не было
 });
+
+test("toPayload: ruleName пробрасывается (обрезка 60, без переводов строк); без rule — поля нет", () => {
+  const p = LLALERT.toPayload(LOAD, { id: "r", name: "Bonded /\nTWIC" });
+  assert.strictEqual(p.ruleName, "Bonded / TWIC");
+  const long = LLALERT.toPayload(LOAD, { id: "r", name: "x".repeat(100) });
+  assert.strictEqual(long.ruleName.length, 60);
+  assert.strictEqual(LLALERT.toPayload(LOAD).ruleName, undefined);
+  assert.strictEqual(LLALERT.toPayload(LOAD, { id: "r", name: "" }).ruleName, undefined);
+});
+
+test("push: принимает {load, rule} и голый груз; ruleName уходит на сервер", async () => {
+  _sent = [];
+  LLALERT._setStatus({ linked: true, enabled: true, configured: true });
+  const other = { ...LOAD, rate: 2600 };
+  const r = await LLALERT.push([{ load: { ...LOAD, rate: 2500 }, rule: { id: "r", name: "Bonded" } }, other]);
+  assert.strictEqual(r.sent, 2);
+  assert.strictEqual(_sent[0][0].ruleName, "Bonded");
+  assert.strictEqual(_sent[0][1].ruleName, undefined);
+  assert.strictEqual(_sent[0][1].rate, 2600);
+});

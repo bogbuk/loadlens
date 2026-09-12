@@ -1,4 +1,5 @@
 /* LoadLens alerts — релей подошедших грузов (green + фильтр прицепа) в Telegram.
+   Принимает {load, rule} от LLRULES.select; ruleName — имя сработавшего правила, печатается ботом первой строкой.
    Только грузы, которые пользователь уже видит в своей сессии (ToS). Шлём lane/ставку/мили/RPM/
    брокера (имя+MC+кредит), дату пикапа, контакт и комментарий груза — PII уходит в личный DM
    пользователя по явному решению. Дедуп: session-Set (сеть) + авторитетный сервер.
@@ -21,7 +22,7 @@ const LLALERT = (() => {
 
   // Полезная нагрузка для сервера — бизнес-поля + (осознанно) дата пикапа и контакт брокера.
   // Контакт (email/phone) — это PII; шлём по явному решению, чтобы диспетчер мог сразу связаться.
-  function toPayload(l) {
+  function toPayload(l, rule) {
     const mc = String(l.brokerMc || "").replace(/\D+/g, "");
     const item = {
       dedupKey: keyFor(l),
@@ -37,6 +38,8 @@ const LLALERT = (() => {
     if (pickup) item.pickupDate = String(pickup).slice(0, 32);
     if (l.contactEmail) item.contactEmail = String(l.contactEmail).slice(0, 120);
     if (l.contactPhone) item.contactPhone = String(l.contactPhone).replace(/[^\d+().\- ]/g, "").slice(0, 24);
+    const ruleName = rule && rule.name ? String(rule.name).replace(/[\n\r]+/g, " ").trim().slice(0, 60) : "";
+    if (ruleName) item.ruleName = ruleName;
     return item;
   }
 
@@ -52,16 +55,17 @@ const LLALERT = (() => {
     return status;
   }
 
-  // Принимает уже отобранные грузы (green + passEquip). Шлёт новые на backend-релей.
-  async function push(loads) {
-    if (!loads || !loads.length) return { sent: 0 };
+  // Принимает [{load, rule}] (отбор LLRULES) или голые грузы (старый вызов). Шлёт новые на backend-релей.
+  async function push(hits) {
+    if (!hits || !hits.length) return { sent: 0 };
     const s = await refreshStatus();
     if (!s.configured || !s.linked || !s.enabled) return { sent: 0 };
 
-    const fresh = loads.filter((l) => !sentKeys.has(keyFor(l)));
+    const pairs = hits.map((h) => (h && h.load) ? h : { load: h, rule: null });
+    const fresh = pairs.filter((p) => p.load && !sentKeys.has(keyFor(p.load)));
     if (!fresh.length) return { sent: 0 };
 
-    const items = fresh.map(toPayload).filter(validItem).slice(0, MAX_BATCH);
+    const items = fresh.map((p) => toPayload(p.load, p.rule)).filter(validItem).slice(0, MAX_BATCH);
     if (!items.length) return { sent: 0 };
 
     // оптимистично помечаем отправленными (повторный показ той же выдачи не спамит сеть)

@@ -5,7 +5,7 @@ Status: in_progress
 ## Checklist
 - [x] LLRULES.normalize / normKeyword / active + тесты
 - [x] LLRULES.matches / select + тесты
-- [ ] LLALERT: {load, rule} + ruleName
+- [x] LLALERT: {load, rule} + ruleName
 - [ ] backend: NotifyItemDto.ruleName + formatAlertMessage
 - [ ] content.js + manifest: отбор через LLRULES
 - [ ] popup: список правил + редактор
