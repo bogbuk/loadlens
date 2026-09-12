@@ -353,7 +353,7 @@ function ruleSummary(r) {
 }
 
 function ruleCard(r) {
-  return `<div class="rule" data-id="${escA(r.id)}"><div class="hd">` +
+  return `<div class="rule" data-id="${escA(r.id)}"><div class="rhd">` +
     `<input type="checkbox" class="rule-on" style="width:auto"${r.enabled ? " checked" : ""}>` +
     `<b>${escA(r.name)}</b>` +
     `<button type="button" class="linkbtn rule-edit">Edit</button>` +
@@ -365,7 +365,7 @@ function ruleForm(r) {
   const eqSel = new Set(r.equipment || []);
   const scoreOpt = (v, label) => `<option value="${v}"${r.score === v ? " selected" : ""}>${label}</option>`;
   return `<div class="rule" data-id="${escA(r.id)}">` +
-    `<label>Name</label><input type="text" id="rf-name" value="${escA(r.name)}" maxlength="${LLRULES.LIMITS.name}">` +
+    `<label>Name</label><input type="text" id="rf-name" value="${escA(r.name)}" maxlength="${LLRULES.LIMITS.name}" placeholder="Rule name">` +
     `<label>Comments contain any of (comma-separated)</label><input type="text" id="rf-any" value="${escA(csv(r.keywordsAny))}" placeholder="bonded, in-bond, TWIC, airport">` +
     `<label>Comments must NOT contain</label><input type="text" id="rf-none" value="${escA(csv(r.keywordsNone))}" placeholder="hazmat, team">` +
     `<div class="two"><div><label>Min rate, $</label><input type="text" id="rf-rate" inputmode="decimal" value="${r.minRate ?? ""}"></div>` +
@@ -408,6 +408,7 @@ function renderRules() {
   if (!box) return;
   const draft = editingRuleId === "new"
     ? LLRULES.normalize({ rules: [{ id: "new", name: "" }] }).rules[0] : null;
+  if (draft) draft.name = ""; // не показывать подставленное normalize имя "Rule" в пустом поле
   const cards = rulesCfg.rules.map((r) => (r.id === editingRuleId ? ruleForm(r) : ruleCard(r))).join("");
   const full = rulesCfg.rules.length >= LLRULES.LIMITS.rules;
   box.innerHTML = '<h4>Alert rules</h4>' +
