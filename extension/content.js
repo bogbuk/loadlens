@@ -20,6 +20,7 @@
   let costPerMile = 1.80;     // текущий (resolveDriverContext → applyDriverContext)
   let targets = LLSCORE.DEFAULTS.targets; // целевые $/mi по бакетам дистанции (ll_targets); порог green
   let equipFilter = null;     // ручной фильтр прицепа из попапа (ll_equip_filter): string[] | null; null = без фильтра
+  let alertRules = { version: 1, rules: [] }; // правила Telegram-алертов из попапа (ll_alert_rules); пусто → green+equip
   let mailTemplate = (typeof LLMAIL !== "undefined") ? LLMAIL.DEFAULT_TEMPLATE : ""; // шаблон письма брокеру (ll_mail_template)
   const _freshHos = (typeof LLHOS !== "undefined") ? LLHOS.fresh() : { remainingDrive: 660, remainingOnDuty: 840, remainingCycle: 4200 };
   let baseHos = { ..._freshHos }; // «базовый» HOS (диспетчерские часы из storage/popup)
@@ -525,12 +526,20 @@
     // которые читают построчные бейджи (hosBadge/badgeRow) — иначе бейджи отстают на один рендер.
     const start = applyDriverContext(loads);
 
-    // green + passEquip — те же грузы, что в «Выгодные сейчас». Шлём их в Telegram (фоновый канал,
-    // гейт/дедуп/cap внутри LLALERT и на сервере). Считаем до early-return, чтобы работало и со свёрнутой панелью.
+    // green + passEquip — те же грузы, что в «Выгодные сейчас» (используется и панелью Hot loads ниже,
+    // и как фолбэк для Telegram-алертов). Считаем до early-return, чтобы работало и со свёрнутой панелью.
+    const badgeFor = (l) => LLSCORE.profitBadge(l, { costPerMile, dieselPrice, laneMedian: laneCache.get(laneKeyOf(l)), targetRpm: targetFor(l) });
     const greens = loads.filter(passEquip)
-      .map((l) => ({ l, b: LLSCORE.profitBadge(l, { costPerMile, dieselPrice, laneMedian: laneCache.get(laneKeyOf(l)), targetRpm: targetFor(l) }) }))
+      .map((l) => ({ l, b: badgeFor(l) }))
       .filter((d) => d.b.level === "green");
-    if (typeof LLALERT !== "undefined") LLALERT.push(greens.map((d) => d.l)).catch(() => {});
+    // Telegram-алерты. Есть включённые правила (ll_alert_rules) → отбор через LLRULES (OR между
+    // правилами, AND внутри); нет → прежнее поведение: green + passEquip (те же грузы, что greens выше).
+    // Гейт/дедуп/cap внутри LLALERT и на сервере.
+    const activeRules = (typeof LLRULES !== "undefined") ? LLRULES.active(alertRules) : [];
+    const alertHits = activeRules.length
+      ? LLRULES.select(activeRules, loads, { equipFilter, badgeFor })
+      : greens.map((d) => ({ load: d.l, rule: null }));
+    if (typeof LLALERT !== "undefined") LLALERT.push(alertHits).catch(() => {});
 
     clearBadges();
     const vis = { hintsOff, hideBadges, hidePanel, panelCollapsed };
@@ -885,9 +894,10 @@
     baseHos = { ...hosState }; // зафиксировать базу после загрузки из storage
     try { const { ll_cpm } = await chrome.storage.local.get("ll_cpm"); if (ll_cpm > 0) { costPerMile = ll_cpm; baseCostPerMile = ll_cpm; } } catch { /* дефолт */ }
     try {
-      const { ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_panel, ll_hide_badges, ll_mail_template } = await chrome.storage.local.get(["ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_panel", "ll_hide_badges", "ll_mail_template"]);
+      const { ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_panel, ll_hide_badges, ll_mail_template, ll_alert_rules } = await chrome.storage.local.get(["ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_panel", "ll_hide_badges", "ll_mail_template", "ll_alert_rules"]);
       if (Array.isArray(ll_targets) && ll_targets.length) targets = ll_targets;
       equipFilter = LLEQUIP.normalize(ll_equip_filter);
+      if (typeof LLRULES !== "undefined") alertRules = LLRULES.normalize(ll_alert_rules);
       if (typeof ll_mail_template === "string" && ll_mail_template.trim()) mailTemplate = ll_mail_template;
       hidePanel = !!ll_hide_panel;
       hideBadges = !!ll_hide_badges;
@@ -923,6 +933,7 @@
         if (ch.ll_hos && ch.ll_hos.newValue) baseHos = ch.ll_hos.newValue;              // аналогично для HOS
         if (ch.ll_targets) targets = (Array.isArray(ch.ll_targets.newValue) && ch.ll_targets.newValue.length) ? ch.ll_targets.newValue : LLSCORE.DEFAULTS.targets;
         if (ch.ll_equip_filter) equipFilter = LLEQUIP.normalize(ch.ll_equip_filter.newValue);
+        if (ch.ll_alert_rules && typeof LLRULES !== "undefined") alertRules = LLRULES.normalize(ch.ll_alert_rules.newValue);
         if (ch.ll_mail_template) {
           const v = ch.ll_mail_template.newValue;
           mailTemplate = (typeof v === "string" && v.trim()) ? v : LLMAIL.DEFAULT_TEMPLATE;

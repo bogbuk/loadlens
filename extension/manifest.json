@@ -40,6 +40,7 @@
         "csv.js",
         "tabstate.js",
         "equip-filter.js",
+        "alert-rules.js",
         "visibility.js",
         "loads-accumulator.js",
         "content.js"

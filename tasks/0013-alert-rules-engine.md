@@ -7,7 +7,7 @@ Status: in_progress
 - [x] LLRULES.matches / select + тесты
 - [x] LLALERT: {load, rule} + ruleName
 - [x] backend: NotifyItemDto.ruleName + formatAlertMessage
-- [ ] content.js + manifest: отбор через LLRULES
+- [x] content.js + manifest: отбор через LLRULES
 - [ ] popup: список правил + редактор
 - [ ] CLAUDE.md
 ### Verification
