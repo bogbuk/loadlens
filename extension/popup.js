@@ -68,7 +68,7 @@ async function renderSettings() {
     '<div class="note">Target $/mi is the "profitable" (green) threshold: a load is green when its gross $/mile is at or above the target for its distance bucket. Cost/mile is the break-even line below which a load is a loss (red).</div>' +
     '<div class="note">"On-page display" applies instantly to all DAT/Truckstop tabs — no need to press Save.</div>' +
     '<div class="note">Email placeholders: {{origin}} {{dest}} {{equipment}} {{rate}} {{rateBasis}} {{loadedMiles}} {{deadheadMiles}} {{trueRpm}} {{pickupDate}} {{brokerName}} {{brokerMc}} {{driverName}} {{counterOffer}}. A line holding only an empty placeholder is dropped — {{counterOffer}} disappears when the rate or miles are unknown.</div>' +
-    '<div class="note">Auto-pilot is switched on per DAT results tab (the "Auto-refresh" toggle in the panel header). Set here: the shared interval (60–120s with jitter), the sort order to hold, and auto-scroll (scrolls the results so DAT loads every page; the panel accumulates them by searchId).</div>';
+    '<div class="note">Auto-pilot: "Enable on DAT tabs" switches it on for every DAT results tab; the "Auto-refresh" toggle in the on-page panel header overrides it for that tab only. Also set here: the shared interval (60–120s with jitter), the sort order to hold, and auto-scroll (scrolls the results so DAT loads every page; the panel accumulates them by searchId).</div>';
   document.getElementById("s-save").onclick = save;
   document.getElementById("s-mail-reset").onclick = () => { document.getElementById("s-mail-tpl").value = LLMAIL.DEFAULT_TEMPLATE; };
   wireEquipChips();
