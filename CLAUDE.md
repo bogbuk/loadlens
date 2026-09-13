@@ -62,6 +62,7 @@ shared/                     КАНОН: load.model.js, scoring.js, planner.js, e
 ```bash
 npm test                 # sync:shared + тесты shared (17) + extension (10)
 npm run sync:shared      # пересобрать extension/vendor/* и backend/shared/* из shared/ — ПОСЛЕ любой правки shared/*.js
+npm run e2e:popup        # Playwright-прогон редактора правил алертов в попапе (popup.js без юнит-тестов); нужен playwright + chromium
 cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm install && npm run build && npm test
 # расширение: chrome://extensions → Загрузить распакованное → extension/
 ```

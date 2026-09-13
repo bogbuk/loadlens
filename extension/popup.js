@@ -412,7 +412,7 @@ function renderRules() {
   const cards = rulesCfg.rules.map((r) => (r.id === editingRuleId ? ruleForm(r) : ruleCard(r))).join("");
   const full = rulesCfg.rules.length >= LLRULES.LIMITS.rules;
   box.innerHTML = '<h4>Alert rules</h4>' +
-    (rulesCfg.rules.length ? "" : '<div class="note">No rules: every profitable (green) load matching your equipment filter is sent.</div>') +
+    (rulesCfg.rules.length || draft ? "" : '<div class="note">No rules: every profitable (green) load matching your equipment filter is sent.</div>') +
     cards + (draft ? ruleForm(draft) : "") +
     (editingRuleId || full ? "" : '<button type="button" id="rule-add" style="margin-top:8px">Add rule</button>');
 

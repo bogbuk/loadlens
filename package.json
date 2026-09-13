@@ -10,7 +10,8 @@
     "check:lang": "node scripts/check-lang.js",
     "test:scripts": "node --test scripts/*.test.js",
     "test": "npm run sync:shared && npm run check:lang && npm run test:scripts && npm run test:shared && npm run test:ext",
-    "package:ext": "node scripts/package-ext.js"
+    "package:ext": "node scripts/package-ext.js",
+    "e2e:popup": "python3 scripts/popup-rules.e2e.py"
   },
   "keywords": [
     "dat",
