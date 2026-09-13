@@ -2,6 +2,14 @@
 # Ждём X-сервер, пишем cloud-конфиг расширения, снимаем чужой SingletonLock, стартуем Chromium.
 for i in $(seq 1 50); do [ -e "/tmp/.X11-unix/X${DISPLAY#:}" ] && break; sleep 0.2; done
 
+# Пароль VNC обязателен и не имеет дефолта: экран висит на публичном домене Traefik и показывает
+# живую сессию DAT. Пустой (или общеизвестный changeme) пароль = чужой доступ к аккаунту клиента,
+# поэтому контейнер обязан падать громко, а не отдавать незащищённый экран.
+if [ -z "$NOVNC_PASSWORD" ] || [ "$NOVNC_PASSWORD" = "changeme" ]; then
+  echo "refusing to start: NOVNC_PASSWORD is not set" >&2
+  exit 1
+fi
+
 # Cloud mode расширения: content.js/popup читают globalThis.LL_CLOUD из cloud.config.js.
 # Без LL_INSTANCE_ID файл остаётся заглушкой из репо — обычный режим (удобно для локального smoke).
 if [ -n "$LL_INSTANCE_ID" ]; then

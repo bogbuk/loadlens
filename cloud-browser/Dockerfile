@@ -20,7 +20,6 @@ RUN chmod +x /usr/local/bin/start-chromium.sh
 ENV DISPLAY=:99 \
     SCREEN=1440x900x24 \
     START_URL=https://one.dat.com/search-loads \
-    NOVNC_PASSWORD=changeme \
     LL_INSTANCE_ID= \
     CHROMIUM_RECYCLE_HOURS=12
 

@@ -7,7 +7,7 @@
 | env | назначение | дефолт |
 |---|---|---|
 | `LL_INSTANCE_ID` | id тенанта → пишется в `/ext/cloud.config.js` (cloud mode расширения) | пусто (обычный режим) |
-| `NOVNC_PASSWORD` | пароль VNC-экрана (генерит бэкенд) | `changeme` |
+| `NOVNC_PASSWORD` | пароль VNC-экрана (генерит бэкенд) | обязателен, дефолта нет; контейнер не стартует, если пусто или `changeme` |
 | `START_URL` | стартовый URL Chromium | `https://one.dat.com/search-loads` |
 | `SCREEN` | геометрия Xvfb/окна | `1440x900x24` |
 | `CHROMIUM_RECYCLE_HOURS` | период рестарта Chromium (лечит рост RAM) | `12` |
@@ -16,9 +16,9 @@
 
 ```bash
 docker build -f cloud-browser/Dockerfile -t loadlens-cloud-browser:dev .
-docker run -d --name llc-smoke -p 6080:6080 -e LL_INSTANCE_ID=test-1 -e NOVNC_PASSWORD=changeme \
+docker run -d --name llc-smoke -p 6080:6080 -e LL_INSTANCE_ID=test-1 -e NOVNC_PASSWORD=<your-password> \
   --shm-size 512m -m 2g loadlens-cloud-browser:dev
-# http://localhost:6080/vnc.html?autoconnect=1&resize=scale&password=changeme
+# http://localhost:6080/vnc.html?autoconnect=1&resize=scale&password=<your-password>
 docker exec llc-smoke cat /ext/cloud.config.js     # → globalThis.LL_CLOUD = { mode: true, instanceId: "test-1" };
 docker exec llc-smoke supervisorctl -c /etc/supervisor/supervisord.conf status  # 5 программ RUNNING
 docker rm -f llc-smoke
