@@ -92,6 +92,19 @@ test("getMe: кэш из ll_auth отдаёт cloudEnabled", async () => {
   assert.deepStrictEqual(await LLAPI.getMe(), { email: "x@y.z", plan: "pro", cloudEnabled: true });
 });
 
+test("login: cloudEnabled переживает вход и отдаётся из кэша getMe", async () => {
+  const store = {};
+  globalThis.chrome = fakeChrome(store);
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true, status: 200,
+    json: async () => ({ accessToken: "a", refreshToken: "r", user: { email: "x@y.z", plan: "pro", cloudEnabled: true } }),
+  });
+  try { await LLAPI.login("x@y.z", "pw"); } finally { globalThis.fetch = origFetch; }
+  // fetch восстановлен → getMe обязан взять кэш ll_auth, а не ходить в сеть
+  assert.strictEqual((await LLAPI.getMe()).cloudEnabled, true);
+});
+
 test("cloudHeartbeat: без логина и при сетевой ошибке не бросает", async () => {
   globalThis.chrome = fakeChrome({});
   await assert.doesNotReject(LLAPI.cloudHeartbeat({ state: "ok", loadsSeen: 1, lastFindLoadsAt: 1 }));

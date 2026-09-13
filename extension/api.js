@@ -175,8 +175,11 @@ const LLAPI = (() => {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.message || `error ${res.status}`);
+    // cloudEnabled кладём сразу: getMe() до PLAN_TTL отдаёт кэш, и без этого поля
+    // секция Cloud в попапе пропадала бы на сутки сразу после входа.
     await setAuth({ accessToken: data.accessToken, refreshToken: data.refreshToken,
-                    email: data.user.email, plan: data.user.plan, planTs: Date.now() });
+                    email: data.user.email, plan: data.user.plan,
+                    cloudEnabled: !!data.user.cloudEnabled, planTs: Date.now() });
     return data.user;
   }
   const register = (email, password) => credsCall("register", email, password);

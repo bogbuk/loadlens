@@ -504,6 +504,9 @@ function agoMin(iso) { return iso ? Math.max(0, Math.round((Date.now() - new Dat
 
 async function renderCloud(me) {
   if (me === undefined) me = await LLAPI.getMe().catch(() => null);
+  // План и cloudEnabled кэшируются на 24ч — без принудительного обновления админский
+  // флип cloud_enabled увидели бы только через сутки. Один запрос на открытие попапа.
+  if (me) me = await LLAPI.getMe(true).catch(() => me);
   if (!me || !me.cloudEnabled) { cloudEl.innerHTML = ""; return; }
   const st = await LLAPI.cloudStatus();
   if (!st) { cloudEl.innerHTML = '<h4>Cloud browser</h4><div class="note">Could not load status.</div>'; return; }
