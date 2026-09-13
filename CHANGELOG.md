@@ -2,6 +2,11 @@
 
 All notable user-facing changes to the LoadLens browser extension.
 
+## 0.6.1 — 2026-09-13
+
+### Fixed
+- **Auto-pilot refreshed nothing when DAT kept the SEARCH button disabled.** DAT disables SEARCH until the criteria change, and the fallback picked the "SEARCH BACK - 24 HRS" toolbar button instead, so the results silently never reloaded and Telegram alerts stopped coming. The auto-pilot now falls back to reloading the page as intended.
+
 ## 0.6.0 — 2026-09-12
 
 ### New
