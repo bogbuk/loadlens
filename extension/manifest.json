@@ -22,6 +22,8 @@
     {
       "matches": ["https://*.dat.com/*", "https://*.truckstop.com/*"],
       "js": [
+        "cloud.config.js",
+        "cloud.js",
         "vendor/load.model.js",
         "vendor/scoring.js",
         "vendor/planner.js",

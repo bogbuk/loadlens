@@ -39,6 +39,8 @@
   let autoRefresh = { on: false, intervalMs: 60000, scroll: true, maxSteps: 40 }; // base; jitter=intervalMs → [base,2·base)
   let sortPref = null;           // {field, dir:'asc'|'desc'} — удерживаемая сортировка DAT
   let pendingSortReapply = false;// true сразу после нашего clickRefresh → переприменить сорт по новой выдаче
+  let cloudCfg = null;           // cloud mode (LLCLOUD.config) — авто-пилот всегда ВКЛ, heartbeat на бэкенд
+  const HEARTBEAT_TICK_MS = 60000; // проверка «пора ли heartbeat» (сам период — LLCLOUD.HEARTBEAT_MS)
   let expandedChainSig = null;   // сигнатура раскрытой цепочки (route path), переживает re-render
   const laneCache = new Map();    // "O>D|E" -> {medianRpm|null}  (из backend)
   const marketCache = new Map();  // market -> strength 0..1
@@ -576,7 +578,7 @@
       `<div class="ll-cfg">Cost/mi: <input id="ll-cpm" type="number" step="0.05" value="${costPerMile}" style="width:60px"> ` +
       `Start: <input id="ll-start" type="text" value="${start ? esc(start) : ""}" style="width:110px" placeholder="CHICAGO_IL"></div>` +
       `<div class="ll-cfg" title="Auto-pilot: the background tab clicks DAT's Search itself and holds the sort order. This checkbox overrides the global switch (extension popup) for this tab only">` +
-        `<label><input type="checkbox" id="ll-ar"${autoRefresh.on ? " checked" : ""}> Auto-refresh</label> ` +
+        `<label title="${cloudCfg ? "Cloud mode: auto-pilot is always on in the cloud browser" : ""}"><input type="checkbox" id="ll-ar"${autoRefresh.on ? " checked" : ""}${cloudCfg ? " disabled" : ""}> Auto-refresh${cloudCfg ? " (Cloud)" : ""}</label> ` +
         `Sort: <select id="ll-sort-f"><option value="">—</option>` +
         SORT_FIELDS.map((s) => `<option value="${s.field}"${sortPref && sortPref.field === s.field ? " selected" : ""}>${esc(s.label)}</option>`).join("") +
         `</select> <button id="ll-sort-dir" title="Sort direction">${sortPref && sortPref.dir === "asc" ? "▲ Low" : "▼ High"}</button></div>` +
@@ -600,6 +602,7 @@
     if (st) st.onchange = () => { currentMarket = st.value.trim().toUpperCase() || null; render(); };
     const ar = bd.querySelector("#ll-ar");
     if (ar) ar.onchange = () => {
+      if (cloudCfg) { ar.checked = true; return; }
       autoRefresh.on = ar.checked;
       if (typeof LLTAB !== "undefined") LLTAB.setAutorefresh(sessionStorage, ar.checked);
       scheduleAuto();
@@ -909,6 +912,9 @@
         scroll: !ll_autorefresh || ll_autorefresh.autoscroll !== false, // дефолт ВКЛ
         maxSteps: (ll_autorefresh && ll_autorefresh.maxSteps) || 40,
       };
+      // Cloud mode: авто-пилот форсим независимо от попапа/per-tab override (спека §4).
+      cloudCfg = (typeof LLCLOUD !== "undefined") ? LLCLOUD.config(globalThis) : null;
+      if (cloudCfg) autoRefresh.on = true;
       if (ll_sort && ll_sort.field) sortPref = { field: ll_sort.field, dir: ll_sort.dir === "asc" ? "asc" : "desc" };
     } catch { /* дефолт */ }
     // если эта загрузка — наш авто-рефреш через reload, переприменим сортировку к свежей выдаче
@@ -950,7 +956,7 @@
           const on = !!(v && v.on);
           if (on !== !!(prev && prev.on)) {
             if (typeof LLTAB !== "undefined") LLTAB.clearAutorefresh(sessionStorage);
-            autoRefresh.on = on;
+            autoRefresh.on = cloudCfg ? true : on;
             if (on && autoRefresh.scroll) scrollToLoadAll();
           }
           scheduleAuto();
@@ -972,6 +978,7 @@
       if (typeof DAT_GQL !== "undefined") {
         const res = DAT_GQL.parseFindLoadsResult(d.payload);
         log("received dat-findloads → parse:", res.loads.length, "loads, searchId", res.searchId || "—", res.loads.length ? "" : "(empty — the DAT schema may have changed)");
+        if (cloudCfg) LLCLOUD.markFindLoads(sessionStorage, Date.now());
         if (res.loads.length) {
           // накапливаем по searchId: та же выдача (пагинация) доливает, новый поиск сбрасывает
           const acc = LLACC.accumulate(accState, res.loads, res.searchId);
@@ -985,6 +992,24 @@
         log("received dat-findloads, but DAT_GQL is not loaded");
       }
     });
+
+    // Cloud mode: heartbeat на бэкенд (раз в 5 мин или при смене состояния). Метки — в sessionStorage,
+    // т.к. авто-пилот перезагружает вкладку каждые 60–120 с и таймеры в памяти не доживают.
+    if (cloudCfg && typeof LLAPI !== "undefined") {
+      const tick = async () => {
+        const now = Date.now();
+        const hb = LLCLOUD.heartbeat({
+          hostname: location.hostname, lastFindLoadsAt: LLCLOUD.lastFindLoads(sessionStorage),
+          now, intervalMs: autoRefresh.intervalMs, loadsSeen: gqlLoads.length,
+        });
+        if (!LLCLOUD.due(sessionStorage, now, hb.state)) return;
+        LLCLOUD.markHeartbeat(sessionStorage, now, hb.state);
+        await LLAPI.cloudHeartbeat(hb);
+      };
+      // первый тик с задержкой: DAT ещё восстанавливает поиск после reload; на странице логина — сразу
+      setTimeout(tick, /^login\./i.test(location.hostname) ? 0 : 20000);
+      setInterval(tick, HEARTBEAT_TICK_MS);
+    }
 
     render();
     scheduleAuto(); // запустить авто-рефреш, если включён в настройках
