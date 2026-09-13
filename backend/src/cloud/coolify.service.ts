@@ -77,6 +77,9 @@ export class CoolifyService {
       docker_compose_raw: Buffer.from(p.compose).toString('base64'),
       instant_deploy: false, // сначала env NOVNC_PASSWORD, потом start
     });
+    // Без uuid дальше пошли бы POST /services/undefined/start — невнятный 404 ровно там,
+    // где ни одна форма ответа Coolify ещё не проверена. Падаем сразу и понятно.
+    if (!r || !r.uuid) throw new CoolifyError('coolify POST /services → response without uuid', 502);
     return { uuid: r.uuid };
   }
   setEnv(uuid: string, key: string, value: string): Promise<void> {

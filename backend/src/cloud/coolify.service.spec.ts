@@ -53,6 +53,11 @@ describe('CoolifyService', () => {
     expect(Buffer.from(calls[0].body.docker_compose_raw, 'base64').toString()).toBe('services: {}');
   });
 
+  it('createService: ответ без uuid → CoolifyError 502 (иначе POST /services/undefined/start)', async () => {
+    const { svc } = makeService([{ status: 201, body: {} }]);
+    await expect(svc.createService({ name: 'll-abc', compose: 'services: {}' })).rejects.toMatchObject({ status: 502 });
+  });
+
   it('setEnv/start/stop/restart/deleteService — правильные пути и методы', async () => {
     const { svc, calls } = makeService([]);
     await svc.setEnv('s', 'NOVNC_PASSWORD', 'p');

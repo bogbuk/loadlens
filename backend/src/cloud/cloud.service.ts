@@ -115,6 +115,22 @@ export class CloudService {
   // Для админки: снять cloud_enabled = остановить браузер (volume остаётся до sweep через 30 дней).
   async disableForUser(userId: string): Promise<void> { await this.disable(userId); }
 
+  // Удаление аккаунта = удалить DAT-сессию с нашего сервера (спека §7): контейнер и volume с
+  // профилем должны уйти вместе с юзером. Строка cloud_instances ушла бы каскадом по FK — и тогда
+  // ни sweep, ни админ уже не нашли бы висящий платный сервис с живой сессией. Ошибки Coolify
+  // глотаем в лог: удаление аккаунта не должно падать из-за недоступного оркестратора.
+  async purgeForUser(userId: string): Promise<void> {
+    const inst = await this.instances.findOne({ where: { userId } });
+    if (!inst) return;
+    if (inst.coolifyServiceUuid) {
+      try { await this.coolify.stop(inst.coolifyServiceUuid); }
+      catch (e) { this.log.error(`purge stop failed for ${userId}: ${(e as Error).message}`); }
+      try { await this.coolify.deleteService(inst.coolifyServiceUuid, { deleteVolumes: true }); }
+      catch (e) { this.log.error(`purge delete failed for ${userId}: ${(e as Error).message}`); }
+    }
+    await inst.destroy();
+  }
+
   async screen(userId: string): Promise<{ url: string; password: string }> {
     const inst = await this.instances.findOne({ where: { userId } });
     if (!inst || inst.status === 'stopped') throw new ConflictException('Cloud browser is not running. Enable it first.');

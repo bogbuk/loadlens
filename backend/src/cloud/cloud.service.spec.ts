@@ -135,6 +135,33 @@ describe('CloudService.disable / status / screen / heartbeat', () => {
   });
 });
 
+describe('CloudService.purgeForUser', () => {
+  const live = () => ({ id: 'inst-1', userId: 'u1', coolifyServiceUuid: 'svc-1', status: 'ok', vncPassword: 'p', screenDomain: 'd.example', loadsSeen: 0, destroy: jest.fn() });
+
+  it('останавливает, удаляет сервис вместе с томом и сносит строку', async () => {
+    const { svc, coolify, inst } = makeService({ inst: live() });
+    await svc.purgeForUser('u1');
+    expect(coolify.stop).toHaveBeenCalledWith('svc-1');
+    expect(coolify.deleteService).toHaveBeenCalledWith('svc-1', { deleteVolumes: true });
+    expect(inst.destroy).toHaveBeenCalled();
+  });
+
+  it('падение Coolify не мешает: строка всё равно уничтожается', async () => {
+    const { svc, coolify, inst } = makeService({ inst: live() });
+    coolify.stop.mockRejectedValue(new Error('coolify down'));
+    coolify.deleteService.mockRejectedValue(new Error('coolify down'));
+    await expect(svc.purgeForUser('u1')).resolves.toBeUndefined();
+    expect(inst.destroy).toHaveBeenCalled();
+  });
+
+  it('без строки — no-op, Coolify не дёргаем', async () => {
+    const { svc, coolify } = makeService();
+    await svc.purgeForUser('u1');
+    expect(coolify.stop).not.toHaveBeenCalled();
+    expect(coolify.deleteService).not.toHaveBeenCalled();
+  });
+});
+
 describe('CloudService.runWatchdog', () => {
   const base = () => ({ id: 'inst-1', userId: 'u1', coolifyServiceUuid: 'svc-1', vncPassword: 'p', screenDomain: 'd.example', loadsSeen: 0, lastStateNotified: null, disabledAt: null });
 
