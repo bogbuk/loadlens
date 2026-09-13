@@ -63,3 +63,41 @@ test("sanitizeLoad: неизвестные поля не проходят (white
   assert.strictEqual(out.resultId, undefined);
   assert.strictEqual(out.randomJunk, undefined);
 });
+
+// ---- cloud mode ----
+function fakeChrome(store) {
+  return { storage: { local: {
+    get: async (k) => { const keys = Array.isArray(k) ? k : [k]; const o = {}; for (const x of keys) if (x in store) o[x] = store[x]; return o; },
+    set: async (o) => { Object.assign(store, o); },
+    remove: async (k) => { delete store[k]; },
+  } } };
+}
+
+test("clientId: в cloud mode — cloud:<instanceId>, ll_cid не создаётся", async () => {
+  const store = {};
+  globalThis.chrome = fakeChrome(store);
+  globalThis.LLCLOUD = require("./cloud.js");
+  globalThis.LL_CLOUD = { mode: true, instanceId: "inst-1" };
+  assert.strictEqual(await LLAPI.clientId(), "cloud:inst-1");
+  assert.strictEqual(store.ll_cid, undefined);
+  delete globalThis.LL_CLOUD;
+  const id = await LLAPI.clientId();
+  assert.match(id, /^[0-9a-f-]{36}$/);
+  assert.strictEqual(store.ll_cid, id);
+});
+
+test("getMe: кэш из ll_auth отдаёт cloudEnabled", async () => {
+  const store = { ll_auth: { accessToken: "a", refreshToken: "r", email: "x@y.z", plan: "pro", cloudEnabled: true, planTs: Date.now() } };
+  globalThis.chrome = fakeChrome(store);
+  assert.deepStrictEqual(await LLAPI.getMe(), { email: "x@y.z", plan: "pro", cloudEnabled: true });
+});
+
+test("cloudHeartbeat: без логина и при сетевой ошибке не бросает", async () => {
+  globalThis.chrome = fakeChrome({});
+  await assert.doesNotReject(LLAPI.cloudHeartbeat({ state: "ok", loadsSeen: 1, lastFindLoadsAt: 1 }));
+  globalThis.chrome = fakeChrome({ ll_auth: { accessToken: "a", refreshToken: "r" } });
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () => { throw new Error("offline"); };
+  try { await assert.doesNotReject(LLAPI.cloudHeartbeat({ state: "ok", loadsSeen: 1, lastFindLoadsAt: 1 })); }
+  finally { globalThis.fetch = origFetch; }
+});
