@@ -4,6 +4,8 @@ import { Op, col, fn } from 'sequelize';
 import { User } from '../users/user.model';
 import { LanesService } from '../lanes/lanes.service';
 import { UserDevice } from './user-device.model';
+import { CloudInstance } from '../cloud/cloud-instance.model';
+import { CloudService } from '../cloud/cloud.service';
 
 export interface AdminUserView {
   email: string;
@@ -14,6 +16,9 @@ export interface AdminUserView {
   alertsEnabled: boolean;
   devices: number;
   deviceEvictions: number;
+  cloudEnabled: boolean;
+  cloudStatus: string | null;
+  cloudHeartbeatAt: Date | null;
   createdAt: Date;
 }
 
@@ -23,9 +28,11 @@ export class AdminService {
     @InjectModel(User) private readonly userModel: typeof User,
     @InjectModel(UserDevice) private readonly devices: typeof UserDevice,
     private readonly lanes: LanesService,
+    @InjectModel(CloudInstance) private readonly cloudInstances: typeof CloudInstance,
+    private readonly cloud: CloudService,
   ) {}
 
-  private view(u: User, devices = 0): AdminUserView {
+  private view(u: User, devices = 0, ci?: CloudInstance | null): AdminUserView {
     return {
       email: u.email,
       plan: u.plan,
@@ -35,6 +42,9 @@ export class AdminService {
       alertsEnabled: u.alertsEnabled,
       devices,
       deviceEvictions: u.deviceEvictions ?? 0,
+      cloudEnabled: !!u.cloudEnabled,
+      cloudStatus: ci?.status ?? null,
+      cloudHeartbeatAt: ci?.lastHeartbeatAt ?? null,
       createdAt: (u as any).createdAt,
     };
   }
@@ -50,7 +60,9 @@ export class AdminService {
       raw: true,
     }) as unknown as Array<{ userId: string; n: string }>;
     const byUser = new Map(counts.map((c) => [c.userId, Number(c.n)]));
-    return rows.map((u) => this.view(u, byUser.get(u.id) ?? 0));
+    const cis = await this.cloudInstances.findAll({ where: { userId: rows.map((u) => u.id) } });
+    const ciByUser = new Map(cis.map((c) => [c.userId, c]));
+    return rows.map((u) => this.view(u, byUser.get(u.id) ?? 0, ciByUser.get(u.id) ?? null));
   }
 
   async stats() {
@@ -81,5 +93,15 @@ export class AdminService {
     user.blocked = blocked;
     await user.save();
     return { email: user.email, blocked: user.blocked };
+  }
+
+  async setCloudEnabled(emailRaw: string, enabled: boolean) {
+    const email = emailRaw.trim().toLowerCase();
+    const user = await this.userModel.findOne({ where: { email } });
+    if (!user) throw new NotFoundException('user not found');
+    user.cloudEnabled = enabled;
+    await user.save();
+    if (!enabled) await this.cloud.disableForUser(user.id); // снятый флаг = браузер выключен
+    return { email: user.email, cloudEnabled: user.cloudEnabled };
   }
 }

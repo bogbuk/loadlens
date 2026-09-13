@@ -9,3 +9,8 @@ export class SetBlockedDto {
   @IsBoolean()
   blocked: boolean;
 }
+
+export class SetCloudDto {
+  @IsBoolean()
+  enabled: boolean;
+}

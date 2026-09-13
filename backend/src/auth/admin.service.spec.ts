@@ -8,12 +8,14 @@ describe('AdminService', () => {
 
   const lanes: any = { overview: jest.fn(() => Promise.resolve({ loads: 10, lanes: 4, markets: 2, medianRpm: 2.1 })) };
   let devicesModel: any;
+  let cloudInstances: any;
+  let cloud: any;
 
   beforeEach(() => {
     users = {
-      'a@b.md': { id: 'u1', email: 'a@b.md', plan: 'free', role: 'user', blocked: false, telegramChatId: null, alertsEnabled: false, deviceEvictions: 0, createdAt: new Date('2026-01-01') },
-      'pro@b.md': { id: 'u2', email: 'pro@b.md', plan: 'pro', role: 'user', blocked: false, telegramChatId: 'c1', alertsEnabled: true, deviceEvictions: 3, createdAt: new Date('2026-02-01') },
-      'boss@b.md': { id: 'u3', email: 'boss@b.md', plan: 'pro', role: 'admin', blocked: false, telegramChatId: null, alertsEnabled: false, deviceEvictions: 0, createdAt: new Date('2026-03-01') },
+      'a@b.md': { id: 'u1', email: 'a@b.md', plan: 'free', role: 'user', blocked: false, telegramChatId: null, alertsEnabled: false, deviceEvictions: 0, cloudEnabled: false, createdAt: new Date('2026-01-01') },
+      'pro@b.md': { id: 'u2', email: 'pro@b.md', plan: 'pro', role: 'user', blocked: false, telegramChatId: 'c1', alertsEnabled: true, deviceEvictions: 3, cloudEnabled: false, createdAt: new Date('2026-02-01') },
+      'boss@b.md': { id: 'u3', email: 'boss@b.md', plan: 'pro', role: 'admin', blocked: false, telegramChatId: null, alertsEnabled: false, deviceEvictions: 0, cloudEnabled: false, createdAt: new Date('2026-03-01') },
     };
     for (const u of Object.values(users)) (u as any).save = jest.fn(function (this: any) { return Promise.resolve(this); });
     const userModel: any = {
@@ -42,7 +44,9 @@ describe('AdminService', () => {
     };
     // устройства: pro@b.md — 2 активных, у остальных нет
     devicesModel = { findAll: jest.fn(() => Promise.resolve([{ userId: 'u2', n: '2' }])) };
-    service = new AdminService(userModel, devicesModel, lanes);
+    cloudInstances = { findAll: jest.fn(() => Promise.resolve([])) };
+    cloud = { disableForUser: jest.fn(() => Promise.resolve()) };
+    service = new AdminService(userModel, devicesModel, lanes, cloudInstances, cloud);
   });
 
   it('listUsers: без passwordHash, поля-вьюхи', async () => {
@@ -90,5 +94,23 @@ describe('AdminService', () => {
 
   it('setBlocked: нет юзера -> 404', async () => {
     await expect(service.setBlocked('no@b.md', true)).rejects.toThrow(NotFoundException);
+  });
+
+  it('setCloudEnabled(false) выключает флаг и останавливает браузер; true — только флаг', async () => {
+    users['pro@b.md'].cloudEnabled = true;
+    await expect(service.setCloudEnabled('pro@b.md', false)).resolves.toEqual({ email: 'pro@b.md', cloudEnabled: false });
+    expect(cloud.disableForUser).toHaveBeenCalledWith('u2');
+    await service.setCloudEnabled('pro@b.md', true);
+    expect(cloud.disableForUser).toHaveBeenCalledTimes(1);
+    expect(users['pro@b.md'].cloudEnabled).toBe(true);
+  });
+  it('listUsers: подмешивает cloudStatus/cloudHeartbeatAt из cloud_instances', async () => {
+    const hb = new Date();
+    users['pro@b.md'].cloudEnabled = true;
+    cloudInstances.findAll.mockResolvedValue([{ userId: 'u2', status: 'ok', lastHeartbeatAt: hb }]);
+    const v = (await service.listUsers()).find((u) => u.email === 'pro@b.md')!;
+    expect(v).toEqual(expect.objectContaining({ cloudEnabled: true, cloudStatus: 'ok', cloudHeartbeatAt: hb }));
+    const free = (await service.listUsers()).find((u) => u.email === 'a@b.md')!;
+    expect(free).toEqual(expect.objectContaining({ cloudEnabled: false, cloudStatus: null, cloudHeartbeatAt: null }));
   });
 });
