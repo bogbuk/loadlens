@@ -217,7 +217,7 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
 | server | localhost — `f8xhhqagybtdjk14krvrp0kq`; destination `coolify`/`p8db7h90y6pwun2gri2rjwke` |
 | github app | bogbuk-github-1 — `lwn318orbfd7rrv82xrkup75` |
 | домен | `loadlens.krait.studio` (Cloudflare proxied, SSL Full) |
-| cloud image | `ghcr.io/bogbuk/loadlens-cloud-browser` (workflow `cloud-browser.yml`) |
+| cloud image | `ghcr.io/bogbuk/loadlens-cloud-browser` (workflow `cloud-browser.yml`, теги `latest` + `sha-<полный sha>`; `CLOUD_IMAGE_TAG` выбирает тег для тенанта) |
 | DNS облака | `*.cloud.loadlens.krait.studio` — DNS-only, TLS от Traefik |
 
 ```bash

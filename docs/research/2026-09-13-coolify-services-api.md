@@ -1,7 +1,7 @@
 # Coolify Services API — предположения кода (Step 1 пропущен по решению контроллера)
 
 Дата: 2026-09-13. Контекст: Task 6 (`backend/src/cloud/coolify.service.ts`), спека
-`docs/superpowers/specs/2026-09-13-loadlens-cloud-browser-design.md`, фон — исследование
+`docs/superpowers/specs/2026-09-12-loadlens-cloud-browser-design.md`, фон — исследование
 `docs/research/2026-09-12-cloud-browser-coolify-hetzner.md` (§1, «Контейнер на тенанта через API»).
 
 ## Почему нет живого прогона
