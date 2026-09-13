@@ -8,14 +8,17 @@ function makeService(opts: { inst?: any; configured?: boolean; fqdn?: string | n
   process.env.CLOUD_IMAGE_TAG = 'latest';
   let inst = opts.inst === undefined ? null : opts.inst;
   const saved: any[] = [];
+  // save — jest.fn: тестам нужен не только факт записи, но и её порядок относительно вызовов Coolify.
+  const withSave = (row: any) => { row.save = jest.fn(async () => { saved.push({ ...row }); }); return row; };
   const instances = {
     findOne: jest.fn().mockImplementation(async () => inst),
-    create: jest.fn().mockImplementation(async (data) => {
-      inst = { id: 'inst-1', loadsSeen: 0, ...data, save: async function () { saved.push({ ...this }); } };
-      return inst;
+    findOrCreate: jest.fn().mockImplementation(async ({ defaults }: any) => {
+      if (inst) return [inst, false];
+      inst = withSave({ id: 'inst-1', loadsSeen: 0, ...defaults });
+      return [inst, true];
     }),
   };
-  if (inst) inst.save = async function () { saved.push({ ...this }); };
+  if (inst) withSave(inst);
   const coolify = {
     configured: opts.configured !== false,
     createService: jest.fn().mockResolvedValue({ uuid: 'svc-1' }),
@@ -41,7 +44,10 @@ describe('CloudService.enable', () => {
   it('первый Enable: создаёт строку, сервис в Coolify, env пароля, старт, FQDN; статус starting', async () => {
     const { svc, coolify, instances } = makeService();
     const view = await svc.enable('u1');
-    expect(instances.create).toHaveBeenCalledWith(expect.objectContaining({ userId: 'u1', status: 'starting' }));
+    expect(instances.findOrCreate).toHaveBeenCalledWith(expect.objectContaining({
+      where: { userId: 'u1' },
+      defaults: expect.objectContaining({ userId: 'u1', status: 'starting' }),
+    }));
     expect(coolify.createService).toHaveBeenCalledWith(expect.objectContaining({ name: expect.stringMatching(/^ll-/) }));
     const compose = coolify.createService.mock.calls[0][0].compose;
     expect(compose).toContain('LL_INSTANCE_ID=inst-1');
@@ -51,9 +57,8 @@ describe('CloudService.enable', () => {
   });
 
   it('повторный Enable при живом сервисе — идемпотентен: ничего не создаёт и не стартует', async () => {
-    const { svc, coolify, instances } = makeService({ inst: { id: 'inst-1', userId: 'u1', coolifyServiceUuid: 'svc-1', status: 'ok', vncPassword: 'p', screenDomain: 'd' } });
+    const { svc, coolify } = makeService({ inst: { id: 'inst-1', userId: 'u1', coolifyServiceUuid: 'svc-1', status: 'ok', vncPassword: 'p', screenDomain: 'd' } });
     const view = await svc.enable('u1');
-    expect(instances.create).not.toHaveBeenCalled();
     expect(coolify.createService).not.toHaveBeenCalled();
     expect(coolify.start).not.toHaveBeenCalled();
     expect(view.status).toBe('ok');
@@ -67,6 +72,15 @@ describe('CloudService.enable', () => {
     expect(coolify.start).toHaveBeenCalledWith('svc-1');
     expect(view.status).toBe('starting');
     expect(inst.disabledAt).toBeNull();
+  });
+
+  it('строка без uuid (гонка двойного Enable): createService ровно один раз, uuid сохранён до start', async () => {
+    const h = makeService({ inst: { id: 'inst-1', userId: 'u1', coolifyServiceUuid: null, status: 'starting', vncPassword: 'p', screenDomain: null, loadsSeen: 0 } });
+    await h.svc.enable('u1');
+    expect(h.coolify.createService).toHaveBeenCalledTimes(1);
+    // Ранний save важен: параллельный запрос должен увидеть uuid до того, как мы дойдём до start.
+    expect(h.inst.save.mock.invocationCallOrder[0]).toBeLessThan(h.coolify.start.mock.invocationCallOrder[0]);
+    expect(h.inst.coolifyServiceUuid).toBe('svc-1');
   });
 
   it('Coolify упал на create → статус error, ошибка пробрасывается как 502', async () => {

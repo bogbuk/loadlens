@@ -61,16 +61,23 @@ export class CloudService {
   // Идемпотентно: живой сервис не трогаем; остановленный — стартуем с новым паролем; нет — создаём.
   async enable(userId: string): Promise<CloudStatusView> {
     if (!this.coolify.configured) throw new ServiceUnavailableException('Cloud browser is not configured on the server');
-    let inst = await this.instances.findOne({ where: { userId } });
-    if (inst && inst.coolifyServiceUuid && inst.status !== 'stopped' && inst.status !== 'error') return this.view(inst);
-    if (!inst) inst = await this.instances.create({ userId, status: 'starting', vncPassword: randomPassword() });
+    // findOrCreate, а не findOne+create: параллельный второй Enable получает ту же строку,
+    // а не падает 500 на unique(user_id).
+    const [inst] = await this.instances.findOrCreate({
+      where: { userId },
+      defaults: { userId, status: 'starting', vncPassword: randomPassword() },
+    });
+    if (inst.coolifyServiceUuid && inst.status !== 'stopped' && inst.status !== 'error') return this.view(inst);
     try {
       if (!inst.coolifyServiceUuid) {
         const { uuid } = await this.coolify.createService({
           name: `ll-${userId.slice(0, 8)}`,
           compose: renderCompose({ userId, instanceId: inst.id, imageTag: process.env.CLOUD_IMAGE_TAG || 'latest' }),
         });
+        // uuid пишем сразу: иначе параллельный Enable не увидит созданный сервис и закажет второй,
+        // а его uuid затрёт первый — контейнер с томом останется висеть неучтённым (платный).
         inst.coolifyServiceUuid = uuid;
+        await inst.save();
       } else {
         inst.vncPassword = randomPassword(); // Enable после Disable — старая ссылка на экран умирает
       }
