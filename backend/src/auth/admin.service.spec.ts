@@ -104,6 +104,18 @@ describe('AdminService', () => {
     expect(cloud.disableForUser).toHaveBeenCalledTimes(1);
     expect(users['pro@b.md'].cloudEnabled).toBe(true);
   });
+
+  it('setCloudEnabled(false): если браузер не остановился, флаг НЕ снимается; при успехе — сначала стоп, потом save', async () => {
+    users['pro@b.md'].cloudEnabled = true;
+    cloud.disableForUser.mockRejectedValueOnce(new Error('boom'));
+    await expect(service.setCloudEnabled('pro@b.md', false)).rejects.toThrow('boom');
+    expect(users['pro@b.md'].cloudEnabled).toBe(true);
+
+    await expect(service.setCloudEnabled('pro@b.md', false)).resolves.toEqual({ email: 'pro@b.md', cloudEnabled: false });
+    const disableOrder = cloud.disableForUser.mock.invocationCallOrder[cloud.disableForUser.mock.invocationCallOrder.length - 1];
+    const saveOrder = users['pro@b.md'].save.mock.invocationCallOrder[users['pro@b.md'].save.mock.invocationCallOrder.length - 1];
+    expect(disableOrder).toBeLessThan(saveOrder);
+  });
   it('listUsers: подмешивает cloudStatus/cloudHeartbeatAt из cloud_instances', async () => {
     const hb = new Date();
     users['pro@b.md'].cloudEnabled = true;

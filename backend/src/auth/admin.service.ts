@@ -99,9 +99,11 @@ export class AdminService {
     const email = emailRaw.trim().toLowerCase();
     const user = await this.userModel.findOne({ where: { email } });
     if (!user) throw new NotFoundException('user not found');
+    // Сначала останавливаем браузер и только потом снимаем флаг: если disableForUser упадёт,
+    // запрос вернёт 500, а cloudEnabled останется true — не разойдётся с реально работающим браузером.
+    if (!enabled) await this.cloud.disableForUser(user.id);
     user.cloudEnabled = enabled;
     await user.save();
-    if (!enabled) await this.cloud.disableForUser(user.id); // снятый флаг = браузер выключен
     return { email: user.email, cloudEnabled: user.cloudEnabled };
   }
 }
