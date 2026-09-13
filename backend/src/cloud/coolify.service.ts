@@ -1,8 +1,8 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
 
 // Coolify — единственный оркестратор контейнеров тенантов (спека §2). Никакого Docker API напрямую.
-// Формы запросов/ответов — предположения из брифа Task 6, не проверены на живом API (Step 1 пропущен —
-// нет токена write+deploy). См. docs/research/2026-09-13-coolify-services-api.md — перепроверить в Task 13.
+// Формы запросов/ответов проверены на живом Coolify 4.3.18 (2026-09-13, Task 13) —
+// см. docs/research/2026-09-13-coolify-services-api.md.
 
 export const COOLIFY_FETCH = 'COOLIFY_FETCH';
 export const CLOUD_IMAGE = 'ghcr.io/bogbuk/loadlens-cloud-browser';
@@ -68,8 +68,9 @@ export class CoolifyService {
   }
 
   async createService(p: { name: string; compose: string }): Promise<{ uuid: string }> {
+    // Coolify 4.3.18: `type` и `docker_compose_raw` взаимоисключающие (422 «Use one or the other») —
+    // для custom compose поле type НЕ шлём. Проверено живьём 2026-09-13 (docs/research/…coolify-services-api.md).
     const r = await this.request<{ uuid: string }>('POST', '/services', {
-      type: 'docker-compose-empty',
       name: p.name,
       server_uuid: process.env.COOLIFY_CLOUD_SERVER_UUID,
       project_uuid: process.env.COOLIFY_CLOUD_PROJECT_UUID,
@@ -82,8 +83,17 @@ export class CoolifyService {
     if (!r || !r.uuid) throw new CoolifyError('coolify POST /services → response without uuid', 502);
     return { uuid: r.uuid };
   }
-  setEnv(uuid: string, key: string, value: string): Promise<void> {
-    return this.request('POST', `/services/${uuid}/envs`, { key, value, is_preview: false });
+  // Coolify сам заводит переменную из `${NOVNC_PASSWORD}` в compose при create, поэтому POST отвечает
+  // 409 «already exists, use PATCH». Основной путь — PATCH (upsert по key); POST — только если переменной
+  // нет (404). Проверено живьём 2026-09-13.
+  async setEnv(uuid: string, key: string, value: string): Promise<void> {
+    const body = { key, value, is_preview: false };
+    try {
+      await this.request('PATCH', `/services/${uuid}/envs`, body);
+    } catch (e) {
+      if (!(e instanceof CoolifyError) || e.status !== 404) throw e;
+      await this.request('POST', `/services/${uuid}/envs`, body);
+    }
   }
   start(uuid: string): Promise<void> { return this.request('POST', `/services/${uuid}/start`); }
   stop(uuid: string): Promise<void> { return this.request('POST', `/services/${uuid}/stop`); }

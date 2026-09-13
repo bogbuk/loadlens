@@ -1,4 +1,4 @@
-# Coolify Services API — предположения кода (Step 1 пропущен по решению контроллера)
+# Coolify Services API — факты живой пробы (Task 13) и исходные предположения
 
 Дата: 2026-09-13. Контекст: Task 6 (`backend/src/cloud/coolify.service.ts`), спека
 `docs/superpowers/specs/2026-09-12-loadlens-cloud-browser-design.md`, фон — исследование
@@ -17,6 +17,30 @@
 **«to verify»** — их нужно перепроверить в Task 13 (Step 0, «рассадка первого тенанта»/rollout)
 на живом сервере реальным токеном; если факты разойдутся — поправить `coolify.service.ts` и
 `coolify.service.spec.ts` по факту, а не наоборот.
+
+## ФАКТЫ с живого Coolify 4.3.18 (2026-09-13, Task 13, токен `loadlens-backend` read/write/deploy)
+
+Проба выполнена скриптом `/root/ll-probe-create.sh` на 46.4.25.36; сервис-проба `ll-manual`
+(uuid `ce9xqoxijxnongda412nyt9z`, проект LoadLens/production). Код `coolify.service.ts` приведён к фактам.
+
+| вызов | факт |
+|---|---|
+| `POST /services` с `type` + `docker_compose_raw` | **422** `You cannot provide both service type and docker_compose_raw. Use one or the other.` → поле `type` НЕ шлём |
+| `POST /services` (name, server_uuid, project_uuid, environment_name, docker_compose_raw=base64, instant_deploy=false) | **201** `{"uuid":"…","domains":["https://browser-<uuid>.cloud.loadlens.krait.studio"]}` — домен выдаётся сразу при create из Wildcard Domain сервера (`server_settings.wildcard_domain`), имя = `<service-name-in-compose>-<uuid>` |
+| `POST /services/{uuid}/envs` `{key,value,is_preview:false}` | **409** `Environment variable already exists. Use PATCH request to update it.` — Coolify сам создал `NOVNC_PASSWORD` из `${NOVNC_PASSWORD}` в compose (плюс `SERVICE_FQDN_BROWSER`, `SERVICE_URL_BROWSER`, `SERVICE_FQDN_BROWSER_6080`, `SERVICE_URL_BROWSER_6080`) |
+| `PATCH /services/{uuid}/envs` `{key,value,is_preview:false}` | **200**, возвращает объект переменной (`uuid`, `key`, `is_runtime:true`, `is_buildtime:true`, `is_literal:false`…). Код: PATCH, на 404 — фолбэк POST |
+| `GET /services/{uuid}/envs` | список; `value` = `null` без ability `read:sensitive` (у токена её нет — это норма) |
+| `GET /services/{uuid}` | ключи `applications[]`, `databases[]`, `status`, `server`, `environment`…; **`applications[0].fqdn`** = `https://browser-<uuid>.cloud…` — как в коде. Поле `docker_compose_raw` в ответе НЕТ. `status` до запуска = `exited` |
+| `POST /services/{uuid}/start` | **200** `{"message":"Service starting request queued."}` — асинхронно; сбой pull видно только по `status` (осталось `exited`) и в UI |
+| `DELETE /services/{uuid}?delete_volumes=true` | по OpenAPI 4.3.18 параметры `delete_configurations`, `delete_volumes`, `docker_cleanup`, `delete_connected_networks` (все boolean, дефолт true) — имя `delete_volumes` верное; живой прогон — после docker inspect |
+
+**Не проверено (ждёт GHCR-логина на сервере):** запуск контейнера, `docker inspect` лимитов
+(`mem_limit`/`shm_size`/`pids_limit`/`hostname`), значение `NOVNC_PASSWORD` внутри контейнера, `stop`,
+`restart`, `DELETE` с volume. Первый `start` упал на `docker pull … unauthorized` — пакет GHCR приватный.
+
+---
+
+## Исходные предположения (до пробы; оставлены для истории)
 
 ## Предполагаемые формы запросов/ответов
 

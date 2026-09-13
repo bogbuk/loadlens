@@ -50,6 +50,7 @@ describe('CoolifyService', () => {
     expect(calls[0].body.project_uuid).toBe('prj');
     expect(calls[0].body.environment_name).toBe('production');
     expect(calls[0].body.instant_deploy).toBe(false);
+    expect(calls[0].body.type).toBeUndefined(); // 4.3.18: type + docker_compose_raw → 422
     expect(Buffer.from(calls[0].body.docker_compose_raw, 'base64').toString()).toBe('services: {}');
   });
 
@@ -64,10 +65,18 @@ describe('CoolifyService', () => {
     await svc.start('s'); await svc.stop('s'); await svc.restart('s');
     await svc.deleteService('s', { deleteVolumes: true });
     expect(calls.map((c) => `${c.method} ${c.url.replace('http://coolify.test/api/v1', '')}`)).toEqual([
-      'POST /services/s/envs', 'POST /services/s/start', 'POST /services/s/stop', 'POST /services/s/restart',
+      'PATCH /services/s/envs', 'POST /services/s/start', 'POST /services/s/stop', 'POST /services/s/restart',
       'DELETE /services/s?delete_volumes=true',
     ]);
     expect(calls[0].body).toEqual({ key: 'NOVNC_PASSWORD', value: 'p', is_preview: false });
+  });
+
+  it('setEnv: PATCH 404 (переменной нет) → фолбэк POST; другие ошибки — наружу', async () => {
+    const { svc, calls } = makeService([{ status: 404, body: { message: 'not found' } }, { status: 201, body: {} }]);
+    await svc.setEnv('s', 'K', 'v');
+    expect(calls.map((c) => c.method)).toEqual(['PATCH', 'POST']);
+    const bad = makeService([{ status: 500, body: {} }]);
+    await expect(bad.svc.setEnv('s', 'K', 'v')).rejects.toMatchObject({ status: 500 });
   });
 
   it('getFqdn: берёт fqdn первого приложения сервиса без схемы; нет → null', async () => {
