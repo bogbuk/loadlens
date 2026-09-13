@@ -6,6 +6,7 @@ describe('UsersService', () => {
   let service: UsersService;
   let user: any;
   let userModel: any;
+  let cloud: any;
 
   beforeEach(async () => {
     user = {
@@ -18,7 +19,8 @@ describe('UsersService', () => {
       findByPk: jest.fn((id) => Promise.resolve(id === 'u1' ? user : null)),
       destroy: jest.fn(() => Promise.resolve(1)),
     };
-    service = new UsersService(userModel);
+    cloud = { purgeForUser: jest.fn(() => Promise.resolve()) };
+    service = new UsersService(userModel, cloud);
   });
 
   it('changePassword: неверный текущий пароль -> BadRequestException', async () => {
@@ -50,5 +52,12 @@ describe('UsersService', () => {
     const res = await service.deleteMe('u1');
     expect(res).toEqual({ ok: true });
     expect(userModel.destroy).toHaveBeenCalledWith({ where: { id: 'u1' } });
+  });
+
+  it('deleteMe: сносит облачный браузер ДО удаления юзера (иначе строка уйдёт каскадом)', async () => {
+    await service.deleteMe('u1');
+    expect(cloud.purgeForUser).toHaveBeenCalledWith('u1');
+    expect(cloud.purgeForUser.mock.invocationCallOrder[0])
+      .toBeLessThan(userModel.destroy.mock.invocationCallOrder[0]);
   });
 });

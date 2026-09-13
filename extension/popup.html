@@ -45,6 +45,7 @@
   .rule .two { display:flex; gap:6px; } .rule .two > * { flex:1; }
   .rule label { display:block; color:#6b7785; font-size:11px; margin-top:6px; }
   .rule .actions { display:flex; gap:6px; margin-top:8px; } .rule .actions button { flex:1; }
+  .mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -55,9 +56,12 @@
   </details>
   <div class="bd" id="fleet"></div>
   <div class="bd" id="telegram"></div>
+  <div class="bd" id="cloud"></div>
   <script src="vendor/load.model.js"></script>
   <script src="vendor/scoring.js"></script>
   <script src="vendor/email-template.js"></script>
+  <script src="cloud.config.js"></script>
+  <script src="cloud.js"></script>
   <script src="api.js"></script>
   <script src="hos.js"></script>
   <script src="drivers.js"></script>

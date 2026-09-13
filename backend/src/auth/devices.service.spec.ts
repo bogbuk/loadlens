@@ -17,7 +17,8 @@ function makeService(rows: any[]) {
       Promise.resolve(Array.isArray(where.clientId) ? where.clientId.length : 1)),
   };
   const users = { increment: jest.fn().mockResolvedValue(undefined) };
-  return { svc: new DevicesService(model as any, users as any), model, users };
+  const cloud = { findOne: jest.fn().mockResolvedValue(null) };
+  return { svc: new DevicesService(model as any, users as any, cloud as any), model, users, cloud };
 }
 
 const row = (clientId: string, minutesAgo: number) =>
@@ -217,5 +218,30 @@ describe('DevicesService.verifyOnRefresh', () => {
       expect.objectContaining({ where: expect.objectContaining({ userId: 'u1', clientId: ['ancient'] }) }),
     );
     expect(users.increment).not.toHaveBeenCalled();
+  });
+});
+
+describe('DevicesService: облачный инстанс', () => {
+  const UUID = '123e4567-e89b-12d3-a456-426614174000';
+  it('cloud:<id> своего инстанса — не регистрируется и не вытесняет', async () => {
+    const { svc, model, cloud } = makeService([row('a', 1), row('b', 1), row('c', 1)]);
+    cloud.findOne.mockResolvedValue({ id: UUID, userId: 'u1' });
+    await svc.registerOnAuth(proUser(), `cloud:${UUID}`);
+    await svc.verifyOnRefresh(proUser(), `cloud:${UUID}`);
+    expect(cloud.findOne).toHaveBeenCalledWith({ where: { id: UUID, userId: 'u1' } });
+    expect(model.upsert).not.toHaveBeenCalled();
+    expect(model.destroy).not.toHaveBeenCalled();
+  });
+  it('cloud:<чужой или несуществующий id> — обычное устройство (лимит работает)', async () => {
+    const { svc, model, users } = makeService([row('a', 1), row('b', 1), row('c', 1)]);
+    await svc.registerOnAuth(proUser(), `cloud:${UUID}`);
+    expect(model.upsert).toHaveBeenCalled();
+    expect(users.increment).toHaveBeenCalled(); // 4-е устройство → вытеснение
+  });
+  it('cloud:<не-uuid> — в БД не ходим, обычное устройство', async () => {
+    const { svc, cloud, model } = makeService([]);
+    await svc.registerOnAuth(freeUser(), 'cloud:whatever');
+    expect(cloud.findOne).not.toHaveBeenCalled();
+    expect(model.upsert).toHaveBeenCalled();
   });
 });

@@ -45,7 +45,7 @@ describe('AuthService', () => {
 
   it('register: хеширует пароль и возвращает токены без hash', async () => {
     const res = await service.register('A@b.MD', 'password1', null);
-    expect(res.user).toEqual({ email: 'a@b.md', plan: 'free' });
+    expect(res.user).toEqual({ email: 'a@b.md', plan: 'free', cloudEnabled: false });
     expect(res.accessToken).toBeTruthy();
     expect(res.refreshToken).toBeTruthy();
     expect(users['a@b.md'].passwordHash).not.toBe('password1');
@@ -177,5 +177,11 @@ describe('AuthService', () => {
     const { refreshToken } = await service.register('a@b.md', 'password1', null);
     const res = await service.refresh(refreshToken, null);
     expect(res.accessToken).toBeTruthy();
+  });
+
+  it('me: отдаёт cloudEnabled', async () => {
+    await service.register('a@b.c', 'password123', null);
+    users['a@b.c'].cloudEnabled = true;
+    await expect(service.me(users['a@b.c'].id)).resolves.toEqual({ email: 'a@b.c', plan: 'free', cloudEnabled: true });
   });
 });

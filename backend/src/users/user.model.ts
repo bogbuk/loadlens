@@ -47,4 +47,8 @@ export class User extends Model {
   // автоматических действий по нему НЕ предпринимаем.
   @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0, field: 'device_evictions' })
   deviceEvictions: number;
+
+  // Cloud browser (Pro Cloud): включает админ. Без флага /cloud/* отвечает 403.
+  @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false, field: 'cloud_enabled' })
+  cloudEnabled: boolean;
 }

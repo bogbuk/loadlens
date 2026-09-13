@@ -30,7 +30,7 @@ export class AuthService {
     };
   }
 
-  private publicUser(u: User) { return { email: u.email, plan: u.plan }; }
+  private publicUser(u: User) { return { email: u.email, plan: u.plan, cloudEnabled: !!u.cloudEnabled }; }
 
   async register(emailRaw: string, password: string, clientId: string | null) {
     const email = emailRaw.trim().toLowerCase();

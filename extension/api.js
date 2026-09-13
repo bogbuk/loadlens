@@ -51,7 +51,10 @@ const LLAPI = (() => {
     return out;
   }
 
+  // В облачном контейнере устройство = инстанс: cloud:<instanceId> (бэкенд не считает его в лимит).
   async function clientId() {
+    const cloud = (typeof LLCLOUD !== "undefined") ? LLCLOUD.config(globalThis) : null;
+    if (cloud) return LLCLOUD.clientIdFor(cloud, null);
     const { ll_cid } = await chrome.storage.local.get("ll_cid");
     if (ll_cid) return ll_cid;
     const id = crypto.randomUUID();
@@ -172,8 +175,11 @@ const LLAPI = (() => {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.message || `error ${res.status}`);
+    // cloudEnabled кладём сразу: getMe() до PLAN_TTL отдаёт кэш, и без этого поля
+    // секция Cloud в попапе пропадала бы на сутки сразу после входа.
     await setAuth({ accessToken: data.accessToken, refreshToken: data.refreshToken,
-                    email: data.user.email, plan: data.user.plan, planTs: Date.now() });
+                    email: data.user.email, plan: data.user.plan,
+                    cloudEnabled: !!data.user.cloudEnabled, planTs: Date.now() });
     return data.user;
   }
   const register = (email, password) => credsCall("register", email, password);
@@ -210,7 +216,7 @@ const LLAPI = (() => {
     let auth = await getAuth();
     if (!auth) return null;
     if (!force && auth.planTs && Date.now() - auth.planTs < PLAN_TTL)
-      return { email: auth.email, plan: auth.plan };
+      return { email: auth.email, plan: auth.plan, cloudEnabled: !!auth.cloudEnabled };
     try {
       let res = await fetch(`${BASE}/auth/me`, { headers: { Authorization: `Bearer ${auth.accessToken}` } });
       if (res.status === 401) {
@@ -218,11 +224,11 @@ const LLAPI = (() => {
         if (!auth) return null;
         res = await fetch(`${BASE}/auth/me`, { headers: { Authorization: `Bearer ${auth.accessToken}` } });
       }
-      if (!res.ok) return { email: auth.email, plan: auth.plan };
+      if (!res.ok) return { email: auth.email, plan: auth.plan, cloudEnabled: !!auth.cloudEnabled };
       const user = await res.json();
-      await setAuth({ ...auth, email: user.email, plan: user.plan, planTs: Date.now() });
-      return user;
-    } catch { return { email: auth.email, plan: auth.plan }; }
+      await setAuth({ ...auth, email: user.email, plan: user.plan, cloudEnabled: !!user.cloudEnabled, planTs: Date.now() });
+      return { email: user.email, plan: user.plan, cloudEnabled: !!user.cloudEnabled };
+    } catch { return { email: auth.email, plan: auth.plan, cloudEnabled: !!auth.cloudEnabled }; }
   }
 
   // ---- authed fetch с авто-refresh (как getMe). Возвращает Response или null (не залогинен). ----
@@ -346,11 +352,32 @@ const LLAPI = (() => {
     return { ok: true };
   }
 
+  // ---- Cloud browser (под JWT; cloud_enabled проверяет сервер) ----
+  async function cloudCall(path, opts) {
+    const res = await authedFetch(path, opts);
+    if (!res) throw new Error("sign in required");
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || `error ${res.status}`);
+    return data;
+  }
+  async function cloudStatus() {
+    try { const res = await authedFetch("/cloud/status"); return res && res.ok ? await res.json() : null; }
+    catch { return null; }
+  }
+  const cloudEnable = () => cloudCall("/cloud/enable", { method: "POST" });
+  const cloudDisable = () => cloudCall("/cloud/disable", { method: "POST" });
+  const cloudScreen = () => cloudCall("/cloud/screen", { method: "POST" }); // { url, password }
+  // Heartbeat из облачного браузера — фоновый канал, ошибки глотаем.
+  async function cloudHeartbeat(hb) {
+    try { await authedFetch("/cloud/heartbeat", { method: "POST", body: JSON.stringify(hb) }); } catch { /* фон */ }
+  }
+
   return { sanitizeLoad, clientId, sendLoads, getLane, getMarket, getDistance, getDiesel,
            getLoadsByOrigin, getLoadsNear, getBrokerReputation, reportBroker, register, login, logout, getMe,
            takeSignoutMessage,
            getDrivers, createDriver, updateDriver, deleteDriver, deleteAccount, changePassword, forgotPassword, resetPassword,
-           telegramStatus, telegramLink, telegramAlerts, telegramUnlink, notifyAlerts };
+           telegramStatus, telegramLink, telegramAlerts, telegramUnlink, notifyAlerts,
+           cloudStatus, cloudEnable, cloudDisable, cloudScreen, cloudHeartbeat };
 })();
 
 if (typeof module !== "undefined" && module.exports) { module.exports = LLAPI; }

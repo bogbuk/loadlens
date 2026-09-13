@@ -40,6 +40,9 @@ extension/                  MV3-расширение (грузит vendor/* → 
   visibility.js (LLVIS)     чистый badgesVisible/panelVisible/fabVisible: сводит hintsOff(per-tab) + ll_hide_panel/ll_hide_badges(глоб.попап) + panelCollapsed в решения «рисовать/нет»
   popup.*                   настройки водителя (cost/mile, HOS-часы) + секция «Отображение на странице» (instant-apply тумблеры ll_hide_panel/ll_hide_badges) + аккаунт + секция «Парк» (CRUD водителей) + секция «Telegram-уведомления» (Pro)
   vendor/                   ★ АВТОКОПИИ из shared/ (load.model, scoring, planner, fleet, email-template, markets.seed). `npm run sync:shared`
+  cloud.js (LLCLOUD)        cloud mode: чтение globalThis.LL_CLOUD, heartbeat/detectState (ok/stale/logged_out), метки в sessionStorage
+  cloud.config.js           заглушка (обычный режим); в облачном образе перезаписывается start-chromium.sh
+cloud-browser/               прод-образ (Chromium+Xvfb+x11vnc+noVNC+supervisor), GHCR `ghcr.io/bogbuk/loadlens-cloud-browser`, workflow `.github/workflows/cloud-browser.yml`; `spike/` — throwaway-заготовка, не прод
 backend/src/                NestJS, synchronize:true (миграций нет)
   loads/                    POST /loads — ingest+upsert (с 2026-07-17 полный набор полей парсера, вкл. контакты/comments); GET /loads?origin=&equipment= — крауд-грузы рынка (onward-плечи цепочек, БЕЗ PII-полей; read — Premium-гард)
   lanes/                    GET /lanes — топ-lane'ов + сводка (публичный, для дашборда); GET /lanes/:o/:d — median RPM по lane (read — Premium-гард)
@@ -50,7 +53,8 @@ backend/src/                NestJS, synchronize:true (миграций нет)
   telegram/                 link/status/unlink (Jwt — без Pro, нужно для сброса пароля) + alerts/notify (Jwt+Pro, релей green-грузов→Telegram DM) + webhook/:secret (/start привязка chat_id). alert_sends — дедуп(TTL)+soft-cap. Фича-флаг = TELEGRAM_BOT_TOKEN
   rates/                    GET /rates — дизель EIA (фолбэк $3.95 без EIA_API_KEY; read — Premium-гард)
   auth/ users/              register/login/refresh/me, DELETE /users/me (hard-delete + каскад водителей)
-                            admin/* (JwtAuthGuard+AdminRoleGuard, role из ADMIN_EMAIL): GET users/stats, PATCH users/:email/plan|block. Страница /admin.html
+                            admin/* (JwtAuthGuard+AdminRoleGuard, role из ADMIN_EMAIL): GET users/stats, PATCH users/:email/plan|block|cloud. Страница /admin.html
+  cloud/                    Coolify-оркестрация облачного браузера: cloud_instances (модель), CoolifyService (API-клиент+compose), CloudService (enable/disable/status/screen/heartbeat), watchdog-cron
   shared/markets.seed.json  ★ копия seed для Docker-контекста backend/ (генерит sync:shared)
 shared/                     КАНОН: load.model.js, scoring.js, planner.js, email-template.js, markets.seed.json, hos-calculator.js
 ```
@@ -185,6 +189,19 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   `metric` груза = RPM (аналог цены в PriceLens).
 - Backend: `synchronize:true` (миграций нет, MVP). Новые колонки — идемпотентный
   `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` в `main.ts`, т.к. synchronize не меняет существующие таблицы.
+- **Cloud browser** (Pro Cloud, `backend/src/cloud/` + `extension/cloud.js`): рабочий стол пользователя
+  (Chromium+расширение), перенесённый на DE-сервер 46.4.25.36 — тот же, где бэкенд
+  (`COOLIFY_CLOUD_SERVER_UUID`). **Coolify — единственный оркестратор**: тенант = Coolify Service
+  (docker-compose), свой домен/TLS через Traefik. Cloud mode включает `extension/cloud.config.js`
+  (в проде его перезаписывает `cloud-browser/start-chromium.sh`: `LL_CLOUD={mode:true,instanceId}`) —
+  форсит авто-пилот, шлёт heartbeat раз в 5 мин, `X-Client-Id: cloud:<instanceId>` (лимит устройств
+  пропускает только свой инстанс, `devices.service.ts`). `cloud_instances.status`: starting → ok →
+  stale/logged_out → stopped; watchdog-cron (`*/5 мин`): нет heartbeat >15 мин при `ok` → restart+DM;
+  `logged_out`/`stale` → DM один раз; `stopped` >30 дней → удалить сервис+volume. **ToS-граница
+  (§6 спеки):** без автологина/хранения паролей/переноса cookies/прямых вызовов API DAT, авто-пилот
+  тот же, что локально — для owner-operator'ов, не для диспетчеров на весь день (DAT держит одну
+  сессию на аккаунт). Фича-флаг `COOLIFY_API_URL` (пусто → `/cloud/*` 503); гейт `users.cloud_enabled`
+  (руками админом, Stripe нет) через `CloudGuard`.
 
 ## Деплой (Coolify, self-hosted 46.4.25.36)
 
@@ -201,6 +218,8 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
 | server | localhost — `f8xhhqagybtdjk14krvrp0kq`; destination `coolify`/`p8db7h90y6pwun2gri2rjwke` |
 | github app | bogbuk-github-1 — `lwn318orbfd7rrv82xrkup75` |
 | домен | `loadlens.krait.studio` (Cloudflare proxied, SSL Full) |
+| cloud image | `ghcr.io/bogbuk/loadlens-cloud-browser` (workflow `cloud-browser.yml`, теги `latest` + `sha-<полный sha>`; `CLOUD_IMAGE_TAG` выбирает тег для тенанта) |
+| DNS облака | `*.cloud.loadlens.krait.studio` — DNS-only, TLS от Traefik |
 
 ```bash
 coolify --context yoolip999 app logs hiooby9kgzj8i79ycl33drec            # runtime-логи

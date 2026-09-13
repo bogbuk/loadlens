@@ -4,6 +4,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { UsersModule } from '../users/users.module';
 import { LanesModule } from '../lanes/lanes.module';
 import { TelegramModule } from '../telegram/telegram.module';
+import { CloudModule } from '../cloud/cloud.module';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { AdminController } from './admin.controller';
@@ -19,6 +20,7 @@ import { DevicesService } from './devices.service';
     UsersModule,
     LanesModule,
     TelegramModule,
+    CloudModule,
     JwtModule.register({ secret: process.env.JWT_SECRET || 'dev-secret' }),
   ],
   controllers: [AuthController, AdminController],

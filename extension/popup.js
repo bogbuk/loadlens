@@ -157,10 +157,10 @@ function accRow(user) {
     '<button id="acc-out">Sign out</button>' +
     '<button id="acc-del" class="danger">Delete account</button></div>';
   document.getElementById("acc-pwd-btn").onclick = () => pwdForm(document.getElementById("acc-pwd"));
-  document.getElementById("acc-out").onclick = async () => { await LLAPI.logout(); accForm(); renderFleet(null); renderTelegram(null); };
+  document.getElementById("acc-out").onclick = async () => { await LLAPI.logout(); accForm(); renderFleet(null); renderTelegram(null); renderCloud(null); };
   document.getElementById("acc-del").onclick = async () => {
     if (!confirm("Delete your account permanently? Your profile and all drivers will be removed. This does not cancel your DAT/Truckstop subscription.")) return;
-    try { await LLAPI.deleteAccount(); accForm("Account deleted."); renderFleet(null); renderTelegram(null); }
+    try { await LLAPI.deleteAccount(); accForm("Account deleted."); renderFleet(null); renderTelegram(null); renderCloud(null); }
     catch (e) { accForm(e.message); }
   };
 }
@@ -175,7 +175,7 @@ function accForm(err) {
   const go = (fn) => async () => {
     const email = document.getElementById("acc-email").value.trim();
     const pass = document.getElementById("acc-pass").value;
-    try { const u = await fn(email, pass); accRow(u); renderFleet(u); renderTelegram(u); }
+    try { const u = await fn(email, pass); accRow(u); renderFleet(u); renderTelegram(u); renderCloud(u); }
     catch (e) { accForm(e.message); }
   };
   document.getElementById("acc-in").onclick = go(LLAPI.login);
@@ -242,7 +242,7 @@ function pwdForm(box) {
       // Смена пароля инвалидирует все сессии (включая текущую) — выходим и просим войти заново.
       await LLAPI.logout();
       accForm("Password changed — please sign in again.");
-      renderFleet(null); renderTelegram(null);
+      renderFleet(null); renderTelegram(null); renderCloud(null);
     } catch (e) { err.textContent = e.message; }
   };
 }
@@ -489,6 +489,67 @@ async function renderTelegram(me) {
   renderRules();
 }
 
+// ---- Cloud browser (Pro Cloud): включает админ (cloud_enabled), пользователь — Enable/Open screen/Disable ----
+const cloudEl = document.getElementById("cloud");
+const CLOUD_LABELS = {
+  off: "not started",
+  starting: "starting — open the screen, sign in to DAT and LoadLens",
+  ok: "running ✓",
+  logged_out: "signed out of DAT — open the screen and sign in",
+  stale: "no loads from DAT — open the screen and check the search",
+  stopped: "stopped",
+  error: "error — try Enable again or contact support",
+};
+function agoMin(iso) { return iso ? Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000)) + " min ago" : "—"; }
+
+async function renderCloud(me) {
+  if (me === undefined) me = await LLAPI.getMe().catch(() => null);
+  // План и cloudEnabled кэшируются на 24ч — без принудительного обновления админский
+  // флип cloud_enabled увидели бы только через сутки. Один запрос на открытие попапа.
+  if (me) me = await LLAPI.getMe(true).catch(() => me);
+  if (!me || !me.cloudEnabled) { cloudEl.innerHTML = ""; return; }
+  const st = await LLAPI.cloudStatus();
+  if (!st) { cloudEl.innerHTML = '<h4>Cloud browser</h4><div class="note">Could not load status.</div>'; return; }
+  const running = st.status !== "off" && st.status !== "stopped";
+  const { ll_cloud_consent } = await chrome.storage.local.get("ll_cloud_consent");
+  cloudEl.innerHTML = '<h4>Cloud browser <span class="plan pro">PRO CLOUD</span></h4>' +
+    `<div class="row"><span class="k">Status</span><span>${CLOUD_LABELS[st.status] || st.status}</span></div>` +
+    (running ? `<div class="row"><span class="k">Last heartbeat</span><span>${agoMin(st.lastHeartbeatAt)}</span></div>` : "") +
+    (running
+      ? '<button id="cl-open">Open screen</button>' +
+        '<div class="note">Password (if the screen asks): <span id="cl-pass" class="mono">…</span> <button id="cl-copy" class="linkbtn">copy</button></div>' +
+        '<div class="note">Signing in to DAT on this computer will sign out your cloud browser.</div>' +
+        '<button id="cl-off" class="danger">Disable Cloud</button>'
+      : (ll_cloud_consent ? "" :
+          '<label class="note"><input id="cl-consent" type="checkbox" style="width:auto"> I am responsible for my DAT account; DAT may restrict accounts used from cloud servers.</label>') +
+        `<button id="cl-on"${ll_cloud_consent ? "" : " disabled"}>Enable Cloud</button>` +
+        '<div class="note">Your own Chromium with DAT One and LoadLens runs 24/7 on our server: auto-pilot and Telegram alerts keep working without a computer at home. One DAT sign-in at a time.</div>');
+  const consent = document.getElementById("cl-consent");
+  if (consent) consent.onchange = () => { document.getElementById("cl-on").disabled = !consent.checked; };
+  const on = document.getElementById("cl-on");
+  if (on) on.onclick = async () => {
+    on.disabled = true; on.textContent = "Starting…";
+    try { await chrome.storage.local.set({ ll_cloud_consent: true }); await LLAPI.cloudEnable(); renderCloud(me); }
+    catch (e) { alert(e.message); renderCloud(me); }
+  };
+  const open = document.getElementById("cl-open");
+  if (open) {
+    LLAPI.cloudScreen().then((s) => { document.getElementById("cl-pass").textContent = s.password; }).catch(() => {});
+    open.onclick = async () => {
+      try { const s = await LLAPI.cloudScreen(); chrome.tabs.create({ url: s.url }); }
+      catch (e) { alert(e.message); }
+    };
+    document.getElementById("cl-copy").onclick = async () => {
+      try { const s = await LLAPI.cloudScreen(); await navigator.clipboard.writeText(s.password); } catch (e) { alert(e.message); }
+    };
+  }
+  const off = document.getElementById("cl-off");
+  if (off) off.onclick = async () => {
+    if (!confirm("Disable the cloud browser? Alerts from it will stop. Your DAT session stays saved for 30 days.")) return;
+    try { await LLAPI.cloudDisable(); renderCloud(me); } catch (e) { alert(e.message); }
+  };
+}
+
 async function addDriver() {
   const name = prompt("Driver name:");
   if (!name || !name.trim()) return;
@@ -500,7 +561,7 @@ renderSettings();
 LLAPI.getMe().then(
   async (u) => {
     if (u) accRow(u); else accForm(await LLAPI.takeSignoutMessage());
-    renderFleet(u || null); renderTelegram(u || null);
+    renderFleet(u || null); renderTelegram(u || null); renderCloud(u || null);
   },
-  async () => { accForm(await LLAPI.takeSignoutMessage()); renderFleet(null); renderTelegram(null); },
+  async () => { accForm(await LLAPI.takeSignoutMessage()); renderFleet(null); renderTelegram(null); renderCloud(null); },
 );

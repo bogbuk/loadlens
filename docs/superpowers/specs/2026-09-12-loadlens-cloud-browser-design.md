@@ -1,7 +1,8 @@
 # LoadLens Cloud — браузер в облаке как единственное рабочее место DAT
 
-Дата: 2026-09-12 (ревизия 2 — оркестрация через Coolify API, цены Hetzner US после 15.06.2026; ресерч —
-`docs/research/2026-09-12-cloud-browser-coolify-hetzner.md`). Статус: дизайн утверждён; Q1/Q2 спайка
+Дата: 2026-09-13 (ревизия 3 — хостинг на DE-сервере 46.4.25.36, cloud mode через `cloud.config.js`,
+пароль VNC у бэкенда, recycle Chromium; план — `docs/superpowers/plans/2026-09-13-loadlens-cloud-browser.md`).
+Статус: дизайн утверждён; Q1/Q2 спайка
 закрыты, ждём Q3 (суточный тест, см. §8), затем план реализации.
 
 ## 1. Цель и границы
@@ -77,6 +78,10 @@ volumes:
 
 ## 3. Инфраструктура и деньги
 
+**Ревизия 3:** первые тенанты — на существующем DE-сервере (Coolify там же, логин в DAT с 46.4.25.36
+прошёл без капчи 12.09, ёмкость 20–25 тенантов, доп. затрат нет); US-сервер — при жалобах DAT на
+не-US IP или >15 тенантах, архитектура не меняется (`COOLIFY_CLOUD_SERVER_UUID`).
+
 - **Сервер:** Hetzner Cloud в Ашберне (`ash`). В США у Hetzner **только Cloud** (CPX/CCX), dedicated
   (AX/Robot) нет. Цены после 15.06.2026 (США, excl. IPv4 $0.60):
 
@@ -103,7 +108,9 @@ volumes:
 
 ## 4. Расширение
 
-- **`ll_cloud_mode`** читается из `chrome.storage.managed` при boot `content.js`; отсутствие = обычный режим.
+- **`extension/cloud.config.js`** — в репо заглушка; стартовый скрипт образа пишет в него
+  `globalThis.LL_CLOUD = {mode:true, instanceId}` из env `LL_INSTANCE_ID`. Managed policy отвергнута:
+  требует пиновать extension-id и managed_schema.
 - В cloud mode `LLTAB.getAutorefresh` игнорируется: авто-пилот **всегда ВКЛ**, чекбокс в панели
   заблокирован с подписью «Cloud». Интервал — `ll_autorefresh.intervalMs` как сейчас (≥60 с, джиттер).
 - Восстановление после рестарта Chromium делает контейнер: `START_URL=https://one.dat.com/search-loads`,
@@ -129,8 +136,9 @@ volumes:
 **Данные.** `users.cloud_enabled BOOLEAN NOT NULL DEFAULT false` (идемпотентный `ALTER TABLE` в
 `main.ts`). Таблица `cloud_instances`: `id`, `user_id` (FK users, каскад, unique), `coolify_service_uuid`,
 `status` (`starting|ok|logged_out|stale|stopped|error`), `screen_token_hash`, `screen_token_expires`,
-`last_heartbeat_at`, `last_state_notified`, `disabled_at`, timestamps. Пароль VNC у нас не хранится —
-его генерит и хранит Coolify (`SERVICE_PASSWORD_VNC`), бэкенд читает при выдаче ссылки.
+`last_heartbeat_at`, `last_state_notified`, `disabled_at`, timestamps. Пароль VNC генерит бэкенд
+(`cloud_instances.vnc_password`), в контейнер уходит через Coolify env `NOVNC_PASSWORD`; ротация на
+Disable/Enable.
 
 **Эндпоинты** (`JwtAuthGuard` + `CloudGuard` = `cloud_enabled`, иначе 403):
 - `GET /cloud/status` → `{enabled, status, lastHeartbeatAt}`
@@ -205,6 +213,11 @@ DAT may restrict accounts used from cloud servers». Наружу через н�
 - **Q2 — ответ есть (2026-09-12):** DAT пускает логин с датацентрового IP в США без капчи/блока. Блокер снят.
 - **Q3 — частично:** восстановление поиска после рестарта Chromium — да (см. §4). Открыто:
   живучесть сессии без человека при авто-пилоте 60–120 с и RAM за сутки.
+  Снят 13.09 (15,5 ч, `tasks/0013`): сессия без человека жива, RAM 1.18 → 1.67 GB без reload-цикла →
+  в образ добавлен recycle Chromium каждые `CHROMIUM_RECYCLE_HOURS` (12); авто-пилот не обновлял
+  выдачу из-за продового бага `findRefreshButton` (фикс `aaf2977`); живучесть под reload-циклом —
+  повторить на первом тенанте. Открыто: Date Range поиска — абсолютная дата, выдача 24/7-режима
+  протухает на следующий день (диапазон дат / авто-сдвиг — отдельное решение).
 
 Раскатка:
 1. Токены: Hetzner Cloud API-токен → `coolify cloud-token create`; Coolify API-токен `loadlens-backend` (write+deploy).
@@ -222,3 +235,24 @@ DAT may restrict accounts used from cloud servers». Наружу через н�
 
 Не делаем: автологин, хранение паролей, перенос cookies, свой Docker-оркестратор, Kubernetes, несколько
 инстансов на пользователя, WebRTC-стрим, второй регион, автоскейл.
+
+## Отклонения от спеки (ревизия 3)
+
+1. **DE вместо US** (см. выше). `COOLIFY_API_URL` — внутренний адрес Coolify из docker-сети
+   (`http://coolify:8080`), проверяется в Task 13.
+2. **Cloud mode — не managed policy, а сгенерированный `extension/cloud.config.js`.** Managed policy
+   требует пиновать extension-id (`key` в манифесте) и `storage.managed_schema`; файл `cloud.config.js`
+   (`globalThis.LL_CLOUD = {mode:true, instanceId}`) пишет `start-chromium.sh` из env `LL_INSTANCE_ID`.
+   Суть требования спеки («cloud mode задаётся конфигом образа, не кликами») сохранена.
+3. **Пароль VNC генерит и хранит бэкенд** (`cloud_instances.vnc_password`), в контейнер уходит через
+   Coolify env `NOVNC_PASSWORD`. Ссылка на экран = `https://<domain>/vnc.html?autoconnect=1&resize=scale&password=<vnc>`;
+   попап дополнительно показывает пароль с кнопкой Copy (если noVNC сборки игнорирует `?password=`,
+   пользователь вставит его сам).
+4. **`X-Client-Id: cloud:<instanceId>` не занимает слот лимита устройств только если `instanceId` —
+   строка `cloud_instances` этого пользователя** (иначе — обычное устройство). Спека не оговаривала
+   защиту от подделки префикса.
+5. **Ежесуточный recycle Chromium в образе** (`CHROMIUM_RECYCLE_HOURS`, дефолт 12): промежуточный Q3
+   (13.09, 15 ч) показал рост RAM 1.18 → 1.67 GB при лимите 2 GB.
+6. Образ остаётся на Debian `chromium` (проверен спайком), не `google-chrome-stable`.
+7. DNS `*.cloud.loadlens.krait.studio` — **DNS-only (без прокси Cloudflare)**: Universal SSL Cloudflare
+   покрывает только один уровень (`*.krait.studio`), TLS выдаёт Traefik Coolify (Let's Encrypt).

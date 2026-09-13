@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { Load } from './loads/load.model';
@@ -21,13 +22,15 @@ import { DriversModule } from './drivers/drivers.module';
 import { AlertSend } from './telegram/alert-send.model';
 import { TelegramModule } from './telegram/telegram.module';
 import { HealthController } from './health/health.controller';
+import { CloudInstance } from './cloud/cloud-instance.model';
+import { CloudModule } from './cloud/cloud.module';
 
 @Module({
   imports: [
     SequelizeModule.forRoot({
       dialect: 'postgres',
       uri: process.env.DATABASE_URL,
-      models: [Load, LaneDistance, BrokerReport, User, Driver, AlertSend],
+      models: [Load, LaneDistance, BrokerReport, User, Driver, AlertSend, CloudInstance],
       autoLoadModels: true,
       synchronize: true,
       logging: false,
@@ -36,6 +39,7 @@ import { HealthController } from './health/health.controller';
       ttl: Number(process.env.THROTTLE_TTL ?? 60000),
       limit: Number(process.env.THROTTLE_LIMIT ?? 120),
     }]),
+    ScheduleModule.forRoot(),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
       exclude: ['/api/(.*)', '/healthz'],
@@ -50,6 +54,7 @@ import { HealthController } from './health/health.controller';
     AuthModule,
     DriversModule,
     TelegramModule,
+    CloudModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

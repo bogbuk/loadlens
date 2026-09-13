@@ -60,7 +60,7 @@
     </div>
     <table>
       <thead><tr>
-        <th>Email</th><th>Роль</th><th>План</th><th>Устройств</th><th>Вытеснений</th><th>Статус</th><th>TG</th><th>Алерты</th><th>Создан</th><th></th>
+        <th>Email</th><th>Роль</th><th>План</th><th>Устройств</th><th>Вытеснений</th><th>Статус</th><th>TG</th><th>Алерты</th><th>Cloud</th><th>Создан</th><th></th>
       </tr></thead>
       <tbody id="rows"></tbody>
     </table>
@@ -148,6 +148,7 @@
           <td>${u.blocked ? '<span class="badge blocked">blocked</span>' : 'active'}</td>
           <td>${u.telegramLinked ? '✓' : '—'}</td>
           <td>${u.alertsEnabled ? '✓' : '—'}</td>
+          <td>${u.cloudEnabled ? (u.cloudStatus ? esc(u.cloudStatus) + (u.cloudHeartbeatAt ? ' · ' + new Date(u.cloudHeartbeatAt).toLocaleTimeString('ru-RU') : '') : 'вкл') : '—'}</td>
           <td>${fmtDate(u.createdAt)}</td>
           <td class="row"></td>`;
         const actions = tr.querySelector('td.row');
@@ -156,6 +157,11 @@
         planBtn.onclick = () => act(() => api('/admin/users/' + encodeURIComponent(u.email) + '/plan',
           { method: 'PATCH', body: JSON.stringify({ plan: u.plan === 'pro' ? 'free' : 'pro' }) }));
         actions.appendChild(planBtn);
+        const cloudBtn = document.createElement('button');
+        cloudBtn.textContent = u.cloudEnabled ? 'cloud off' : 'cloud on';
+        cloudBtn.onclick = () => act(() => api('/admin/users/' + encodeURIComponent(u.email) + '/cloud',
+          { method: 'PATCH', body: JSON.stringify({ enabled: !u.cloudEnabled }) }));
+        actions.appendChild(cloudBtn);
         if (u.role !== 'admin') {
           const blockBtn = document.createElement('button');
           blockBtn.className = u.blocked ? '' : 'danger';
