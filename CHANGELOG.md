@@ -2,6 +2,13 @@
 
 All notable user-facing changes to the LoadLens browser extension.
 
+## [Unreleased]
+
+### New
+- **Cloud browser (Pro Cloud): always-on DAT session.** Run your search on a browser we host, with the extension pre-loaded, instead of leaving your own laptop on. The auto-pilot keeps working around the clock.
+- **Cloud browser: live screen link.** Open a link to see and control the cloud browser's screen from any device, so you can log in or check on it whenever you need to.
+- **Cloud browser: sign-out and stale-session alerts.** Get a Telegram message if the cloud session signs out or stops refreshing, so a lapsed login doesn't go unnoticed. Opt-in, with a clear heads-up that DAT will see the login coming from a cloud server.
+
 ## 0.6.0 — 2026-09-12
 
 ### New
