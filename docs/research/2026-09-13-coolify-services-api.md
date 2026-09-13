@@ -34,9 +34,19 @@
 | `POST /services/{uuid}/start` | **200** `{"message":"Service starting request queued."}` — асинхронно; сбой pull видно только по `status` (осталось `exited`) и в UI |
 | `DELETE /services/{uuid}?delete_volumes=true` | по OpenAPI 4.3.18 параметры `delete_configurations`, `delete_volumes`, `docker_cleanup`, `delete_connected_networks` (все boolean, дефолт true) — имя `delete_volumes` верное; живой прогон — после docker inspect |
 
-**Не проверено (ждёт GHCR-логина на сервере):** запуск контейнера, `docker inspect` лимитов
-(`mem_limit`/`shm_size`/`pids_limit`/`hostname`), значение `NOVNC_PASSWORD` внутри контейнера, `stop`,
-`restart`, `DELETE` с volume. Первый `start` упал на `docker pull … unauthorized` — пакет GHCR приватный.
+**Запуск и жизненный цикл (после того как пакет GHCR сделан публичным, 13.09):**
+
+| проверка | факт |
+|---|---|
+| `start` → контейнер | появился за <2 мин, имя `browser-<service-uuid>` (compose-сервис + uuid) |
+| `docker inspect` (риск №6 спеки) | **все лимиты дошли:** `mem=2147483648 shm=536870912 pids=512 cpus=1e9 (1 CPU) host=ll-manual restart=unless-stopped`; volume `<service-uuid>_profile → /data` |
+| env внутри контейнера | `NOVNC_PASSWORD` = значение из PATCH; `LL_INSTANCE_ID`, `START_URL`, `SCREEN` как в compose; Coolify добавил `SERVICE_FQDN_BROWSER_6080=<host>:6080` и `SERVICE_URL_BROWSER_6080=https://<host>:6080` (с портом!) — код FQDN из них НЕ берёт, берёт `applications[0].fqdn` без порта |
+| `/ext/cloud.config.js` | `globalThis.LL_CLOUD = { mode: true, instanceId: "manual-1" }` — start-chromium.sh отработал |
+| экран по HTTPS | `https://browser-<uuid>.cloud.loadlens.krait.studio/vnc.html` → 200, сертификат Let's Encrypt на точное имя (DNS-only запись + Traefik) |
+| `POST …/stop` | 200 `Service stopping request queued.`; контейнер удалён (compose down), volume остаётся |
+| `DELETE …?delete_volumes=true` | 200 `Service deletion request queued.`; через ~20 с контейнера и volume нет, `GET /services/{uuid}` → 404 |
+
+`restart` живьём не гонялся (тот же action-эндпоинт, что start/stop) — проверится watchdog-сценарием на первом тенанте (Task 13, Step 9).
 
 ---
 
