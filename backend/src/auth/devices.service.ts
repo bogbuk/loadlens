@@ -3,6 +3,9 @@ import { InjectModel } from '@nestjs/sequelize';
 import { User } from '../users/user.model';
 import { UserDevice } from './user-device.model';
 import { DEVICE_LIMIT, DeviceRow, decideDevices } from './device-limit';
+import { CloudInstance } from '../cloud/cloud-instance.model';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Тексты видит пользователь на экране входа в попапе — только английский.
 const MSG_CLIENT_ID = 'Please update the LoadLens extension to continue.';
@@ -30,7 +33,17 @@ export class DevicesService {
   constructor(
     @InjectModel(UserDevice) private readonly devices: typeof UserDevice,
     @InjectModel(User) private readonly users: typeof User,
+    @InjectModel(CloudInstance) private readonly cloud: typeof CloudInstance,
   ) {}
+
+  // Облачный браузер представляется cloud:<instanceId>. Слот лимита не занимает — но только если
+  // инстанс существует и принадлежит этому пользователю: иначе любой мог бы обойти лимит префиксом.
+  async isCloudClient(userId: string, clientId: string | null): Promise<boolean> {
+    if (!clientId || !clientId.startsWith('cloud:')) return false;
+    const id = clientId.slice('cloud:'.length);
+    if (!UUID_RE.test(id)) return false;
+    return !!(await this.cloud.findOne({ where: { id, userId } }));
+  }
 
   private async touch(userId: string, clientId: string): Promise<void> {
     await this.devices.upsert({ userId, clientId, lastSeenAt: new Date() });
@@ -68,6 +81,7 @@ export class DevicesService {
     // не должен занимать слот собственного лимита. Это НЕ дыра в лимите: обычные пользователи
     // роль admin себе не назначают (см. bootstrap из ADMIN_EMAIL в main.ts / auth.service.ts).
     if (user.role === 'admin') return;
+    if (await this.isCloudClient(user.id, clientId)) return;
     if (!clientId) {
       if (user.plan === 'pro' && headerRequired()) deny('client_id_required');
       return; // free без заголовка (старая сборка расширения) — работает как раньше
@@ -88,6 +102,7 @@ export class DevicesService {
   // без единого обращения к /auth/login.
   async verifyOnRefresh(user: User, clientId: string | null): Promise<void> {
     if (user.role === 'admin') return; // см. комментарий в registerOnAuth
+    if (await this.isCloudClient(user.id, clientId)) return;
     if (!clientId) {
       if (user.plan === 'pro' && headerRequired()) deny('client_id_required');
       return;
