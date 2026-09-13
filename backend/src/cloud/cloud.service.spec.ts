@@ -17,6 +17,7 @@ function makeService(opts: { inst?: any; configured?: boolean; fqdn?: string | n
       inst = withSave({ id: 'inst-1', loadsSeen: 0, ...defaults });
       return [inst, true];
     }),
+    findAll: jest.fn().mockImplementation(async () => (inst ? [inst] : [])),
   };
   if (inst) withSave(inst);
   const coolify = {
@@ -131,5 +132,48 @@ describe('CloudService.disable / status / screen / heartbeat', () => {
     await stopped.svc.heartbeat('u1', { state: 'ok', loadsSeen: 1, lastFindLoadsAt: 1 });
     expect(stopped.inst.status).toBe('stopped');
     await expect(makeService().svc.heartbeat('u1', { state: 'ok', loadsSeen: 1, lastFindLoadsAt: 1 })).resolves.toEqual({ ok: true });
+  });
+});
+
+describe('CloudService.runWatchdog', () => {
+  const base = () => ({ id: 'inst-1', userId: 'u1', coolifyServiceUuid: 'svc-1', vncPassword: 'p', screenDomain: 'd.example', loadsSeen: 0, lastStateNotified: null, disabledAt: null });
+
+  it('ok без heartbeat 15 мин → restart, статус stale, DM "restarted" с ссылкой, lastStateNotified=stale', async () => {
+    const { svc, coolify, telegram, inst } = makeService({ inst: { ...base(), status: 'ok', lastHeartbeatAt: new Date(Date.now() - 16 * 60000) } });
+    const r = await svc.runWatchdog();
+    expect(coolify.restart).toHaveBeenCalledWith('svc-1');
+    expect(inst.status).toBe('stale');
+    expect(inst.lastStateNotified).toBe('stale');
+    expect(telegram.sendMessageTo).toHaveBeenCalledWith('42', expect.stringContaining('https://d.example/vnc.html'));
+    expect(r).toEqual({ restarted: 1, notified: 1, swept: 0 });
+  });
+
+  it('logged_out → DM один раз; второй прогон молчит', async () => {
+    const { svc, telegram } = makeService({ inst: { ...base(), status: 'logged_out', lastHeartbeatAt: new Date() } });
+    await svc.runWatchdog(); await svc.runWatchdog();
+    expect(telegram.sendMessageTo).toHaveBeenCalledTimes(1);
+    expect(telegram.sendMessageTo.mock.calls[0][1]).toContain('signed out of DAT');
+  });
+
+  it('без Telegram — статус помечаем, DM не шлём и не падаем', async () => {
+    const m = makeService({ inst: { ...base(), status: 'stale', lastHeartbeatAt: new Date() } });
+    m.telegram.sendMessageTo.mockClear();
+    (m.svc as any).users.findByPk.mockResolvedValue({ id: 'u1', telegramChatId: null });
+    await expect(m.svc.runWatchdog()).resolves.toEqual({ restarted: 0, notified: 0, swept: 0 });
+    expect(m.inst.lastStateNotified).toBe('stale');
+  });
+
+  it('stopped > 30 дней → delete с volume, строка удаляется', async () => {
+    const { svc, coolify, inst } = makeService({ inst: { ...base(), status: 'stopped', disabledAt: new Date(Date.now() - 31 * 86400000) } });
+    inst.destroy = jest.fn();
+    await svc.runWatchdog();
+    expect(coolify.deleteService).toHaveBeenCalledWith('svc-1', { deleteVolumes: true });
+    expect(inst.destroy).toHaveBeenCalled();
+  });
+
+  it('без COOLIFY_API_URL — no-op', async () => {
+    const { svc, instances } = makeService({ configured: false, inst: { ...base(), status: 'logged_out' } });
+    await expect(svc.runWatchdog()).resolves.toEqual({ restarted: 0, notified: 0, swept: 0 });
+    expect(instances.findAll).not.toHaveBeenCalled();
   });
 });

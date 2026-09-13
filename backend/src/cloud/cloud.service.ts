@@ -2,11 +2,13 @@ import {
   BadGatewayException, ConflictException, Injectable, Logger, ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Cron } from '@nestjs/schedule';
 import { randomBytes } from 'node:crypto';
 import { User } from '../users/user.model';
 import { TelegramService } from '../telegram/telegram.service';
 import { CloudInstance, CloudStatus } from './cloud-instance.model';
 import { CoolifyService, renderCompose } from './coolify.service';
+import { decideWatchdog, WatchdogRow } from './cloud-watchdog';
 import { HeartbeatDto } from './dto/heartbeat.dto';
 
 export interface CloudStatusView {
@@ -130,5 +132,59 @@ export class CloudService {
     if (dto.state === 'ok') inst.lastStateNotified = null;
     await inst.save();
     return { ok: true };
+  }
+
+  private notifyText(status: 'stale' | 'logged_out', inst: CloudInstance, restarted: boolean): string {
+    const link = this.screenUrl(inst);
+    const tail = link ? `\nOpen the screen: ${link}` : '';
+    if (status === 'logged_out') return `⚠️ Your cloud browser is signed out of DAT. Sign in to keep alerts running.${tail}`;
+    return restarted
+      ? `🔁 Your cloud browser stopped responding and was restarted. Check that DAT search is open.${tail}`
+      : `⚠️ Your cloud browser has not received loads from DAT for a while. Check the DAT tab.${tail}`;
+  }
+
+  // Каждые 5 минут (спека §5). Действия — из чистой decideWatchdog; здесь только исполнение.
+  @Cron('*/5 * * * *')
+  async watchdogTick(): Promise<void> {
+    try { await this.runWatchdog(); }
+    catch (e) { this.log.error(`watchdog failed: ${(e as Error).message}`); }
+  }
+
+  async runWatchdog(now = new Date()): Promise<{ restarted: number; notified: number; swept: number }> {
+    const result = { restarted: 0, notified: 0, swept: 0 };
+    if (!this.coolify.configured) return result;
+    const rows = await this.instances.findAll();
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    const actions = decideWatchdog(rows.map((r): WatchdogRow => ({
+      id: r.id, status: r.status, lastHeartbeatAt: r.lastHeartbeatAt, lastStateNotified: r.lastStateNotified, disabledAt: r.disabledAt,
+    })), now);
+    const restartedIds = new Set<string>();
+    for (const a of actions) {
+      const inst = byId.get(a.id)!;
+      try {
+        if (a.type === 'restart') {
+          if (inst.coolifyServiceUuid) await this.coolify.restart(inst.coolifyServiceUuid);
+          inst.status = 'stale';
+          await inst.save();
+          restartedIds.add(inst.id);
+          result.restarted++;
+        } else if (a.type === 'notify') {
+          const user = await this.users.findByPk(inst.userId);
+          inst.lastStateNotified = a.status; // помечаем и без Telegram — иначе будем «пытаться» каждые 5 минут
+          await inst.save();
+          if (user?.telegramChatId) {
+            const ok = await this.telegram.sendMessageTo(user.telegramChatId, this.notifyText(a.status, inst, restartedIds.has(inst.id)));
+            if (ok) result.notified++;
+          }
+        } else if (a.type === 'sweep') {
+          if (inst.coolifyServiceUuid) await this.coolify.deleteService(inst.coolifyServiceUuid, { deleteVolumes: true });
+          await inst.destroy();
+          result.swept++;
+        }
+      } catch (e) {
+        this.log.error(`watchdog ${a.type} failed for ${inst.userId}: ${(e as Error).message}`);
+      }
+    }
+    return result;
   }
 }
