@@ -578,7 +578,7 @@
       `<div class="ll-cfg">Cost/mi: <input id="ll-cpm" type="number" step="0.05" value="${costPerMile}" style="width:60px"> ` +
       `Start: <input id="ll-start" type="text" value="${start ? esc(start) : ""}" style="width:110px" placeholder="CHICAGO_IL"></div>` +
       `<div class="ll-cfg" title="Auto-pilot: the background tab clicks DAT's Search itself and holds the sort order. This checkbox overrides the global switch (extension popup) for this tab only">` +
-        `<label title="${cloudCfg ? "Cloud mode: auto-pilot is always on in the cloud browser" : ""}"><input type="checkbox" id="ll-ar"${autoRefresh.on ? " checked" : ""}${cloudCfg ? " disabled" : ""}> Auto-refresh${cloudCfg ? " (Cloud)" : ""}</label> ` +
+        `<label${cloudCfg ? ' title="Cloud mode: auto-pilot is always on in the cloud browser"' : ""}><input type="checkbox" id="ll-ar"${autoRefresh.on ? " checked" : ""}${cloudCfg ? " disabled" : ""}> Auto-refresh${cloudCfg ? " (Cloud)" : ""}</label> ` +
         `Sort: <select id="ll-sort-f"><option value="">—</option>` +
         SORT_FIELDS.map((s) => `<option value="${s.field}"${sortPref && sortPref.field === s.field ? " selected" : ""}>${esc(s.label)}</option>`).join("") +
         `</select> <button id="ll-sort-dir" title="Sort direction">${sortPref && sortPref.dir === "asc" ? "▲ Low" : "▼ High"}</button></div>` +
@@ -828,6 +828,7 @@
   function clearAuto() { if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; } }
   function scheduleAuto() {
     clearAuto();
+    if (/^login\./i.test(location.hostname)) return; // страница логина: reload убил бы форму входа
     if (!autoRefresh.on) return;
     const base = Math.max(60000, autoRefresh.intervalMs || 60000); // не чаще 60с (ToS: имитация человека)
     const delay = nextDelay(base, base);                            // [base, 2·base) → дефолт 60–120с
@@ -896,6 +897,9 @@
     if (typeof LLHOS !== "undefined") { try { hosState = await LLHOS.load(); } catch { /* fresh */ } }
     baseHos = { ...hosState }; // зафиксировать базу после загрузки из storage
     try { const { ll_cpm } = await chrome.storage.local.get("ll_cpm"); if (ll_cpm > 0) { costPerMile = ll_cpm; baseCostPerMile = ll_cpm; } } catch { /* дефолт */ }
+    // Cloud mode: авто-пилот форсим независимо от попапа/per-tab override (спека §4). Вычисляем ДО
+    // try со storage, чтобы сбой chrome.storage.local не отключал форс молча.
+    cloudCfg = (typeof LLCLOUD !== "undefined") ? LLCLOUD.config(globalThis) : null;
     try {
       const { ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_panel, ll_hide_badges, ll_mail_template, ll_alert_rules } = await chrome.storage.local.get(["ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_panel", "ll_hide_badges", "ll_mail_template", "ll_alert_rules"]);
       if (Array.isArray(ll_targets) && ll_targets.length) targets = ll_targets;
@@ -912,11 +916,9 @@
         scroll: !ll_autorefresh || ll_autorefresh.autoscroll !== false, // дефолт ВКЛ
         maxSteps: (ll_autorefresh && ll_autorefresh.maxSteps) || 40,
       };
-      // Cloud mode: авто-пилот форсим независимо от попапа/per-tab override (спека §4).
-      cloudCfg = (typeof LLCLOUD !== "undefined") ? LLCLOUD.config(globalThis) : null;
-      if (cloudCfg) autoRefresh.on = true;
       if (ll_sort && ll_sort.field) sortPref = { field: ll_sort.field, dir: ll_sort.dir === "asc" ? "asc" : "desc" };
     } catch { /* дефолт */ }
+    if (cloudCfg) autoRefresh.on = true;
     // если эта загрузка — наш авто-рефреш через reload, переприменим сортировку к свежей выдаче
     try {
       if (sessionStorage.getItem("ll_autopilot_reload")) {
