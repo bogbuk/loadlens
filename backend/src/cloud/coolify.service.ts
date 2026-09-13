@@ -46,14 +46,20 @@ export class CoolifyService {
 
   private async request<T = any>(method: string, path: string, body?: unknown): Promise<T> {
     if (!this.configured) throw new CoolifyError('cloud is not configured', 503);
-    const res = await this.fetchFn(`${process.env.COOLIFY_API_URL}/api/v1${path}`, {
-      method,
-      headers: {
-        Authorization: `Bearer ${process.env.COOLIFY_API_TOKEN || ''}`,
-        'Content-Type': 'application/json', Accept: 'application/json',
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
+    let res: Response;
+    try {
+      res = await this.fetchFn(`${process.env.COOLIFY_API_URL}/api/v1${path}`, {
+        method,
+        headers: {
+          Authorization: `Bearer ${process.env.COOLIFY_API_TOKEN || ''}`,
+          'Content-Type': 'application/json', Accept: 'application/json',
+        },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+    } catch (e) {
+      // Хост Coolify недоступен (DNS/timeout/connection refused) — тоже CoolifyError, а не сырой fetch-error
+      throw new CoolifyError(`coolify ${method} ${path} → unreachable: ${(e as Error).message}`, 502);
+    }
     if (!res.ok) {
       const text = await res.text().catch(() => '');
       throw new CoolifyError(`coolify ${method} ${path} → ${res.status} ${text.slice(0, 200)}`, res.status);

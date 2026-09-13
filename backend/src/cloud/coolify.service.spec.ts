@@ -78,4 +78,15 @@ describe('CoolifyService', () => {
     const { svc } = makeService([{ status: 422, body: { message: 'bad' } }]);
     await expect(svc.start('s')).rejects.toMatchObject({ status: 422 });
   });
+
+  it('сеть недоступна (fetch reject) → CoolifyError со статусом 502', async () => {
+    process.env.COOLIFY_API_URL = 'http://coolify.test';
+    process.env.COOLIFY_API_TOKEN = 'tok';
+    process.env.COOLIFY_CLOUD_SERVER_UUID = 'srv';
+    process.env.COOLIFY_CLOUD_PROJECT_UUID = 'prj';
+    const fetchFn = jest.fn().mockRejectedValue(new Error('ECONNREFUSED'));
+    const svc = new CoolifyService(fetchFn as any);
+    await expect(svc.start('s')).rejects.toMatchObject({ status: 502 });
+    await expect(svc.start('s')).rejects.toBeInstanceOf(CoolifyError);
+  });
 });
