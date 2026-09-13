@@ -166,6 +166,24 @@ test("findRefreshButton пропускает disabled SEARCH (DAT гасит е�
   assert.strictEqual(findRefreshButton(fakeRoot({ match: { [sel]: enabled } })), enabled);
 });
 
+test("findRefreshButton НЕ берёт «SEARCH BACK - 24 HRS» и прочие кнопки со словом Search в тексте", () => {
+  // Регрессия 2026-09-13 (Q3 облака): SEARCH disabled → текстовый фолбэк кликал тулбар-кнопку
+  // «SEARCH BACK - 24 HRS» → clicked=true → reload никогда не наступал, выдача не обновлялась.
+  const sel = 'button[data-test="search-button"]';
+  const disabled = { getAttribute: () => null, disabled: true, textContent: "Search" };
+  const searchBack = { getAttribute: () => null, textContent: " SEARCH BACK - 24 HRS " };
+  const saved = { getAttribute: () => null, textContent: "Saved Searches" };
+  assert.strictEqual(findRefreshButton(fakeRoot({ match: { [sel]: disabled }, buttons: [disabled, searchBack, saved] })), null);
+  // точное имя (с пробелами/регистром) по-прежнему подходит
+  const exact = { getAttribute: () => null, textContent: "  SEARCH " };
+  assert.strictEqual(findRefreshButton(fakeRoot({ buttons: [searchBack, exact] })), exact);
+  // запасные селекторы по aria-label тоже проверяются на точное имя
+  const ariaBack = { getAttribute: (a) => (a === "aria-label" ? "Search back" : null), textContent: "" };
+  assert.strictEqual(findRefreshButton(fakeRoot({ match: { 'button[aria-label*="Search" i]': ariaBack } })), null);
+  const ariaOk = { getAttribute: (a) => (a === "aria-label" ? "Search" : null), textContent: "" };
+  assert.strictEqual(findRefreshButton(fakeRoot({ match: { 'button[aria-label*="Search" i]': ariaOk } })), ariaOk);
+});
+
 test("DAT_ADAPTER.applySort кликает уже отрендеренную опцию (document-шим)", async () => {
   const hi = fakeOption("Rate - Highest");
   global.document = fakeRoot({ options: [hi] });

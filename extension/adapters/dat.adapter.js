@@ -86,15 +86,24 @@
     return ad !== "true" && ad !== true;
   }
 
-  // кнопка Search/Refresh: кандидаты по порядку, затем фолбэк по тексту; только АКТИВНЫЕ
+  // Имя кнопки — ТОЧНО «Search»/«Refresh» (текст или aria-label). Регрессия 2026-09-13: фолбэк по
+  // /\bsearch\b/ цеплял тулбар-кнопку «SEARCH BACK - 24 HRS», когда настоящая SEARCH была disabled →
+  // clickRefresh «успешно» тогглил дропдаун, reload-фолбэк не наступал и выдача не обновлялась вовсе.
+  const REFRESH_NAME = /^(search|refresh)$/i;
+  function isRefreshLabel(el) {
+    const text = (el.textContent || "").trim();
+    const aria = (el.getAttribute && el.getAttribute("aria-label")) || "";
+    return REFRESH_NAME.test(text) || REFRESH_NAME.test(String(aria).trim());
+  }
+  // кнопка Search/Refresh: кандидаты по порядку (первые два селектора — точечные, им верим; aria-label-
+  // селекторы — только при точном имени), затем фолбэк по точному тексту; только АКТИВНЫЕ
   function findRefreshButton(root) {
     if (!root) return null;
-    for (const sel of REFRESH_SELECTORS.button) {
-      const el = root.querySelector(sel);
-      if (usable(el)) return el;
+    for (let i = 0; i < REFRESH_SELECTORS.button.length; i++) {
+      const el = root.querySelector(REFRESH_SELECTORS.button[i]);
+      if (usable(el) && (i < 2 || isRefreshLabel(el))) return el;
     }
-    return [...root.querySelectorAll("button")].find((b) =>
-      usable(b) && /\b(search|refresh)\b/i.test((b.textContent || "").trim())) || null;
+    return [...root.querySelectorAll("button")].find((b) => usable(b) && isRefreshLabel(b)) || null;
   }
 
   // ---- авто-скролл: догрузить все страницы выдачи (DAT lazy-load при прокрутке вниз) ----
