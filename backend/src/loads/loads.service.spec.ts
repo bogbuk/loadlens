@@ -182,3 +182,30 @@ describe('LoadsService.near', () => {
     expect(res.loads.map((l) => l.loadId)).toEqual(['NEW']);
   });
 });
+
+describe('LoadsService.ingest — повтор при deadlock (40P01)', () => {
+  const item = { board: 'dat', loadId: 'L1', originMarket: 'CHICAGO_IL', destMarket: 'ATLANTA_GA',
+    equipment: 'V', groupKey: 'dat|CHICAGO_IL>ATLANTA_GA|V', rate: 2000, loadedMiles: 700, deadheadMiles: 20 };
+  const deadlock = () => Object.assign(new Error('deadlock detected'), { parent: { code: '40P01' } });
+
+  it('повторяет upsert один раз, если Postgres выбрал его жертвой deadlock', async () => {
+    const bulkCreate = jest.fn().mockRejectedValueOnce(deadlock()).mockResolvedValueOnce([]);
+    const svc = new LoadsService({ bulkCreate } as any, { query: jest.fn().mockResolvedValue([]) } as any);
+    await expect(svc.ingest({ clientId: 'c', items: [item] } as any)).resolves.toEqual({ accepted: 1 });
+    expect(bulkCreate).toHaveBeenCalledTimes(2);
+  });
+
+  it('после второго deadlock подряд отдаёт ошибку наверх', async () => {
+    const bulkCreate = jest.fn().mockRejectedValue(deadlock());
+    const svc = new LoadsService({ bulkCreate } as any, { query: jest.fn() } as any);
+    await expect(svc.ingest({ clientId: 'c', items: [item] } as any)).rejects.toThrow('deadlock detected');
+    expect(bulkCreate).toHaveBeenCalledTimes(2);
+  });
+
+  it('другие ошибки БД не повторяет', async () => {
+    const bulkCreate = jest.fn().mockRejectedValue(Object.assign(new Error('boom'), { parent: { code: '23502' } }));
+    const svc = new LoadsService({ bulkCreate } as any, { query: jest.fn() } as any);
+    await expect(svc.ingest({ clientId: 'c', items: [item] } as any)).rejects.toThrow('boom');
+    expect(bulkCreate).toHaveBeenCalledTimes(1);
+  });
+});

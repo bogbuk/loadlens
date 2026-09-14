@@ -68,6 +68,7 @@ npm test                 # sync:shared + тесты shared (17) + extension (10)
 npm run sync:shared      # пересобрать extension/vendor/* и backend/shared/* из shared/ — ПОСЛЕ любой правки shared/*.js
 npm run e2e:popup        # Playwright-прогон редактора правил алертов в попапе (popup.js без юнит-тестов); нужен playwright + chromium
 cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm install && npm run build && npm test
+# интеграционный тест ingest на реальном Postgres (иначе skip): cd backend && LL_TEST_DATABASE_URL=postgresql://loadlens:loadlens@localhost:5435/loadlens npx jest loads.ingest-concurrency
 # расширение: chrome://extensions → Загрузить распакованное → extension/
 ```
 

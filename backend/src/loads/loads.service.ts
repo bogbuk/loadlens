@@ -25,6 +25,8 @@ const EXTENDED_FIELDS = [
 ] as const;
 
 // форма груза для планировщика цепочек (без PII: contact/credit не отдаём)
+const isDeadlock = (e: unknown) => (e as any)?.parent?.code === '40P01';
+
 export interface CrowdLoad {
   board: string; loadId: string; originMarket: string; destMarket: string;
   equipment: string; groupKey: string; lastSeen: Date;
@@ -77,12 +79,20 @@ export class LoadsService {
       // расширенные поля 1:1 из DTO (полный набор парсера, 2026-07-17)
       ...Object.fromEntries(EXTENDED_FIELDS.map((f) => [f, it[f] ?? null])),
     }));
-    await this.model.bulkCreate(rows, {
+    // Детерминированный порядок строк: Postgres берёт блокировки в порядке VALUES; два клиента
+    // (локальное + облачное расширение), шлющие одну выдачу в разном порядке, иначе дедлочатся
+    // (pg-лог прода 2026-09-13 17:55 UTC). Тест — loads.ingest-concurrency.spec.ts.
+    rows.sort((a, b) => (a.board < b.board ? -1 : a.board > b.board ? 1 : a.loadId < b.loadId ? -1 : a.loadId > b.loadId ? 1 : 0));
+    const upsert = () => this.model.bulkCreate(rows, {
       updateOnDuplicate: [
         'rate', 'loadedMiles', 'deadheadMiles', 'rpmCents', 'weight',
         'brokerMc', 'brokerName', 'groupKey', 'lastSeen', ...EXTENDED_FIELDS,
       ],
     });
+    // Защита в глубину: если Postgres всё же выбрал наш upsert жертвой deadlock (40P01) —
+    // один повтор вместо 500 клиенту (он потерял бы всю страницу выдачи).
+    try { await upsert(); }
+    catch (e) { if (isDeadlock(e)) await upsert(); else throw e; }
     // Инкремент seen_count только для уже существовавших грузов: у новых first_seen == now
     // (выставлен выше), у существующих — старее. Группируем по board (составной ключ board+load_id).
     // seen_count — soft-метрика; её сбой не должен ломать ingest грузов.
@@ -94,10 +104,14 @@ export class LoadsService {
         idsByBoard.set(r.board, arr);
       }
       for (const [board, ids] of idsByBoard) {
+        // Блокируем строки в том же порядке (load_id ↑), что и upsert выше — иначе UPDATE по порядку
+        // скана дедлочится с INSERT … ON CONFLICT параллельного клиента.
         await this.sequelize.query(
           `UPDATE loads SET seen_count = seen_count + 1
-             WHERE board = :board AND load_id IN (:ids) AND first_seen < :now`,
-          { replacements: { board, ids, now } },
+             WHERE id IN (SELECT id FROM loads
+                           WHERE board = :board AND load_id IN (:ids) AND first_seen < :now
+                           ORDER BY load_id FOR UPDATE)`,
+          { replacements: { board, ids: [...ids].sort(), now } },
         );
       }
     } catch { /* soft-метрика — игнорируем */ }
