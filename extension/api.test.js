@@ -105,6 +105,21 @@ test("login: cloudEnabled переживает вход и отдаётся из
   assert.strictEqual((await LLAPI.getMe()).cloudEnabled, true);
 });
 
+test("cloudHeartbeat: true только при 2xx; без логина / сеть / 5xx → false", async () => {
+  globalThis.chrome = fakeChrome({ ll_auth: { accessToken: "a", refreshToken: "r", email: "x@y.z", plan: "pro", planTs: Date.now() } });
+  const origFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({ ok: true }) });
+    assert.strictEqual(await LLAPI.cloudHeartbeat({ state: "ok", loadsSeen: 1, lastFindLoadsAt: 1 }), true);
+    globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) });
+    assert.strictEqual(await LLAPI.cloudHeartbeat({ state: "ok", loadsSeen: 1, lastFindLoadsAt: 1 }), false);
+    globalThis.fetch = async () => { throw new Error("offline"); };
+    assert.strictEqual(await LLAPI.cloudHeartbeat({ state: "ok", loadsSeen: 1, lastFindLoadsAt: 1 }), false);
+  } finally { globalThis.fetch = origFetch; }
+  globalThis.chrome = fakeChrome({});
+  assert.strictEqual(await LLAPI.cloudHeartbeat({ state: "ok", loadsSeen: 1, lastFindLoadsAt: 1 }), false);
+});
+
 test("cloudHeartbeat: без логина и при сетевой ошибке не бросает", async () => {
   globalThis.chrome = fakeChrome({});
   await assert.doesNotReject(LLAPI.cloudHeartbeat({ state: "ok", loadsSeen: 1, lastFindLoadsAt: 1 }));

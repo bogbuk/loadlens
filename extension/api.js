@@ -368,8 +368,13 @@ const LLAPI = (() => {
   const cloudDisable = () => cloudCall("/cloud/disable", { method: "POST" });
   const cloudScreen = () => cloudCall("/cloud/screen", { method: "POST" }); // { url, password }
   // Heartbeat из облачного браузера — фоновый канал, ошибки глотаем.
+  // true только при 2xx: content.js ставит метку «heartbeat отправлен» лишь после подтверждения,
+  // иначе (нет JWT — юзер ещё не вошёл в облаке; сеть; 5xx) повторяет на следующем тике, а не через 5 мин.
   async function cloudHeartbeat(hb) {
-    try { await authedFetch("/cloud/heartbeat", { method: "POST", body: JSON.stringify(hb) }); } catch { /* фон */ }
+    try {
+      const res = await authedFetch("/cloud/heartbeat", { method: "POST", body: JSON.stringify(hb) });
+      return !!(res && res.ok);
+    } catch { return false; }
   }
 
   return { sanitizeLoad, clientId, sendLoads, getLane, getMarket, getDistance, getDiesel,

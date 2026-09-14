@@ -45,8 +45,19 @@ const LLCLOUD = (() => {
     return now - last >= HEARTBEAT_MS;
   }
 
+  // Один тик: если пора — шлём; метку ставим ТОЛЬКО после подтверждённой отправки (send → true).
+  // Иначе следующий тик (через минуту) повторит попытку — без JWT/сети heartbeat не «сгорает» на 5 мин.
+  async function tickHeartbeat({ ss, now, hb, send }) {
+    if (!due(ss, now, hb.state)) return "skipped";
+    let ok = false;
+    try { ok = (await send(hb)) === true; } catch (_) { ok = false; }
+    if (!ok) return "failed";
+    markHeartbeat(ss, now, hb.state);
+    return "sent";
+  }
+
   return { HEARTBEAT_MS, STALE_INTERVALS, config, clientIdFor, detectState, heartbeat,
-           markFindLoads, lastFindLoads, markHeartbeat, due };
+           markFindLoads, lastFindLoads, markHeartbeat, due, tickHeartbeat };
 })();
 
 if (typeof module !== "undefined" && module.exports) { module.exports = LLCLOUD; }

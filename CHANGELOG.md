@@ -13,6 +13,7 @@ All notable user-facing changes to the LoadLens browser extension.
 ## 0.6.1 — 2026-09-13
 
 ### Fixed
+- **Cloud browser: heartbeat no longer skips after a failed send.** If the cloud browser could not report its status (not signed in to LoadLens yet, network hiccup), it now retries within a minute instead of waiting five, so the status in the popup and the watchdog stay accurate.
 - **Auto-pilot refreshed nothing when DAT kept the SEARCH button disabled.** DAT disables SEARCH until the criteria change, and the fallback picked the "SEARCH BACK - 24 HRS" toolbar button instead, so the results silently never reloaded and Telegram alerts stopped coming. The auto-pilot now falls back to reloading the page as intended.
 
 ## 0.6.0 — 2026-09-12

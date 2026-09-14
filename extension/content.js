@@ -997,16 +997,20 @@
 
     // Cloud mode: heartbeat на бэкенд (раз в 5 мин или при смене состояния). Метки — в sessionStorage,
     // т.к. авто-пилот перезагружает вкладку каждые 60–120 с и таймеры в памяти не доживают.
+    // Метка «отправлено» ставится только после ответа 2xx (LLCLOUD.tickHeartbeat): без JWT/сети
+    // повтор на следующем тике, а не через 5 мин. hbInFlight — не дублировать при зависшем запросе.
     if (cloudCfg && typeof LLAPI !== "undefined") {
+      let hbInFlight = false;
       const tick = async () => {
+        if (hbInFlight) return;
         const now = Date.now();
         const hb = LLCLOUD.heartbeat({
           hostname: location.hostname, lastFindLoadsAt: LLCLOUD.lastFindLoads(sessionStorage),
           now, intervalMs: autoRefresh.intervalMs, loadsSeen: gqlLoads.length,
         });
-        if (!LLCLOUD.due(sessionStorage, now, hb.state)) return;
-        LLCLOUD.markHeartbeat(sessionStorage, now, hb.state);
-        await LLAPI.cloudHeartbeat(hb);
+        hbInFlight = true;
+        try { await LLCLOUD.tickHeartbeat({ ss: sessionStorage, now, hb, send: LLAPI.cloudHeartbeat }); }
+        finally { hbInFlight = false; }
       };
       // первый тик с задержкой: DAT ещё восстанавливает поиск после reload; на странице логина — сразу
       setTimeout(tick, /^login\./i.test(location.hostname) ? 0 : 20000);
