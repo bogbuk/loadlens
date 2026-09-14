@@ -10,10 +10,12 @@ All notable user-facing changes to the LoadLens browser extension.
 - **Cloud browser: certificate heads-up.** Right after Enable the popup warns that the screen's security certificate takes 1–2 minutes, so a certificate warning in the browser is expected and clears on reload.
 - **Cloud browser: sign-out and stale-session alerts.** Get a Telegram message if the cloud session signs out or stops refreshing, so a lapsed login doesn't go unnoticed. Opt-in, with a clear heads-up that DAT will see the login coming from a cloud server.
 
+### Fixed
+- **Cloud browser: heartbeat no longer skips after a failed send.** If the cloud browser could not report its status (not signed in to LoadLens yet, network hiccup), it now retries within a minute instead of waiting five, so the status in the popup and the watchdog stay accurate.
+
 ## 0.6.1 — 2026-09-13
 
 ### Fixed
-- **Cloud browser: heartbeat no longer skips after a failed send.** If the cloud browser could not report its status (not signed in to LoadLens yet, network hiccup), it now retries within a minute instead of waiting five, so the status in the popup and the watchdog stay accurate.
 - **Auto-pilot refreshed nothing when DAT kept the SEARCH button disabled.** DAT disables SEARCH until the criteria change, and the fallback picked the "SEARCH BACK - 24 HRS" toolbar button instead, so the results silently never reloaded and Telegram alerts stopped coming. The auto-pilot now falls back to reloading the page as intended.
 
 ## 0.6.0 — 2026-09-12
