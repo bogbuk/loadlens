@@ -518,6 +518,9 @@ async function renderCloud(me) {
     (running
       ? '<button id="cl-open">Open screen</button>' +
         '<div class="note">Password (the screen will ask for it): <span id="cl-pass" class="mono">…</span> <button id="cl-copy" class="linkbtn">copy</button></div>' +
+        // LE-сертификат для домена экрана выпускается ~1–2 мин после Enable: до этого браузер
+        // показывает ERR_CERT_AUTHORITY_INVALID. Предупреждаем, пока тенант ещё в `starting`.
+        (st.status === "starting" ? '<div class="note">⏳ Just enabled? The screen gets its security certificate in 1–2 minutes — if the browser shows a certificate warning, wait a minute and reload the page.</div>' : "") +
         '<div class="note">Signing in to DAT on this computer will sign out your cloud browser.</div>' +
         '<button id="cl-off" class="danger">Disable Cloud</button>'
       : (ll_cloud_consent ? "" :

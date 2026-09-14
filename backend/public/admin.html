@@ -175,7 +175,8 @@
           screenBtn.textContent = 'экран';
           screenBtn.onclick = () => act(async () => {
             const s = await api('/admin/users/' + encodeURIComponent(u.email) + '/cloud/screen', { method: 'POST' });
-            $('cloudInfo').textContent = u.email + ' — экран: ' + s.url + '   пароль: ' + s.password;
+            $('cloudInfo').textContent = u.email + ' — экран: ' + s.url + '   пароль: ' + s.password +
+              '\n(сертификат домена выпускается 1–2 мин после «cloud старт»: при ошибке сертификата подождать и обновить страницу)';
           });
           actions.appendChild(screenBtn);
         }
