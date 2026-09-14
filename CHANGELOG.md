@@ -4,6 +4,8 @@ All notable user-facing changes to the LoadLens browser extension.
 
 ## [Unreleased]
 
+## 0.6.2 — 2026-09-14
+
 ### New
 - **Cloud browser (Pro Cloud): always-on DAT session.** Run your search on a browser we host, with the extension pre-loaded, instead of leaving your own laptop on. The auto-pilot keeps working around the clock.
 - **Cloud browser: live screen link.** Open a link to see and control the cloud browser's screen from any device, so you can log in or check on it whenever you need to.
