@@ -106,4 +106,27 @@ export class AdminService {
     await user.save();
     return { email: user.email, cloudEnabled: user.cloudEnabled };
   }
+
+  // Онбординг без расширения из стора: секция Cloud в попапе ещё не выпущена (0.6.1 на ревью),
+  // поэтому админ поднимает браузер от имени пользователя и отдаёт ему ссылку на экран + пароль.
+  // Флаг сохраняем ДО старта: heartbeat инстанса идёт через CloudGuard (cloud_enabled), и если
+  // старт упадёт после флага — админ просто нажмёт ещё раз (enable идемпотентен).
+  async cloudEnable(emailRaw: string) {
+    const email = emailRaw.trim().toLowerCase();
+    const user = await this.userModel.findOne({ where: { email } });
+    if (!user) throw new NotFoundException('user not found');
+    if (!user.cloudEnabled) {
+      user.cloudEnabled = true;
+      await user.save();
+    }
+    const view = await this.cloud.enable(user.id);
+    return { email: user.email, cloudEnabled: true, status: view.status };
+  }
+
+  async cloudScreen(emailRaw: string) {
+    const email = emailRaw.trim().toLowerCase();
+    const user = await this.userModel.findOne({ where: { email } });
+    if (!user) throw new NotFoundException('user not found');
+    return this.cloud.screen(user.id);
+  }
 }

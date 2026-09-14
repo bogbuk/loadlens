@@ -57,6 +57,7 @@
       <input id="search" type="text" placeholder="поиск по email…" />
       <button id="refreshBtn">Обновить</button>
       <div class="err" id="appErr"></div>
+      <div id="cloudInfo" style="font-family:monospace;white-space:pre-wrap;user-select:all;margin:6px 0"></div>
     </div>
     <table>
       <thead><tr>
@@ -162,6 +163,22 @@
         cloudBtn.onclick = () => act(() => api('/admin/users/' + encodeURIComponent(u.email) + '/cloud',
           { method: 'PATCH', body: JSON.stringify({ enabled: !u.cloudEnabled }) }));
         actions.appendChild(cloudBtn);
+        const running = u.cloudStatus && u.cloudStatus !== 'stopped' && u.cloudStatus !== 'error';
+        if (!running) {
+          // Поднять браузер от имени юзера (ставит cloud on сам) — онбординг без секции Cloud в попапе.
+          const startBtn = document.createElement('button');
+          startBtn.textContent = 'cloud старт';
+          startBtn.onclick = () => act(() => api('/admin/users/' + encodeURIComponent(u.email) + '/cloud/enable', { method: 'POST' }));
+          actions.appendChild(startBtn);
+        } else {
+          const screenBtn = document.createElement('button');
+          screenBtn.textContent = 'экран';
+          screenBtn.onclick = () => act(async () => {
+            const s = await api('/admin/users/' + encodeURIComponent(u.email) + '/cloud/screen', { method: 'POST' });
+            $('cloudInfo').textContent = u.email + ' — экран: ' + s.url + '   пароль: ' + s.password;
+          });
+          actions.appendChild(screenBtn);
+        }
         if (u.role !== 'admin') {
           const blockBtn = document.createElement('button');
           blockBtn.className = u.blocked ? '' : 'danger';

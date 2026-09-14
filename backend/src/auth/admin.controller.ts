@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { AdminRoleGuard } from './admin-role.guard';
 import { AdminService } from './admin.service';
@@ -32,5 +32,17 @@ export class AdminController {
   @Patch('users/:email/cloud')
   setCloud(@Param('email') email: string, @Body() dto: SetCloudDto) {
     return this.service.setCloudEnabled(email, dto.enabled);
+  }
+
+  // Поднять облачный браузер от имени пользователя (ставит cloud_enabled) и выдать ссылку на экран
+  // с паролем — онбординг клиента, у которого в расширении из стора ещё нет секции Cloud.
+  @Post('users/:email/cloud/enable')
+  cloudEnable(@Param('email') email: string) {
+    return this.service.cloudEnable(email);
+  }
+
+  @Post('users/:email/cloud/screen')
+  cloudScreen(@Param('email') email: string) {
+    return this.service.cloudScreen(email);
   }
 }

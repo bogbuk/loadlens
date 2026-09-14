@@ -45,7 +45,7 @@ describe('AdminService', () => {
     // устройства: pro@b.md — 2 активных, у остальных нет
     devicesModel = { findAll: jest.fn(() => Promise.resolve([{ userId: 'u2', n: '2' }])) };
     cloudInstances = { findAll: jest.fn(() => Promise.resolve([])) };
-    cloud = { disableForUser: jest.fn(() => Promise.resolve()) };
+    cloud = { disableForUser: jest.fn(() => Promise.resolve()), enable: jest.fn(() => Promise.resolve({ enabled: true, status: 'starting' })), screen: jest.fn(() => Promise.resolve({ url: 'https://d/vnc.html', password: 'p' })) };
     service = new AdminService(userModel, devicesModel, lanes, cloudInstances, cloud);
   });
 
@@ -116,6 +116,26 @@ describe('AdminService', () => {
     const saveOrder = users['pro@b.md'].save.mock.invocationCallOrder[users['pro@b.md'].save.mock.invocationCallOrder.length - 1];
     expect(disableOrder).toBeLessThan(saveOrder);
   });
+  it('cloudEnable: ставит cloud_enabled (если ещё нет) и поднимает браузер от имени юзера; нет юзера → 404', async () => {
+    await expect(service.cloudEnable('pro@b.md')).resolves.toEqual({ email: 'pro@b.md', cloudEnabled: true, status: 'starting' });
+    expect(users['pro@b.md'].cloudEnabled).toBe(true);
+    expect(users['pro@b.md'].save).toHaveBeenCalled();
+    expect(cloud.enable).toHaveBeenCalledWith('u2');
+    await expect(service.cloudEnable('no@b.md')).rejects.toThrow(NotFoundException);
+  });
+
+  it('cloudEnable: флаг сохраняется ДО старта браузера (иначе CloudGuard режет heartbeat инстанса)', async () => {
+    cloud.enable.mockRejectedValueOnce(new Error('coolify down'));
+    await expect(service.cloudEnable('a@b.md')).rejects.toThrow('coolify down');
+    expect(users['a@b.md'].cloudEnabled).toBe(true);
+  });
+
+  it('cloudScreen: отдаёт url+пароль экрана юзера; нет юзера → 404', async () => {
+    await expect(service.cloudScreen('pro@b.md')).resolves.toEqual({ url: 'https://d/vnc.html', password: 'p' });
+    expect(cloud.screen).toHaveBeenCalledWith('u2');
+    await expect(service.cloudScreen('no@b.md')).rejects.toThrow(NotFoundException);
+  });
+
   it('listUsers: подмешивает cloudStatus/cloudHeartbeatAt из cloud_instances', async () => {
     const hb = new Date();
     users['pro@b.md'].cloudEnabled = true;
