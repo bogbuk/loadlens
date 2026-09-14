@@ -114,9 +114,9 @@ describe('CloudService.disable / status / screen / heartbeat', () => {
     });
   });
 
-  it('screen: url noVNC с autoconnect и паролем; без домена/остановленный → 409', async () => {
+  it('screen: url noVNC с autoconnect БЕЗ пароля в query (пароль отдельно, вводится в диалоге); без домена/остановленный → 409', async () => {
     const { svc } = makeService({ inst: live() });
-    expect(await svc.screen('u1')).toEqual({ url: 'https://d.example/vnc.html?autoconnect=1&resize=scale&password=p', password: 'p' });
+    expect(await svc.screen('u1')).toEqual({ url: 'https://d.example/vnc.html?autoconnect=1&resize=scale', password: 'p' });
     await expect(makeService({ inst: { ...live(), status: 'stopped' } }).svc.screen('u1')).rejects.toMatchObject({ status: 409 });
     await expect(makeService({ inst: { ...live(), screenDomain: null } }).svc.screen('u1')).rejects.toMatchObject({ status: 409 });
     await expect(makeService().svc.screen('u1')).rejects.toMatchObject({ status: 409 });

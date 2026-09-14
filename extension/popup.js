@@ -517,7 +517,7 @@ async function renderCloud(me) {
     (running ? `<div class="row"><span class="k">Last heartbeat</span><span>${agoMin(st.lastHeartbeatAt)}</span></div>` : "") +
     (running
       ? '<button id="cl-open">Open screen</button>' +
-        '<div class="note">Password (if the screen asks): <span id="cl-pass" class="mono">…</span> <button id="cl-copy" class="linkbtn">copy</button></div>' +
+        '<div class="note">Password (the screen will ask for it): <span id="cl-pass" class="mono">…</span> <button id="cl-copy" class="linkbtn">copy</button></div>' +
         '<div class="note">Signing in to DAT on this computer will sign out your cloud browser.</div>' +
         '<button id="cl-off" class="danger">Disable Cloud</button>'
       : (ll_cloud_consent ? "" :

@@ -162,9 +162,12 @@ Disable/Enable.
 ходит по внутреннему адресу (`host.docker.internal:8000`), токен наружу не уходит.
 
 **Экран.** Два уровня:
-1. MVP: `POST /cloud/screen` отдаёт `https://ll-<userId>.cloud.loadlens.krait.studio/vnc.html?autoconnect=1&resize=scale&password=<vnc>`.
-   Пароль — секрет Coolify; на Disable/Enable ротируется (`updateEnv` + `restart`). Минус: ссылка
-   долгоживущая, TTL 15 мин не соблюдается — принято для MVP (аудитория — 1–2 пользователя).
+1. MVP: `POST /cloud/screen` отдаёт `{url, password}`, где url = `https://ll-<userId>.cloud.loadlens.krait.studio/vnc.html?autoconnect=1&resize=scale`
+   **без пароля в query** (сдвиг 2026-09-14: раньше был `&password=<vnc>`, и ссылка с паролем оседала в
+   истории браузера, Telegram-DM watchdog'а и access-логах Traefik). noVNC показывает диалог пароля,
+   пользователь копирует его из попапа. Пароль — секрет Coolify; на Disable/Enable ротируется
+   (`updateEnv` + `restart`). Минус: пароль долгоживущий, TTL 15 мин не соблюдается — принято для MVP
+   (аудитория — 1–2 пользователя).
 2. Второй шаг: Traefik `forwardAuth` → `GET /cloud/screen/verify?token=` (одноразовый токен, 15 мин,
    в БД хэш). Middleware описывается один раз в dynamic-config Traefik US-сервера
    (`ll-screen-auth@file`), в compose тенанта — один label `traefik.http.routers.<router>.middlewares=`.

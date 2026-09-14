@@ -50,10 +50,12 @@ export class CloudService {
     };
   }
 
-  // Ссылка на экран (MVP, спека §5 уровень 1): пароль в query, ротируется на каждом Enable.
+  // Ссылка на экран (спека §5 уровень 1, с 2026-09-14 БЕЗ пароля в query): пароль noVNC спрашивает сам,
+  // пользователь берёт его из попапа (`screen().password`). В URL пароль не кладём — он оседал в истории
+  // браузера, Telegram-DM watchdog'а и access-логах Traefik. Ротируется на каждом Enable.
   screenUrl(inst: CloudInstance): string | null {
     if (!inst.screenDomain || !inst.vncPassword) return null;
-    return `https://${inst.screenDomain}/vnc.html?autoconnect=1&resize=scale&password=${encodeURIComponent(inst.vncPassword)}`;
+    return `https://${inst.screenDomain}/vnc.html?autoconnect=1&resize=scale`;
   }
 
   async status(userId: string): Promise<CloudStatusView> {
