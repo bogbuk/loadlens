@@ -859,6 +859,7 @@
     const container = adapter && adapter.findScrollContainer && adapter.findScrollContainer();
     if (!container) { log("auto-scroll: container not found"); return; }
     scrolling = true;
+    const startTop = container.scrollTop || 0; // куда вернуть пользователя после доскролла
     try {
       let dry = 0, prevSize = accState.byId.size, prevH = 0;
       const maxSteps = autoRefresh.maxSteps || 40;
@@ -871,7 +872,12 @@
         else if (++dry >= SCROLL_DRY) break;                          // выдача исчерпана
       }
       log("auto-scroll done:", accState.byId.size, "loads");
-    } finally { scrolling = false; }
+    } finally {
+      // вернуть выдачу на исходную позицию: иначе после reload вкладка стоит в самом низу списка
+      // (хвост сортировки — старые/«no rate» грузы), и «лучшие сверху» пользователь не видит
+      try { if (adapter.scrollRestore) adapter.scrollRestore(container, startTop); } catch (_) { /* нет */ }
+      scrolling = false;
+    }
   }
 
   // применить удерживаемую сортировку через родной дропдаун DAT (вручную или после авто-рефреша)

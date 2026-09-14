@@ -133,6 +133,13 @@
     try { container.scrollTop = container.scrollHeight; } catch (_) { /* нет */ }
     return { scrollTop: container.scrollTop || 0, scrollHeight: container.scrollHeight || 0 };
   }
+  // вернуть прокрутку туда, где она была до доскролла. Без этого вкладка после auto-refresh остаётся
+  // в самом низу списка (хвост сортировки: старые/«no rate» грузы) — жалоба лида 2026-09-14.
+  function scrollRestore(container, top) {
+    if (!container) return { scrollTop: 0, scrollHeight: 0 };
+    try { container.scrollTop = Math.max(0, top || 0); } catch (_) { /* нет */ }
+    return { scrollTop: container.scrollTop || 0, scrollHeight: container.scrollHeight || 0 };
+  }
 
   const DAT_ADAPTER = {
     board: "dat",
@@ -175,6 +182,7 @@
     // ---- авто-скролл (для накопления всех страниц текущей выдачи) ----
     findScrollContainer() { return findScrollContainer(typeof document !== "undefined" ? document : null); },
     scrollStep(container) { return scrollStep(container); },
+    scrollRestore(container, top) { return scrollRestore(container, top); },
 
     // ---- авто-пилот ----
     // Кликнуть родную кнопку Search/Refresh DAT. true — кнопка нашлась и кликнута.
@@ -210,7 +218,7 @@
     module.exports = {
       DAT_ADAPTER, DAT_SELECTORS, REFRESH_SELECTORS, SORT_SELECTORS,
       resultIdOf, domRowKey, sortKey, readSortOptions, pickSortOption, findRefreshButton,
-      isScrollable, findScrollContainer, scrollStep,
+      isScrollable, findScrollContainer, scrollStep, scrollRestore,
     };
   }
 })();

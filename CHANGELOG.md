@@ -11,6 +11,7 @@ All notable user-facing changes to the LoadLens browser extension.
 - **Cloud browser: sign-out and stale-session alerts.** Get a Telegram message if the cloud session signs out or stops refreshing, so a lapsed login doesn't go unnoticed. Opt-in, with a clear heads-up that DAT will see the login coming from a cloud server.
 
 ### Fixed
+- **Auto-pilot no longer leaves the board scrolled to the bottom.** After each refresh the auto-scroll pulls every page of results and then returns the list to where it was, so the best loads under your sort are back on screen instead of the oldest and rate-less ones at the tail. Reported by a Pro user on 2026-09-14.
 - **Cloud browser: heartbeat no longer skips after a failed send.** If the cloud browser could not report its status (not signed in to LoadLens yet, network hiccup), it now retries within a minute instead of waiting five, so the status in the popup and the watchdog stay accurate.
 
 ## 0.6.1 — 2026-09-13

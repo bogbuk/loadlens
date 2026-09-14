@@ -4,7 +4,7 @@ const assert = require("node:assert");
 // Порядок require: сначала зависимости-глобалы, потом адаптеры (регистрируются по сайд-эффекту).
 require("../../shared/load.model.js");
 const LLADAPT = require("./adapters.js");
-const { DAT_ADAPTER, resultIdOf, domRowKey, sortKey, readSortOptions, pickSortOption, findRefreshButton, isScrollable, findScrollContainer, scrollStep } = require("./dat.adapter.js");
+const { DAT_ADAPTER, resultIdOf, domRowKey, sortKey, readSortOptions, pickSortOption, findRefreshButton, isScrollable, findScrollContainer, scrollStep, scrollRestore } = require("./dat.adapter.js");
 const { TRUCKSTOP_ADAPTER, TRUCKSTOP_SELECTORS } = require("./truckstop.adapter.js");
 
 // Лёгкий DOM-шим для Truckstop parseRow (карта {selector: text}).
@@ -225,4 +225,18 @@ test("scrollStep ставит scrollTop в конец и возвращает м
   assert.strictEqual(c.scrollTop, 4200);
   assert.deepStrictEqual(m, { scrollTop: 4200, scrollHeight: 4200 });
   assert.deepStrictEqual(scrollStep(null), { scrollTop: 0, scrollHeight: 0 });
+});
+
+test("scrollRestore возвращает контейнер на исходную позицию после доскролла (иначе вкладка остаётся внизу — старые/no-rate грузы)", () => {
+  const c = { scrollTop: 0, scrollHeight: 5000, clientHeight: 800 };
+  scrollStep(c); scrollStep(c);
+  assert.strictEqual(c.scrollTop, 5000);
+  assert.deepStrictEqual(scrollRestore(c, 0), { scrollTop: 0, scrollHeight: 5000 });
+  assert.strictEqual(c.scrollTop, 0);
+  // пользователь был на середине — вернуть туда же, а не в начало
+  const mid = { scrollTop: 1200, scrollHeight: 5000, clientHeight: 800 };
+  scrollStep(mid);
+  scrollRestore(mid, 1200);
+  assert.strictEqual(mid.scrollTop, 1200);
+  assert.deepStrictEqual(scrollRestore(null, 0), { scrollTop: 0, scrollHeight: 0 });
 });
