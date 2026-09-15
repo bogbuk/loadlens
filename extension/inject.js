@@ -43,6 +43,7 @@
     const dec = new TextDecoder();
     let reader;
     try { reader = res.clone().body.getReader(); } catch (_) { return; }
+    const st = sseStats; st.started++; st.open++;
     log("liveQueryMatches SSE tee started, searchId", searchId);
     (async () => {
       for (;;) {
@@ -51,13 +52,19 @@
         for (const f of parser.push(dec.decode(value, { stream: true }))) {
           let data;
           try { data = JSON.parse(f.data); } catch (_) { continue; }
+          st.events++; st.lastEventAt = Date.now();
           log("SSE event", f.event, "→ posting to content.js");
           window.postMessage({ source: "loadlens", type: "dat-match-event", payload: { event: f.event, id: f.id, searchId, data } }, window.location.origin);
         }
       }
+      st.open--;
       log("liveQueryMatches SSE tee ended, searchId", searchId);
-    })().catch(() => {});
+    })().catch(() => { st.open--; });
   }
+  // Диагностика для поддержки (DevTools → window.__loadlensSse): сколько потоков live-матчей
+  // перехвачено и сколько событий прошло. MAIN world, поэтому доступно из консоли страницы.
+  const sseStats = { started: 0, open: 0, events: 0, lastEventAt: 0 };
+  window.__loadlensSse = sseStats;
 
   // fetch (GraphQL-клиент DAT использует именно его)
   const origFetch = window.fetch;

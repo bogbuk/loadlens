@@ -551,9 +551,12 @@
     if (sameSearch) {
       const acc = LLACC.accumulate(accState, [r.load], accState.searchId);
       accState = acc.state; gqlLoads = acc.loads; schedule();
-    } else if (typeof LLALERT !== "undefined") {
-      applyDriverContext([r.load]);
-      LLALERT.push(selectAlertHits([r.load])).catch(() => {});
+    } else {
+      if (typeof LLALERT !== "undefined") {
+        applyDriverContext([r.load]);
+        LLALERT.push(selectAlertHits([r.load])).catch(() => {});
+      }
+      schedule(); // перерисовать шапку панели (индикатор «● live»), выдача не меняется
     }
   }
 
