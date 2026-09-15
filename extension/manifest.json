@@ -44,6 +44,7 @@
         "equip-filter.js",
         "alert-rules.js",
         "visibility.js",
+        "autopilot-policy.js",
         "loads-accumulator.js",
         "content.js"
       ],

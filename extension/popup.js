@@ -25,7 +25,9 @@ async function renderSettings() {
   const mailTpl = (typeof ll_mail_template === "string" && ll_mail_template.trim()) ? ll_mail_template : LLMAIL.DEFAULT_TEMPLATE;
   const cpm = ll_cpm != null ? ll_cpm : 1.80;
   const targets = Array.isArray(ll_targets) && ll_targets.length ? ll_targets : DEFAULT_TARGETS;
-  const ar = (ll_autorefresh && typeof ll_autorefresh === "object") ? ll_autorefresh : { on: false, intervalMs: 60000 };
+  const ar = (ll_autorefresh && typeof ll_autorefresh === "object") ? ll_autorefresh : { on: false, intervalMs: 180000 };
+  // ключа ещё нет (старая настройка) → LLPOLICY подставит дефолтное ночное окно 22–5
+  const quiet = LLPOLICY.normalizeQuiet("quiet" in ar ? ar.quiet : undefined);
   const sort = (ll_sort && ll_sort.field) ? { field: ll_sort.field, dir: ll_sort.dir === "asc" ? "asc" : "desc" } : { field: "", dir: "desc" };
   const equipSel = new Set(LLEQUIP.normalize(ll_equip_filter) || []);
   const hos = await LLHOS.load();
@@ -48,8 +50,12 @@ async function renderSettings() {
     '<h4>DAT tab auto-pilot</h4>' +
     `<div class="row"><span class="k">Enable on DAT tabs</span><input id="s-ar-on" type="checkbox"${ar.on ? " checked" : ""} style="width:auto"></div>` +
     '<div class="note">Applies to every DAT tab; the Auto-refresh checkbox in the on-page panel overrides it for that tab only.</div>' +
-    `<div class="row"><span class="k">Interval, sec (≥60)</span><input id="s-ar-int" type="number" min="60" step="10" value="${Math.round((ar.intervalMs || 60000) / 1000)}"></div>` +
+    `<div class="row"><span class="k">Interval, sec (≥120)</span><input id="s-ar-int" type="number" min="120" step="30" value="${Math.round((ar.intervalMs || 180000) / 1000)}"></div>` +
     `<div class="row"><span class="k">Auto-scroll (pull all pages)</span><input id="s-ar-scroll" type="checkbox"${ar.autoscroll !== false ? " checked" : ""} style="width:auto"></div>` +
+    `<div class="row"><span class="k">Quiet hours</span><span><input id="s-ar-quiet" type="checkbox"${quiet ? " checked" : ""} style="width:auto"> ` +
+    `from <input id="s-ar-quiet-from" type="number" min="0" max="23" value="${quiet ? quiet.from : 22}" style="width:48px"> ` +
+    `to <input id="s-ar-quiet-to" type="number" min="0" max="23" value="${quiet ? quiet.to : 5}" style="width:48px"></span></div>` +
+    `<div class="note">Auto-pilot pauses overnight — brokers barely post then, and a flat round-the-clock pattern is what stands out most. Hours follow this machine's clock, which now reads <b>${escA(machineClock())}</b> (in the cloud browser that is the server's time, not yours).</div>` +
     `<div class="row"><span class="k">Sort</span><select id="s-sort-f">` +
     ['<option value="">— keep current —</option>'].concat(SORT_FIELDS.map((s) =>
       `<option value="${s.field}"${sort.field === s.field ? " selected" : ""}>${escA(s.label)}</option>`)).join("") +
@@ -71,7 +77,7 @@ async function renderSettings() {
     '<div class="note">Target $/mi is the "profitable" (green) threshold: a load is green when its gross $/mile is at or above the target for its distance bucket. Cost/mile is the break-even line below which a load is a loss (red).</div>' +
     '<div class="note">"On-page display" applies instantly to all DAT/Truckstop tabs — no need to press Save.</div>' +
     '<div class="note">Email placeholders: {{origin}} {{dest}} {{equipment}} {{rate}} {{rateBasis}} {{loadedMiles}} {{deadheadMiles}} {{trueRpm}} {{pickupDate}} {{brokerName}} {{brokerMc}} {{driverName}} {{counterOffer}}. A line holding only an empty placeholder is dropped — {{counterOffer}} disappears when the rate or miles are unknown.</div>' +
-    '<div class="note">Auto-pilot: "Enable on DAT tabs" switches it on for every DAT results tab; the "Auto-refresh" toggle in the on-page panel header overrides it for that tab only. Also set here: the shared interval (60–120s with jitter), the sort order to hold, and auto-scroll (scrolls the results so DAT loads every page; the panel accumulates them by searchId).</div>';
+    '<div class="note">Auto-pilot: "Enable on DAT tabs" switches it on for every DAT results tab; the "Auto-refresh" toggle in the on-page panel header overrides it for that tab only. Also set here: the shared interval (3 minutes by default, with jitter; 2 minutes is the floor), quiet hours, the sort order to hold, and auto-scroll (scrolls the results so DAT loads every page; the panel accumulates them by searchId). While DAT\'s live match stream is running the auto-pilot checks far less often — new loads arrive on their own.</div>';
   document.getElementById("s-save").onclick = save;
   document.getElementById("s-mail-reset").onclick = () => { document.getElementById("s-mail-tpl").value = LLMAIL.DEFAULT_TEMPLATE; };
   wireEquipChips();
@@ -95,6 +101,12 @@ function wireEquipChips() {
   document.getElementById("s-equip-all").onclick = () => setAll(true);
   document.getElementById("s-equip-none").onclick = () => setAll(false);
   refresh();
+}
+// Текущее время ЭТОЙ машины: окно тишины считается по её часам, а в облачном браузере это время
+// сервера, а не водителя — без подсказки пользователь выставит часы вслепую.
+function machineClock() {
+  const d = new Date();
+  return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
 }
 function settingRow(label, id, val, step) {
   return `<div class="row"><span class="k">${label}</span>` +
@@ -121,14 +133,20 @@ async function save() {
   // пустой шаблон = «вернуть дефолт» (content.js подставит DEFAULT_TEMPLATE)
   const tpl = document.getElementById("s-mail-tpl").value;
   await chrome.storage.local.set({ ll_mail_template: tpl.trim() ? tpl : null });
-  // авто-пилот: интервал не реже 60с; сорт = поле+направление (пусто → не удерживать)
-  const intSec = Math.max(60, parseInt(document.getElementById("s-ar-int").value, 10) || 60);
+  // авто-пилот: интервал не реже 120с (ToS-футпринт); сорт = поле+направление (пусто → не удерживать)
+  const intSec = Math.max(120, parseInt(document.getElementById("s-ar-int").value, 10) || 180);
   const autoscroll = document.getElementById("s-ar-scroll").checked;
+  // выключенное окно тишины храним как null — LLPOLICY отличает его от «ключа ещё нет» (дефолт)
+  const quietOn = document.getElementById("s-ar-quiet").checked;
+  const quietVal = quietOn ? LLPOLICY.normalizeQuiet({
+    from: document.getElementById("s-ar-quiet-from").value,
+    to: document.getElementById("s-ar-quiet-to").value,
+  }) : null;
   const sortField = document.getElementById("s-sort-f").value || null;
   const arOn = document.getElementById("s-ar-on").checked;
   await chrome.storage.local.set({
     // on — глобальный тумблер (per-tab override живёт в sessionStorage вкладки, см. content.js)
-    ll_autorefresh: { on: arOn, intervalMs: intSec * 1000, autoscroll },
+    ll_autorefresh: { on: arOn, intervalMs: intSec * 1000, autoscroll, quiet: quietVal },
     ll_sort: sortField ? { field: sortField, dir: document.getElementById("s-sort-d").value === "asc" ? "asc" : "desc" } : { field: null },
   });
   await LLHOS.save(LLHOS.fromHours({ driveH, dutyH, cycleH }));

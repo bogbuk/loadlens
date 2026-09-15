@@ -4,6 +4,10 @@ All notable user-facing changes to the LoadLens browser extension.
 
 ## [Unreleased]
 
+### Changed
+- **Auto-pilot is much quieter on DAT.** It now behaves like a person checking the board rather than a script hammering it: the default interval is 3 minutes instead of 1 (2 minutes is the floor), the auto-scroll pulls every page only for a new search and just a couple of pages after that, and a full page reload is now a rare exception — at most once every 15 minutes, and only when the results really have gone stale — instead of the normal path on every tick. When DAT's live match stream is running, new loads arrive on their own, so the auto-pilot drops to one check every 10 minutes and stops scrolling altogether. All together this cuts the traffic LoadLens causes on DAT by well over an order of magnitude.
+- **Quiet hours.** The auto-pilot now pauses overnight (22:00–05:00 by default, adjustable or switchable off in the popup). Brokers barely post at night, and a flat round-the-clock pattern is the most conspicuous thing a load board sees. Hours follow the clock of the machine running the browser — in the cloud browser that is the server's time, which the popup now shows next to the setting.
+
 ### New
 - **Live matches from DAT, no refresh needed.** DAT already streams new matching loads to every open search tab (on plans with live matches, Pro and up). Turn on "Listen to DAT live matches" in the popup and LoadLens reads that stream: new loads land in the panel and go through your Telegram alert rules the moment DAT sends them, with no extra requests to DAT and no need for the auto-pilot to refresh the page. A "● live" mark in the panel header shows the stream is flowing. Off by default.
 

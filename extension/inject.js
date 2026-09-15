@@ -33,6 +33,13 @@
   // модуля — т.е. ИМЕННО эту обёртку (мы на document_start). Читаем КЛОН тела как поток, парсим
   // кадры (LLSSE) и шлём content.js. Своих запросов не шлём, поток не инициируем
   // (см. docs/research/2026-09-15-dat-load-match-alerts-spike.md).
+  // Открытие/закрытие потока — отдельный сигнал от самих событий: content.js по нему понимает,
+  // что live-матчи несут свежесть, и разряжает авто-пилот (см. autopilot-policy.js). По одним
+  // только событиям этого не понять — в тихие минуты матчей нет, а поток жив.
+  function postSse(type, searchId) {
+    try { window.postMessage({ source: "loadlens", type, payload: { searchId } }, window.location.origin); }
+    catch (_) { /* страница могла уйти */ }
+  }
   function maybeTeeSse(url, res) {
     if (!url || url.indexOf("/liveQueryMatches/") === -1 || !res || !res.body) return;
     if (typeof LLSSE === "undefined") { log("liveQueryMatches stream seen, but LLSSE is not loaded"); return; }
@@ -45,6 +52,7 @@
     try { reader = res.clone().body.getReader(); } catch (_) { return; }
     const st = sseStats; st.started++; st.open++;
     log("liveQueryMatches SSE tee started, searchId", searchId);
+    postSse("dat-sse-open", searchId);
     (async () => {
       for (;;) {
         const { done, value } = await reader.read();
@@ -59,7 +67,8 @@
       }
       st.open--;
       log("liveQueryMatches SSE tee ended, searchId", searchId);
-    })().catch(() => { st.open--; });
+      postSse("dat-sse-close", searchId);
+    })().catch(() => { st.open--; postSse("dat-sse-close", searchId); });
   }
   // Диагностика для поддержки (DevTools → window.__loadlensSse): сколько потоков live-матчей
   // перехвачено и сколько событий прошло. MAIN world, поэтому доступно из консоли страницы.

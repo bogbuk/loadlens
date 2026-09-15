@@ -39,6 +39,8 @@ extension/                  MV3-расширение (грузит vendor/* → 
   alerts.js (LLALERT)       релей green+passEquip грузов в Telegram: keyFor/toPayload (бизнес-поля + дата пикапа + контакт брокера — PII по явному решению, только в DM) + push (гейт linked/enabled, session-дедуп). Вызывается из content.render
   equip-filter.js (LLEQUIP) чистый normalize/matches фильтра прицепа (ll_equip_filter): string[]|null, мультивыбор, обратно-совместим со старой строкой
   alert-rules.js (LLRULES)  чистые normalize/active/matches/select правил Telegram-алертов (ll_alert_rules): AND внутри правила, OR между; пусто → green+equip. Спека 2026-09-12
+  autopilot-policy.js (LLPOLICY) ★ чистая политика футпринта авто-пилота: nextTick (база тика, окно тишины,
+                            джиттер) / allowReload (потолок reload) / scrollBudget (сколько страниц скроллить)
   visibility.js (LLVIS)     чистый badgesVisible/panelVisible/fabVisible: сводит hintsOff(per-tab) + ll_hide_panel/ll_hide_badges(глоб.попап) + panelCollapsed в решения «рисовать/нет»
   popup.*                   настройки водителя (cost/mile, HOS-часы) + секция «Отображение на странице» (instant-apply тумблеры ll_hide_panel/ll_hide_badges) + аккаунт + секция «Парк» (CRUD водителей) + секция «Telegram-уведомления» (Pro)
   vendor/                   ★ АВТОКОПИИ из shared/ (load.model, scoring, planner, fleet, email-template, markets.seed). `npm run sync:shared`
@@ -121,21 +123,39 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   fallback **`location.reload()`** (повторяет тот же поиск из URL; маркер `sessionStorage.ll_autopilot_reload`
   → после reload переприменяем сортировку). Это формально заставляет приложение DAT слать FindLoads —
   граница сместилась с «только наблюдаем» к «кликаем её же UI / перезагружаем как пользователь в его
-  сессии». Поэтому: по умолчанию **ВЫКЛ** (opt-in), интервал **≥60с с джиттером** (`nextDelay`, дефолт
-  60–120с), сортировку переприменяем только после нашего рефреша (`pendingSortReapply`). Это НЕ путь
+  сессии». Поэтому: по умолчанию **ВЫКЛ** (opt-in), сортировку переприменяем только после нашего рефреша
+  (`pendingSortReapply`). Это НЕ путь
   Convoy: GraphQL/REST DAT с токеном напрямую по-прежнему НЕЛЬЗЯ. Сорт-дропдаун (`applySort`) — селекторы
   ★ ЗАГЛУШКИ до живой сессии. Настройки — `ll_autorefresh`/`ll_sort`. **Вкл/выкл (с 2026-09-12):**
   глобальный тумблер `ll_autorefresh.on` в попапе («Enable on DAT tabs») + per-tab override галкой
   в шапке панели (`sessionStorage`, `LLTAB.resolveAutorefresh`); побеждает последнее действие —
   переключение в попапе снимает override на всех вкладках. Раньше `on` был ТОЛЬКО per-tab, и настройки
   попапа (интервал/скролл) молча ничего не запускали. Спека — `docs/superpowers/specs/2026-06-22-dat-autopilot-refresh-sort-design.md`.
+- **Футпринт авто-пилота — вся арифметика в `extension/autopilot-policy.js` (LLPOLICY), не в `content.js`**
+  (с 2026-09-15, после отвала первого лида: «friend got a warning from DAT»). Решения и их причины:
+  (1) **база тика** — `nextTick`: 120с жёсткий пол, дефолт 180с (было 60с); при живом SSE-потоке
+  live-матчей — **600с**, потому что свежесть уже несёт поток, а поллинг нужен лишь чтобы не разойтись
+  с выдачей; джиттер прежний `[base, 2·base)`. (2) **`location.reload()` больше НЕ штатная ветка тика** —
+  это самый грубый сигнал (полный bootstrap приложения). `allowReload` пускает его, только если прошло
+  ≥15 мин с прошлого (`lastReloadAt` живёт в `sessionStorage.ll_autopilot_reload_at` — иначе сам reload
+  обнулял бы потолок) И выдача протухла (>10 мин без ответов FindLoads, `lastDataAt`); иначе тик просто
+  пропускается. (3) **Бюджет скролла** — `scrollBudget`: полный (`maxSteps`, дефолт 10, было 40) только
+  на новую выдачу (`accState.searchId !== scrolledSearchId`), дальше 2 страницы, при живом SSE — **0**.
+  Каждый шаг скролла провоцирует `fetchMore` (`limit:150`) — это и был основной объём футпринта.
+  (4) **Окно тишины** `ll_autorefresh.quiet` (дефолт 22–5, `null` = выключено пользователем; `undefined`
+  = ключа нет → дефолт): в окне тик планируется, но страницу не трогаем, спим до конца окна + джиттер
+  до 5 мин. Часы — **локальные для машины**, в облаке это TZ контейнера, поэтому попап печатает рядом
+  текущее время машины. Ровный круглосуточный паттерн — самое заметное в телеметрии борда.
+  **Признак «SSE жив» — `dat-sse-open`/`dat-sse-close` из `inject.js`** (набор `sseStreams`), а НЕ факт
+  недавнего события: в тихие минуты матчей нет, а поток жив (недавнее событие оставлено фолбэком на
+  случай, если поток открылся до подписки `content.js`). Этим же признаком горит индикатор «● live».
 - **Авто-скролл + накопление выдачи по `searchId`.** Выдача DAT пагинируется (`cursors.next`, `limit:150`):
   за экран приходит не всё. `DAT_GQL.parseFindLoadsResult` отдаёт `{loads, searchId, hasNext}`; чистый
   `LLACC.accumulate` (`extension/loads-accumulator.js`) копит страницы — тот же `searchId` доливает по
   `loadId` (last-write-wins), новый `searchId` (наш клик SEARCH/reload) сбрасывает, `sid=null` → перезапись.
   `content.scrollToLoadAll` доскролливает выдачу (`adapter.findScrollContainer` авто-детектит контейнер,
-  `scrollStep` шагает; стоп по «сухим» шагам/`maxSteps=40`), провоцируя `fetchMore` приложения DAT — своих
-  запросов не шлём. Гейт: авто-пилот ВКЛ + `ll_autorefresh.autoscroll` (дефолт ВКЛ). **Виртуализация DAT:**
+  `scrollStep` шагает; стоп по «сухим» шагам или бюджету `LLPOLICY.scrollBudget`), провоцируя `fetchMore`
+  приложения DAT — своих запросов не шлём. Гейт: авто-пилот ВКЛ + `ll_autorefresh.autoscroll` (дефолт ВКЛ). **Виртуализация DAT:**
   построчные бейджи — только видимые строки, **панель — полный набор** (данные из перехвата JSON, не из DOM).
 - **Live-матчи DAT по SSE (с 2026-09-15, `ll_sse_alerts`, дефолт ВЫКЛ).** Приложение DAT само держит
   SSE-поток `freight.api.prod.dat.com/notification/v3/liveQueryMatches/{searchId}` на каждую вкладку поиска

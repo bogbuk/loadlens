@@ -36,13 +36,17 @@
   // авто-пилот: фоновый таб сам кликает Search DAT, удерживает сортировку и доскролливает выдачу
   // до конца (см. spec 2026-06-22). ToS: НЕ вызываем API DAT — кликаем/скроллим её же UI как
   // пользователь в своей сессии; по умолчанию ВЫКЛ, opt-in.
-  let autoRefresh = { on: false, intervalMs: 60000, scroll: true, maxSteps: 40 }; // base; jitter=intervalMs → [base,2·base)
+  let autoRefresh = { on: false, intervalMs: 180000, scroll: true, maxSteps: 10, quiet: null }; // базу тика и бюджет скролла решает LLPOLICY
   let sortPref = null;           // {field, dir:'asc'|'desc'} — удерживаемая сортировка DAT
   let pendingSortReapply = false;// true сразу после нашего clickRefresh → переприменить сорт по новой выдаче
   let cloudCfg = null;           // cloud mode (LLCLOUD.config) — авто-пилот всегда ВКЛ, heartbeat на бэкенд
   let sseAlerts = false;         // ll_sse_alerts: слушать нативный SSE-поток live-матчей DAT (inject → dat-match-event)
-  let liveTs = 0;                // ts последнего SSE-события (индикатор «live» в шапке панели)
+  let liveTs = 0;                // ts последнего SSE-события (фолбэк для индикатора «live»)
   const LIVE_FRESH_MS = 90000;   // «live» горит, если событие было не позже этого окна
+  const sseStreams = new Set();  // searchId открытых SSE-потоков (dat-sse-open/close из inject.js)
+  let lastDataAt = 0;            // ts последнего ответа DAT FindLoads — «выдача ещё свежая?»
+  let lastReloadAt = 0;          // ts нашего последнего location.reload() (переживает reload в sessionStorage)
+  let scrolledSearchId;          // выдача, которую уже доскроллили полностью (undefined = ещё ни разу)
   const HEARTBEAT_TICK_MS = 60000; // проверка «пора ли heartbeat» (сам период — LLCLOUD.HEARTBEAT_MS)
   let expandedChainSig = null;   // сигнатура раскрытой цепочки (route path), переживает re-render
   const laneCache = new Map();    // "O>D|E" -> {medianRpm|null}  (из backend)
@@ -533,6 +537,14 @@
     return loads.filter(passEquip).filter((l) => badgeFor(l).level === "green").map((load) => ({ load, rule: null }));
   }
 
+  // Живой ли канал live-матчей: открытый поток (надёжно) или недавнее событие (фолбэк на случай,
+  // если поток открылся до того, как content.js навесил слушатель). От этого зависит, насколько
+  // редко тикает авто-пилот и нужно ли вообще скроллить (см. autopilot-policy.js).
+  function sseLive() {
+    if (!sseAlerts) return false;
+    return sseStreams.size > 0 || Date.now() - liveTs < LIVE_FRESH_MS;
+  }
+
   // Событие нативных Load Match Alerts DAT (SSE, перехват клона потока в inject.js). За флагом ll_sse_alerts.
   // Create/Update того же поиска, что на экране (searchId совпал с накопителем) → доливаем в выдачу и
   // перерисовываем (render сам прогонит алерты). Событие другой вкладки поиска (DAT держит поток на каждую)
@@ -616,7 +628,7 @@
       `Start: <input id="ll-start" type="text" value="${start ? esc(start) : ""}" style="width:110px" placeholder="CHICAGO_IL"></div>` +
       `<div class="ll-cfg" title="Auto-pilot: the background tab clicks DAT's Search itself and holds the sort order. This checkbox overrides the global switch (extension popup) for this tab only">` +
         `<label${cloudCfg ? ' title="Cloud mode: auto-pilot is always on in the cloud browser"' : ""}><input type="checkbox" id="ll-ar"${autoRefresh.on ? " checked" : ""}${cloudCfg ? " disabled" : ""}> Auto-refresh${cloudCfg ? " (Cloud)" : ""}</label> ` +
-        (sseAlerts && Date.now() - liveTs < LIVE_FRESH_MS ? `<span class="ll-live" title="Listening to DAT's live match stream for this search — new loads arrive without a refresh">● live</span> ` : "") +
+        (sseLive() ? `<span class="ll-live" title="Listening to DAT's live match stream for this search — new loads arrive without a refresh">● live</span> ` : "") +
         `Sort: <select id="ll-sort-f"><option value="">—</option>` +
         SORT_FIELDS.map((s) => `<option value="${s.field}"${sortPref && sortPref.field === s.field ? " selected" : ""}>${esc(s.label)}</option>`).join("") +
         `</select> <button id="ll-sort-dir" title="Sort direction">${sortPref && sortPref.dir === "asc" ? "▲ Low" : "▼ High"}</button></div>` +
@@ -863,14 +875,21 @@
     return base + Math.floor(r() * jitter);
   }
   let autoTimer = null;
+  let autoTimerSseLive = false;  // режим, в котором взведён текущий таймер (чтобы не пересоздавать зря)
   function clearAuto() { if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; } }
   function scheduleAuto() {
     clearAuto();
     if (/^login\./i.test(location.hostname)) return; // страница логина: reload убил бы форму входа
     if (!autoRefresh.on) return;
-    const base = Math.max(60000, autoRefresh.intervalMs || 60000); // не чаще 60с (ToS: имитация человека)
-    const delay = nextDelay(base, base);                            // [base, 2·base) → дефолт 60–120с
+    const plan = LLPOLICY.nextTick({
+      now: Date.now(), sseLive: sseLive(), quiet: autoRefresh.quiet, intervalMs: autoRefresh.intervalMs,
+    });
+    autoTimerSseLive = sseLive();
+    if (plan.skip) log("auto-refresh: quiet hours, sleeping", Math.round(plan.delayMs / 60000), "min");
     autoTimer = setTimeout(() => {
+      // Окно тишины: таймер тикает, но страницу не трогаем — свежесть в это время несёт только
+      // пассивный SSE-поток (своих запросов не шлём).
+      if (plan.skip || LLPOLICY.inQuiet(Date.now(), autoRefresh.quiet)) { scheduleAuto(); return; }
       let clicked = false;
       try { clicked = !!(adapter.clickRefresh && adapter.clickRefresh()); }
       catch (e) { log("auto-refresh error", e); }
@@ -878,14 +897,23 @@
         // DAT включила SEARCH (критерии менялись) → клик перезапускает поиск без перезагрузки
         pendingSortReapply = true; log("auto-refresh: clicked Search");
         scheduleAuto();
-      } else {
-        // SEARCH задизейблена/не найдена (тот же поиск нечего повторять) → перезагружаем страницу.
-        // Маркер в sessionStorage: после reload переприменим удерживаемую сортировку к новой выдаче.
-        log("auto-refresh: Search disabled → page reload");
-        try { sessionStorage.setItem("ll_autopilot_reload", "1"); } catch (_) {}
-        try { location.reload(); } catch (_) { scheduleAuto(); } // boot после reload сам перезапустит таймер
+        return;
       }
-    }, delay);
+      // SEARCH задизейблена/не найдена (тот же поиск нечего повторять). Раньше здесь был reload на
+      // КАЖДЫЙ тик — самый грубый сигнал для DAT (полный bootstrap приложения). Теперь это
+      // исключение: свой потолок в 15 минут и только если выдача действительно протухла.
+      const may = LLPOLICY.allowReload({ now: Date.now(), lastReloadAt, lastDataAt });
+      if (!may) { log("auto-refresh: Search disabled, reload not due → skip"); scheduleAuto(); return; }
+      log("auto-refresh: Search disabled → page reload");
+      lastReloadAt = Date.now();
+      // Маркеры в sessionStorage: после reload переприменим сортировку и не забудем момент
+      // последней перезагрузки (переменные модуля её не переживают).
+      try {
+        sessionStorage.setItem("ll_autopilot_reload", "1");
+        sessionStorage.setItem("ll_autopilot_reload_at", String(lastReloadAt));
+      } catch (_) {}
+      try { location.reload(); } catch (_) { scheduleAuto(); } // boot после reload сам перезапустит таймер
+    }, plan.delayMs);
   }
   // ---- авто-скролл: доскроллить выдачу до конца, чтобы DAT lazy-load'нул все страницы ----
   // Данные копятся событийно (inject → message → LLACC.accumulate); скролл лишь провоцирует fetchMore
@@ -894,13 +922,19 @@
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   async function scrollToLoadAll() {
     if (scrolling || !autoRefresh.on || !autoRefresh.scroll) return;
+    // Каждый шаг скролла провоцирует fetchMore приложения DAT (limit:150) — это основной объём
+    // нашего футпринта. Полный доскролл оправдан один раз на новую выдачу; дальше хватает пары
+    // страниц, а при живом SSE новые грузы приходят сами и скроллить незачем.
+    const first = accState.searchId !== scrolledSearchId;
+    const maxSteps = LLPOLICY.scrollBudget({ first, sseLive: sseLive(), maxSteps: autoRefresh.maxSteps });
+    if (maxSteps <= 0) { log("auto-scroll: skipped (live matches are carrying freshness)"); return; }
     const container = adapter && adapter.findScrollContainer && adapter.findScrollContainer();
     if (!container) { log("auto-scroll: container not found"); return; }
     scrolling = true;
+    if (first) scrolledSearchId = accState.searchId;
     const startTop = container.scrollTop || 0; // куда вернуть пользователя после доскролла
     try {
       let dry = 0, prevSize = accState.byId.size, prevH = 0;
-      const maxSteps = autoRefresh.maxSteps || 40;
       for (let i = 0; i < maxSteps; i++) {
         if (!autoRefresh.on || !autoRefresh.scroll) break;
         const m = adapter.scrollStep(container) || {};
@@ -957,9 +991,11 @@
       const globalOn = !!(ll_autorefresh && ll_autorefresh.on);
       autoRefresh = {
         on: (typeof LLTAB !== "undefined") ? LLTAB.resolveAutorefresh(sessionStorage, globalOn) : globalOn,
-        intervalMs: (ll_autorefresh && ll_autorefresh.intervalMs) || 60000,
+        intervalMs: (ll_autorefresh && ll_autorefresh.intervalMs) || 180000,
         scroll: !ll_autorefresh || ll_autorefresh.autoscroll !== false, // дефолт ВКЛ
-        maxSteps: (ll_autorefresh && ll_autorefresh.maxSteps) || 40,
+        maxSteps: (ll_autorefresh && ll_autorefresh.maxSteps) || LLPOLICY.DEFAULT_MAX_STEPS,
+        // окно тишины: ключа нет → дефолт 22–5 (в том числе у всех, кто настраивал авто-пилот раньше)
+        quiet: LLPOLICY.normalizeQuiet(ll_autorefresh ? ll_autorefresh.quiet : undefined),
       };
       if (ll_sort && ll_sort.field) sortPref = { field: ll_sort.field, dir: ll_sort.dir === "asc" ? "asc" : "desc" };
     } catch { /* дефолт */ }
@@ -970,6 +1006,10 @@
         sessionStorage.removeItem("ll_autopilot_reload");
         if (sortPref) pendingSortReapply = true;
       }
+      // Момент последнего reload переживает саму перезагрузку — иначе потолок «раз в 15 минут»
+      // обнулялся бы каждым reload и не ограничивал ничего.
+      const at = Number(sessionStorage.getItem("ll_autopilot_reload_at"));
+      if (Number.isFinite(at) && at > 0) lastReloadAt = at;
     } catch { /* нет sessionStorage */ }
     try { if (typeof LLTAB !== "undefined") hintsOff = LLTAB.getHintsOff(sessionStorage); } catch (_) { /* нет sessionStorage */ }
     // парк водителей диспетчера (если залогинен); активный — per-device выбор
@@ -996,9 +1036,10 @@
         if (ch.ll_hide_badges) hideBadges = !!ch.ll_hide_badges.newValue;
         if (ch.ll_autorefresh) {
           const v = ch.ll_autorefresh.newValue, prev = ch.ll_autorefresh.oldValue;
-          autoRefresh.intervalMs = (v && v.intervalMs) || 60000;
+          autoRefresh.intervalMs = (v && v.intervalMs) || 180000;
           autoRefresh.scroll = !v || v.autoscroll !== false;
-          autoRefresh.maxSteps = (v && v.maxSteps) || 40;
+          autoRefresh.maxSteps = (v && v.maxSteps) || LLPOLICY.DEFAULT_MAX_STEPS;
+          autoRefresh.quiet = LLPOLICY.normalizeQuiet(v ? v.quiet : undefined);
           // Глобальный тумблер переключили в попапе → побеждает последнее действие: снимаем per-tab
           // override и применяем глобальное значение ко всем вкладкам DAT.
           const on = !!(v && v.on);
@@ -1024,10 +1065,24 @@
       const d = e.data;
       if (!d || d.source !== "loadlens") return;
       if (d.type === "dat-match-event") { try { onMatchEvent(d.payload); } catch (err) { log("match event error", err); } return; }
+      // Поток live-матчей открылся/закрылся: от этого зависит база тика авто-пилота и бюджет
+      // скролла, поэтому таймер переводим сразу, не дожидаясь следующего срабатывания.
+      if (d.type === "dat-sse-open" || d.type === "dat-sse-close") {
+        const sid = d.payload && d.payload.searchId;
+        if (d.type === "dat-sse-open") sseStreams.add(sid); else sseStreams.delete(sid);
+        log("SSE stream", d.type === "dat-sse-open" ? "open" : "closed", sid, "— live streams:", sseStreams.size);
+        // Перевзводим таймер, ТОЛЬКО если сменился сам режим (был/стал живой SSE). DAT переоткрывает
+        // потоки регулярно, а при базе в 10 минут пересоздание на каждое открытие означало бы, что
+        // тик не наступит никогда.
+        if (autoRefresh.on && sseLive() !== autoTimerSseLive) scheduleAuto();
+        schedule();
+        return;
+      }
       if (d.type !== "dat-findloads") return;
       if (typeof DAT_GQL !== "undefined") {
         const res = DAT_GQL.parseFindLoadsResult(d.payload);
         log("received dat-findloads → parse:", res.loads.length, "loads, searchId", res.searchId || "—", res.loads.length ? "" : "(empty — the DAT schema may have changed)");
+        lastDataAt = Date.now(); // выдача обновилась — reload точно не нужен (см. LLPOLICY.allowReload)
         if (cloudCfg) LLCLOUD.markFindLoads(sessionStorage, Date.now());
         if (res.loads.length) {
           // накапливаем по searchId: та же выдача (пагинация) доливает, новый поиск сбрасывает
