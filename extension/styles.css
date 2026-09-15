@@ -112,6 +112,7 @@
 #ll-panel h4 { margin: 10px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .3px; color: #1e3a8a; }
 #ll-panel .ll-cfg { font-size: 12px; color: #475569; margin: 8px 0; }
 #ll-panel .ll-cfg input { border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 5px; font: inherit; }
+#ll-panel .ll-live { color: #16a34a; font-weight: 600; font-size: 11px; letter-spacing: .02em; }
 #ll-panel .chain { padding: 6px 8px; margin: 5px 0; border-radius: 9px; background: #f8fafc; border-left: 3px solid #94a3b8; }
 #ll-panel .chain.ll-green { border-left-color: #16a34a; }
 #ll-panel .chain.ll-amber { border-left-color: #d97706; }

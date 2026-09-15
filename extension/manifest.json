@@ -52,7 +52,7 @@
     },
     {
       "matches": ["https://*.dat.com/*"],
-      "js": ["inject.js"],
+      "js": ["sse-frames.js", "inject.js"],
       "world": "MAIN",
       "run_at": "document_start"
     }

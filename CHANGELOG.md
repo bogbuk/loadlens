@@ -4,6 +4,9 @@ All notable user-facing changes to the LoadLens browser extension.
 
 ## [Unreleased]
 
+### New
+- **Live matches from DAT, no refresh needed.** DAT already streams new matching loads to every open search tab (on plans with live matches, Pro and up). Turn on "Listen to DAT live matches" in the popup and LoadLens reads that stream: new loads land in the panel and go through your Telegram alert rules the moment DAT sends them, with no extra requests to DAT and no need for the auto-pilot to refresh the page. A "● live" mark in the panel header shows the stream is flowing. Off by default.
+
 ## 0.6.2 — 2026-09-14
 
 ### New

@@ -27,6 +27,38 @@
     }).catch(() => {});
   }
 
+  // Нативные Load Match Alerts DAT: приложение само открывает SSE-поток
+  // `notification/v3/liveQueryMatches/{searchId}` (text/event-stream) на каждую вкладку поиска
+  // через fetch-based EventSourcePolyfill. Полифил захватывает ссылку на fetch при загрузке
+  // модуля — т.е. ИМЕННО эту обёртку (мы на document_start). Читаем КЛОН тела как поток, парсим
+  // кадры (LLSSE) и шлём content.js. Своих запросов не шлём, поток не инициируем
+  // (см. docs/research/2026-09-15-dat-load-match-alerts-spike.md).
+  function maybeTeeSse(url, res) {
+    if (!url || url.indexOf("/liveQueryMatches/") === -1 || !res || !res.body) return;
+    if (typeof LLSSE === "undefined") { log("liveQueryMatches stream seen, but LLSSE is not loaded"); return; }
+    const ct = (res.headers && res.headers.get("content-type")) || "";
+    if (ct.indexOf("text/event-stream") === -1) return;
+    const searchId = url.split("/liveQueryMatches/")[1].split(/[?#]/)[0] || null;
+    const parser = LLSSE.createParser();
+    const dec = new TextDecoder();
+    let reader;
+    try { reader = res.clone().body.getReader(); } catch (_) { return; }
+    log("liveQueryMatches SSE tee started, searchId", searchId);
+    (async () => {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        for (const f of parser.push(dec.decode(value, { stream: true }))) {
+          let data;
+          try { data = JSON.parse(f.data); } catch (_) { continue; }
+          log("SSE event", f.event, "→ posting to content.js");
+          window.postMessage({ source: "loadlens", type: "dat-match-event", payload: { event: f.event, id: f.id, searchId, data } }, window.location.origin);
+        }
+      }
+      log("liveQueryMatches SSE tee ended, searchId", searchId);
+    })().catch(() => {});
+  }
+
   // fetch (GraphQL-клиент DAT использует именно его)
   const origFetch = window.fetch;
   if (typeof origFetch === "function") {
@@ -36,6 +68,7 @@
         try {
           const url = (args[0] && args[0].url) || String(args[0] || "");
           maybeCapture(url, () => res.clone().json());
+          maybeTeeSse(url, res);
         } catch (_) { /* не мешаем приложению */ }
       }).catch(() => {});
       return p;

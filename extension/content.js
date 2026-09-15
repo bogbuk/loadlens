@@ -40,6 +40,9 @@
   let sortPref = null;           // {field, dir:'asc'|'desc'} — удерживаемая сортировка DAT
   let pendingSortReapply = false;// true сразу после нашего clickRefresh → переприменить сорт по новой выдаче
   let cloudCfg = null;           // cloud mode (LLCLOUD.config) — авто-пилот всегда ВКЛ, heartbeat на бэкенд
+  let sseAlerts = false;         // ll_sse_alerts: слушать нативный SSE-поток live-матчей DAT (inject → dat-match-event)
+  let liveTs = 0;                // ts последнего SSE-события (индикатор «live» в шапке панели)
+  const LIVE_FRESH_MS = 90000;   // «live» горит, если событие было не позже этого окна
   const HEARTBEAT_TICK_MS = 60000; // проверка «пора ли heartbeat» (сам период — LLCLOUD.HEARTBEAT_MS)
   let expandedChainSig = null;   // сигнатура раскрытой цепочки (route path), переживает re-render
   const laneCache = new Map();    // "O>D|E" -> {medianRpm|null}  (из backend)
@@ -516,6 +519,44 @@
     return p;
   }
 
+  // Бейдж выгодности с текущими настройками (cost/mile, дизель, медиана lane, целевой $/mi по бакету).
+  function badgeFor(l) {
+    return LLSCORE.profitBadge(l, { costPerMile, dieselPrice, laneMedian: laneCache.get(laneKeyOf(l)), targetRpm: targetFor(l) });
+  }
+
+  // Отбор грузов для Telegram-алертов. Есть включённые правила (ll_alert_rules) → LLRULES.select (OR между
+  // правилами, AND внутри); нет → прежнее поведение: green + passEquip (те же грузы, что «Выгодные сейчас»).
+  // Используется и в render (вся выдача), и для одиночных live-событий SSE (dat-match-event).
+  function selectAlertHits(loads) {
+    const activeRules = (typeof LLRULES !== "undefined") ? LLRULES.active(alertRules) : [];
+    if (activeRules.length) return LLRULES.select(activeRules, loads, { equipFilter, badgeFor });
+    return loads.filter(passEquip).filter((l) => badgeFor(l).level === "green").map((load) => ({ load, rule: null }));
+  }
+
+  // Событие нативных Load Match Alerts DAT (SSE, перехват клона потока в inject.js). За флагом ll_sse_alerts.
+  // Create/Update того же поиска, что на экране (searchId совпал с накопителем) → доливаем в выдачу и
+  // перерисовываем (render сам прогонит алерты). Событие другой вкладки поиска (DAT держит поток на каждую)
+  // → только алерты, в панель не подмешиваем. Cancel → убираем из накопителя.
+  function onMatchEvent(payload) {
+    if (!sseAlerts || typeof DAT_GQL === "undefined" || !payload) return;
+    const r = DAT_GQL.parseMatchEvent(payload);
+    if (!r) return;
+    liveTs = Date.now();
+    const sameSearch = !!(accState.searchId && payload.searchId && payload.searchId === accState.searchId);
+    log("SSE match event:", r.action, r.loadId, sameSearch ? "(current search)" : "(other search tab)");
+    if (r.action === "cancel") {
+      if (sameSearch && accState.byId.delete(r.loadId)) { gqlLoads = [...accState.byId.values()]; schedule(); }
+      return;
+    }
+    if (sameSearch) {
+      const acc = LLACC.accumulate(accState, [r.load], accState.searchId);
+      accState = acc.state; gqlLoads = acc.loads; schedule();
+    } else if (typeof LLALERT !== "undefined") {
+      applyDriverContext([r.load]);
+      LLALERT.push(selectAlertHits([r.load])).catch(() => {});
+    }
+  }
+
   function render() {
     const loads = currentLoads();                   // DAT: gqlLoads (перехват) · Truckstop: DOM
     queueSync(loads);
@@ -530,18 +571,11 @@
 
     // green + passEquip — те же грузы, что в «Выгодные сейчас» (используется и панелью Hot loads ниже,
     // и как фолбэк для Telegram-алертов). Считаем до early-return, чтобы работало и со свёрнутой панелью.
-    const badgeFor = (l) => LLSCORE.profitBadge(l, { costPerMile, dieselPrice, laneMedian: laneCache.get(laneKeyOf(l)), targetRpm: targetFor(l) });
     const greens = loads.filter(passEquip)
       .map((l) => ({ l, b: badgeFor(l) }))
       .filter((d) => d.b.level === "green");
-    // Telegram-алерты. Есть включённые правила (ll_alert_rules) → отбор через LLRULES (OR между
-    // правилами, AND внутри); нет → прежнее поведение: green + passEquip (те же грузы, что greens выше).
-    // Гейт/дедуп/cap внутри LLALERT и на сервере.
-    const activeRules = (typeof LLRULES !== "undefined") ? LLRULES.active(alertRules) : [];
-    const alertHits = activeRules.length
-      ? LLRULES.select(activeRules, loads, { equipFilter, badgeFor })
-      : greens.map((d) => ({ load: d.l, rule: null }));
-    if (typeof LLALERT !== "undefined") LLALERT.push(alertHits).catch(() => {});
+    // Telegram-алерты: отбор в selectAlertHits (правила или green+equip). Гейт/дедуп/cap внутри LLALERT и на сервере.
+    if (typeof LLALERT !== "undefined") LLALERT.push(selectAlertHits(loads)).catch(() => {});
 
     clearBadges();
     const vis = { hintsOff, hideBadges, hidePanel, panelCollapsed };
@@ -579,6 +613,7 @@
       `Start: <input id="ll-start" type="text" value="${start ? esc(start) : ""}" style="width:110px" placeholder="CHICAGO_IL"></div>` +
       `<div class="ll-cfg" title="Auto-pilot: the background tab clicks DAT's Search itself and holds the sort order. This checkbox overrides the global switch (extension popup) for this tab only">` +
         `<label${cloudCfg ? ' title="Cloud mode: auto-pilot is always on in the cloud browser"' : ""}><input type="checkbox" id="ll-ar"${autoRefresh.on ? " checked" : ""}${cloudCfg ? " disabled" : ""}> Auto-refresh${cloudCfg ? " (Cloud)" : ""}</label> ` +
+        (sseAlerts && Date.now() - liveTs < LIVE_FRESH_MS ? `<span class="ll-live" title="Listening to DAT's live match stream for this search — new loads arrive without a refresh">● live</span> ` : "") +
         `Sort: <select id="ll-sort-f"><option value="">—</option>` +
         SORT_FIELDS.map((s) => `<option value="${s.field}"${sortPref && sortPref.field === s.field ? " selected" : ""}>${esc(s.label)}</option>`).join("") +
         `</select> <button id="ll-sort-dir" title="Sort direction">${sortPref && sortPref.dir === "asc" ? "▲ Low" : "▼ High"}</button></div>` +
@@ -907,7 +942,8 @@
     // try со storage, чтобы сбой chrome.storage.local не отключал форс молча.
     cloudCfg = (typeof LLCLOUD !== "undefined") ? LLCLOUD.config(globalThis) : null;
     try {
-      const { ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_panel, ll_hide_badges, ll_mail_template, ll_alert_rules } = await chrome.storage.local.get(["ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_panel", "ll_hide_badges", "ll_mail_template", "ll_alert_rules"]);
+      const { ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_panel, ll_hide_badges, ll_mail_template, ll_alert_rules, ll_sse_alerts } = await chrome.storage.local.get(["ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_panel", "ll_hide_badges", "ll_mail_template", "ll_alert_rules", "ll_sse_alerts"]);
+      sseAlerts = !!ll_sse_alerts;
       if (Array.isArray(ll_targets) && ll_targets.length) targets = ll_targets;
       equipFilter = LLEQUIP.normalize(ll_equip_filter);
       if (typeof LLRULES !== "undefined") alertRules = LLRULES.normalize(ll_alert_rules);
@@ -948,6 +984,7 @@
         if (ch.ll_targets) targets = (Array.isArray(ch.ll_targets.newValue) && ch.ll_targets.newValue.length) ? ch.ll_targets.newValue : LLSCORE.DEFAULTS.targets;
         if (ch.ll_equip_filter) equipFilter = LLEQUIP.normalize(ch.ll_equip_filter.newValue);
         if (ch.ll_alert_rules && typeof LLRULES !== "undefined") alertRules = LLRULES.normalize(ch.ll_alert_rules.newValue);
+        if (ch.ll_sse_alerts) sseAlerts = !!ch.ll_sse_alerts.newValue;
         if (ch.ll_mail_template) {
           const v = ch.ll_mail_template.newValue;
           mailTemplate = (typeof v === "string" && v.trim()) ? v : LLMAIL.DEFAULT_TEMPLATE;
@@ -982,7 +1019,9 @@
     window.addEventListener("message", (e) => {
       if (e.source !== window) return;
       const d = e.data;
-      if (!d || d.source !== "loadlens" || d.type !== "dat-findloads") return;
+      if (!d || d.source !== "loadlens") return;
+      if (d.type === "dat-match-event") { try { onMatchEvent(d.payload); } catch (err) { log("match event error", err); } return; }
+      if (d.type !== "dat-findloads") return;
       if (typeof DAT_GQL !== "undefined") {
         const res = DAT_GQL.parseFindLoadsResult(d.payload);
         log("received dat-findloads → parse:", res.loads.length, "loads, searchId", res.searchId || "—", res.loads.length ? "" : "(empty — the DAT schema may have changed)");

@@ -1,0 +1,63 @@
+{
+  "created": {
+    "event": "LOAD_MATCH_CREATED",
+    "id": "SEARCH-1:1789460196637",
+    "data": {
+      "isActive": true,
+      "assetInfo": {
+        "postingId": "POST-SSE-1",
+        "equipmentType": "VAN",
+        "equipmentDisplayName": "Van",
+        "origin": { "placeId": 1, "city": "Muncie", "county": "Delaware", "stateProv": "IN", "postalCode": "47302", "latitude": 40.19, "longitude": -85.38 },
+        "destination": { "placeId": 2, "city": "Dallas", "county": "Dallas", "stateProv": "TX", "postalCode": "75201", "latitude": 32.78, "longitude": -96.8 },
+        "capacity": { "fullPartial": "FULL", "maximumLengthFeet": 53, "maximumWeightPounds": 42000 }
+      },
+      "availability": { "earliestWhen": "2026-09-16T00:00:00Z", "latestWhen": "2026-09-16T23:59:59Z" },
+      "tripLength": { "miles": 960, "method": "PCMILER" },
+      "originDeadheadMiles": { "miles": 35, "method": "PCMILER" },
+      "destinationDeadheadMiles": { "miles": 0, "method": "PCMILER" },
+      "estimatedRatePerMile": 2.4,
+      "rateInfo": { "nonBookable": { "rateUsd": 2600, "basis": "FLAT" } },
+      "posterInfo": {
+        "companyName": "Synthetic Logistics LLC",
+        "city": "Fort Worth", "state": "TX",
+        "credit": { "creditScore": 96, "daysToPay": 21, "asOf": "2026-09-01" },
+        "contact": { "email": "dispatch@example.invalid", "phone": { "number": "5550100200" } },
+        "preferredContactMethod": "EMAIL"
+      },
+      "posterDotIds": { "brokerMcNumber": "MC-000111" },
+      "comments": ["Drop trailer ok"],
+      "postingExpiresWhen": "2026-09-17T00:00:00Z",
+      "isFactorable": true, "isAssurable": false, "isBookable": false, "isNegotiable": true,
+      "isFromPrivateNetwork": false, "isTrackingRequired": false, "isRedacted": false,
+      "servicedWhen": "2026-09-15T18:10:00Z", "presentationDate": "2026-09-15T18:10:00Z",
+      "resultId": "SEARCH-1+ROW-SSE-1"
+    }
+  },
+  "updated_redacted": {
+    "event": "LOAD_MATCH_UPDATED",
+    "id": "SEARCH-1:1789460196638",
+    "data": {
+      "isActive": true,
+      "assetInfo": {
+        "postingId": "POST-SSE-2",
+        "equipmentType": "VAN",
+        "origin": { "city": "Anderson", "stateProv": "IN" },
+        "destination": { "city": "Fort Worth", "stateProv": "TX" },
+        "capacity": { "fullPartial": "FULL", "maximumLengthFeet": 53, "maximumWeightPounds": 44000 }
+      },
+      "availability": { "earliestWhen": "2026-09-16T00:00:00Z", "latestWhen": "2026-09-16T23:59:59Z" },
+      "tripLength": { "miles": 940, "method": "PCMILER" },
+      "originDeadheadMiles": { "miles": 12, "method": "PCMILER" },
+      "estimatedRatePerMile": 2.1,
+      "isRedacted": true,
+      "redactionReasons": ["UNMET_PREFERENCE", "QUALIFICATION"],
+      "resultId": "SEARCH-1+ROW-SSE-2"
+    }
+  },
+  "cancelled": {
+    "event": "LOAD_MATCH_CANCELLED",
+    "id": "SEARCH-1:1789460196639",
+    "data": { "postingId": "POST-SSE-1" }
+  }
+}

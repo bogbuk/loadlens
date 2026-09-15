@@ -173,7 +173,31 @@ const DAT_GQL = (() => {
     return !!(json && json.data && json.data.freightSearchV4 && json.data.freightSearchV4.findLoads);
   }
 
-  return { parseFindLoads, parseFindLoadsResult, mapResult, resolveRate, isFindLoadsResponse };
+  // Событие нативных Load Match Alerts DAT (SSE `notification/v3/liveQueryMatches/{searchId}`,
+  // перехват клона потока в inject.js; см. docs/research/2026-09-15-dat-load-match-alerts-spike.md).
+  // event: LOAD_MATCH_CREATED | LOAD_MATCH_UPDATED → data = тот же объект, что элемент findLoads.results
+  // (assetInfo/posterInfo/rateInfo/...), поэтому идёт через mapResult; LOAD_MATCH_CANCELLED → data = {postingId}.
+  // Возвращает { action: "create"|"update"|"cancel", loadId, load|null } или null (чужое событие/мусор).
+  function parseMatchEvent(frame) {
+    if (!frame || typeof frame !== "object") return null;
+    const ev = String(frame.event || "").toUpperCase();
+    if (!/^LOAD_MATCH_/.test(ev)) return null;
+    let data = frame.data;
+    if (typeof data === "string") { try { data = JSON.parse(data); } catch (_) { return null; } }
+    if (!data || typeof data !== "object") return null;
+    if (/CANCEL/.test(ev)) {
+      const id = data.postingId ?? (data.assetInfo && data.assetInfo.postingId) ?? null;
+      return id == null ? null : { action: "cancel", loadId: String(id), load: null };
+    }
+    const action = /UPDATE/.test(ev) ? "update" : /CREATE/.test(ev) ? "create" : null;
+    if (!action) return null;
+    const load = mapResult(data);
+    if (!load) return null;
+    load.fromMatchAlert = true;      // пришёл live-пушем DAT, а не из выдачи FindLoads
+    return { action, loadId: String(load.loadId), load };
+  }
+
+  return { parseFindLoads, parseFindLoadsResult, parseMatchEvent, mapResult, resolveRate, isFindLoadsResponse };
 })();
 
 if (typeof module !== "undefined" && module.exports) module.exports = DAT_GQL;

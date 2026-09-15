@@ -124,3 +124,50 @@ test("isFindLoadsResponse распознаёт ответ; мусор → []", (
   assert.strictEqual(DAT_GQL.isFindLoadsResponse({ data: {} }), false);
   assert.deepStrictEqual(DAT_GQL.parseFindLoads({ data: {} }), []);
 });
+
+// --- Load Match Alerts (SSE liveQueryMatches): событие → {action, load}. Спайк 2026-09-15.
+const matchFx = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "__fixtures__", "dat-match-event.json"), "utf8"),
+);
+
+test("parseMatchEvent: LOAD_MATCH_CREATED → create + полный Load (та же форма, что findLoads.results)", () => {
+  const r = DAT_GQL.parseMatchEvent(matchFx.created);
+  assert.strictEqual(r.action, "create");
+  assert.strictEqual(r.loadId, "POST-SSE-1");
+  assert.strictEqual(r.load.loadId, "POST-SSE-1");
+  assert.strictEqual(r.load.originMarket, "MUNCIE_IN");
+  assert.strictEqual(r.load.destMarket, "DALLAS_TX");
+  assert.strictEqual(r.load.equipment, "V");
+  assert.strictEqual(r.load.rate, 2600);
+  assert.strictEqual(r.load.loadedMiles, 960);
+  assert.strictEqual(r.load.deadheadMiles, 35);
+  assert.strictEqual(r.load.brokerMc, "MC-000111");
+  assert.strictEqual(r.load.creditScore, 96);
+  assert.strictEqual(r.load.contactEmail, "dispatch@example.invalid");
+  assert.strictEqual(r.load.comments, "Drop trailer ok");
+  assert.strictEqual(r.load.fromMatchAlert, true);
+});
+
+test("parseMatchEvent: LOAD_MATCH_UPDATED (redacted, без ставки/брокера) → update, rate null, estimatedRatePerMile есть", () => {
+  const r = DAT_GQL.parseMatchEvent(matchFx.updated_redacted);
+  assert.strictEqual(r.action, "update");
+  assert.strictEqual(r.load.loadId, "POST-SSE-2");
+  assert.strictEqual(r.load.rate, null);
+  assert.strictEqual(r.load.estimatedRatePerMile, 2.1);
+  assert.strictEqual(r.load.brokerMc, null);
+  assert.deepStrictEqual(r.load.redactionReasons, ["UNMET_PREFERENCE", "QUALIFICATION"]);
+});
+
+test("parseMatchEvent: LOAD_MATCH_CANCELLED → cancel + loadId, без Load", () => {
+  const r = DAT_GQL.parseMatchEvent(matchFx.cancelled);
+  assert.deepStrictEqual(r, { action: "cancel", loadId: "POST-SSE-1", load: null });
+});
+
+test("parseMatchEvent: data строкой JSON тоже принимается; чужое событие/мусор → null", () => {
+  const r = DAT_GQL.parseMatchEvent({ event: "LOAD_MATCH_CREATED", data: JSON.stringify(matchFx.created.data) });
+  assert.strictEqual(r.action, "create");
+  assert.strictEqual(DAT_GQL.parseMatchEvent({ event: "__IMMINENT_DISCONNECT", data: {} }), null);
+  assert.strictEqual(DAT_GQL.parseMatchEvent({ event: "LOAD_MATCH_CREATED", data: "not json" }), null);
+  assert.strictEqual(DAT_GQL.parseMatchEvent({ event: "LOAD_MATCH_CREATED", data: { noAssetInfo: true } }), null);
+  assert.strictEqual(DAT_GQL.parseMatchEvent(null), null);
+});

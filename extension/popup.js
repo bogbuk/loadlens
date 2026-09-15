@@ -20,8 +20,8 @@ const SORT_FIELDS = [
 ];
 
 async function renderSettings() {
-  const { ll_cpm, ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_panel, ll_hide_badges, ll_mail_template } =
-    await chrome.storage.local.get(["ll_cpm", "ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_panel", "ll_hide_badges", "ll_mail_template"]);
+  const { ll_cpm, ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_panel, ll_hide_badges, ll_mail_template, ll_sse_alerts } =
+    await chrome.storage.local.get(["ll_cpm", "ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_panel", "ll_hide_badges", "ll_mail_template", "ll_sse_alerts"]);
   const mailTpl = (typeof ll_mail_template === "string" && ll_mail_template.trim()) ? ll_mail_template : LLMAIL.DEFAULT_TEMPLATE;
   const cpm = ll_cpm != null ? ll_cpm : 1.80;
   const targets = Array.isArray(ll_targets) && ll_targets.length ? ll_targets : DEFAULT_TARGETS;
@@ -57,6 +57,9 @@ async function renderSettings() {
     `<div class="row"><span class="k">Direction</span><select id="s-sort-d">` +
     `<option value="desc"${sort.dir === "desc" ? " selected" : ""}>Highest → Lowest</option>` +
     `<option value="asc"${sort.dir === "asc" ? " selected" : ""}>Lowest → Highest</option></select></div>` +
+    '<h4>DAT live matches</h4>' +
+    `<div class="row"><span class="k">Listen to DAT live matches</span><input id="s-sse" type="checkbox"${ll_sse_alerts ? " checked" : ""} style="width:auto"></div>` +
+    '<div class="note">DAT already streams new matching loads to every open search tab. With this on, LoadLens reads that stream, adds new loads to the panel and runs your Telegram alert rules on them the moment they appear — no refresh needed, no extra requests to DAT. Needs a DAT plan with live matches (Pro and up); on lower plans nothing arrives and the auto-pilot remains the way to get alerts. Applies instantly.</div>' +
     '<h4>On-page display</h4>' +
     `<div class="row"><span class="k">Hide panel on page</span><input id="s-hide-panel" type="checkbox"${ll_hide_panel ? " checked" : ""} style="width:auto"></div>` +
     `<div class="row"><span class="k">Hide badges in table</span><input id="s-hide-badges" type="checkbox"${ll_hide_badges ? " checked" : ""} style="width:auto"></div>` +
@@ -75,6 +78,7 @@ async function renderSettings() {
   // «Отображение на странице» — instant-apply (без кнопки «Сохранить»); content.js слушает storage.onChanged
   document.getElementById("s-hide-panel").onchange = (e) => chrome.storage.local.set({ ll_hide_panel: e.target.checked });
   document.getElementById("s-hide-badges").onchange = (e) => chrome.storage.local.set({ ll_hide_badges: e.target.checked });
+  document.getElementById("s-sse").onchange = (e) => chrome.storage.local.set({ ll_sse_alerts: e.target.checked });
 }
 // чипы-тумблеры фильтра прицепа: клик переключает .on, ссылки Все/Сброс, живая сводка
 function wireEquipChips() {

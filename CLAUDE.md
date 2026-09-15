@@ -23,6 +23,8 @@ NestJS/Sequelize/Postgres (крауд-база ставок по lane, JWT-ак�
 extension/                  MV3-расширение (грузит vendor/* → api → adapters → geo/hos → content)
   inject.js                 ★ MAIN-world перехватчик: патчит fetch/XHR, ловит ответы DAT FindLoads
                             (one-web-bff/graphql), шлёт их content.js через postMessage. Своих запросов к DAT НЕ шлём.
+                            + tee клона SSE-потока liveQueryMatches (нативные Load Match Alerts) → dat-match-event
+  sse-frames.js (LLSSE)     чистый парсер SSE-кадров (MAIN world, грузится перед inject.js)
   adapters/
     dat.graphql.js (DAT_GQL) ОСНОВНОЙ путь DAT: parseFindLoads(json)→Load[] по реальной GraphQL-схеме
                             (FreightSearchV4FindLoadsResult). Богатые поля: rate+basis, trip/DH miles,
@@ -135,6 +137,17 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   `scrollStep` шагает; стоп по «сухим» шагам/`maxSteps=40`), провоцируя `fetchMore` приложения DAT — своих
   запросов не шлём. Гейт: авто-пилот ВКЛ + `ll_autorefresh.autoscroll` (дефолт ВКЛ). **Виртуализация DAT:**
   построчные бейджи — только видимые строки, **панель — полный набор** (данные из перехвата JSON, не из DOM).
+- **Live-матчи DAT по SSE (с 2026-09-15, `ll_sse_alerts`, дефолт ВЫКЛ).** Приложение DAT само держит
+  SSE-поток `freight.api.prod.dat.com/notification/v3/liveQueryMatches/{searchId}` на каждую вкладку поиска
+  (подписка регистрируется самим FindLoads через `criteria.delivery.notify`; своих запросов не шлём).
+  `inject.js` читает КЛОН тела (`maybeTeeSse`, кадры — `LLSSE`), шлёт `dat-match-event`;
+  `DAT_GQL.parseMatchEvent` → `{action: create|update|cancel, load}` (payload = элемент `findLoads.results`,
+  `load.fromMatchAlert=true`); `content.onMatchEvent`: тот же `searchId`, что в накопителе → доливка в панель
+  + render; чужая вкладка поиска → только Telegram-алерты (`selectAlertHits`). Индикатор «● live» в шапке.
+  **Гейт тарифа DAT:** полные live matches только от Pro (10 вкладок; Standard/Enhanced → поток не открывается,
+  фича молчит). Патчить `fetch` ПОСЛЕ загрузки страницы бесполезно — полифил EventSource DAT захватывает
+  ссылку на fetch при загрузке модуля (мы успеваем только на document_start). Спайк —
+  `docs/research/2026-09-15-dat-load-match-alerts-spike.md`.
 - **HOS-правила** (11h/14h/30min/70h-8d, split sleeper) живут в `shared/hos-calculator.js` +
   упрощённая мультисменная forward-модель в `planner.stepHos`. Обязательный сон не штрафует ранг.
 - **Broker-trust бейдж** (`LLSCORE.brokerBadge`): good/ok/risk по `creditScore` (≥90 good, <75 risk)
