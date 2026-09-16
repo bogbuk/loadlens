@@ -42,7 +42,7 @@ extension/                  MV3-расширение (грузит vendor/* → 
   autopilot-policy.js (LLPOLICY) ★ чистая политика футпринта авто-пилота: nextTick (база тика, окно тишины,
                             джиттер) / allowReload (потолок reload) / scrollBudget (сколько страниц скроллить)
   visibility.js (LLVIS)     чистый badgesVisible/panelVisible/fabVisible: сводит hintsOff(per-tab) + ll_hide_panel/ll_hide_badges(глоб.попап) + panelCollapsed в решения «рисовать/нет»
-  popup.*                   настройки водителя (cost/mile, HOS-часы) + секция «Отображение на странице» (instant-apply тумблеры ll_hide_panel/ll_hide_badges) + аккаунт + секция «Парк» (CRUD водителей) + секция «Telegram-уведомления» (Pro)
+  popup.*                   настройки водителя (cost/mile, HOS-часы) + секция «Отображение на странице» (instant-apply тумблеры ll_hide_panel/ll_hide_badges) + аккаунт + секция «Парк» (CRUD водителей) + секция «Telegram» (привязка — любой план, алерты и правила — Pro)
   vendor/                   ★ АВТОКОПИИ из shared/ (load.model, scoring, planner, fleet, email-template, markets.seed). `npm run sync:shared`
   cloud.js (LLCLOUD)        cloud mode: чтение globalThis.LL_CLOUD, heartbeat/detectState (ok/stale/logged_out), метки в sessionStorage
   cloud.config.js           заглушка (обычный режим); в облачном образе перезаписывается start-chromium.sh
@@ -201,7 +201,10 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   min rate/$/mi, max DH, miles, equipment, штаты назначения, MC allow/block, credit, score) — OR между
   правилами, AND внутри, `deadheadMiles:null`→0. Имя правила уходит как `ruleName` и печатается ботом
   первой строкой `🎯`. Спека — `docs/superpowers/specs/2026-09-12-alert-rules-engine-design.md`;
-  тот шлёт их в `POST /telegram/notify` → бот DM-ит диспетчеру. **Гейт Pro** + привязка Telegram
+  тот шлёт их в `POST /telegram/notify` → бот DM-ит диспетчеру. **Гейт Pro стоит на алертах**
+  (`alerts`/`notify`, тумблер и редактор правил в попапе), а **привязка/отвязка чата доступна любому
+  плану** — код сброса пароля приходит только в бота, без привязки Free теряет аккаунт навсегда
+  (`link`/`status`/`unlink` = только `JwtAuthGuard`). Привязка Telegram
   (`/telegram/link` → deep-link `t.me/<bot>?start=<token>` → вебхук `/telegram/webhook/:secret` ловит
   `/start` и пишет `users.telegram_chat_id`) + тумблер `alerts_enabled`. Дедуп **по семантическому
   ключу** (`board|origin>dest|equip|rate|miles|mc`, НЕ по композитному resultId) + TTL 6ч + soft-cap

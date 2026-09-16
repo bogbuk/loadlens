@@ -22,6 +22,8 @@ PROFILE = str(OUT / "chrome-profile")
 BACKEND = "https://loadlens.krait.studio"  # LL_BACKEND по умолчанию в api.js; сеть перехватывается целиком
 
 errors, console, results = [], [], []
+tg_linked = True   # мок /telegram/status; сценарий Free-без-привязки переключает в False
+me_plan = "pro"    # мок /auth/me: попап освежает кэш плана из сети, иначе сценарий Free «съезжает» в Pro
 
 
 def check(name, cond, extra=""):
@@ -39,13 +41,13 @@ def mock(route, request):
     url = request.url
     body = {}
     if "/telegram/status" in url:
-        body = {"configured": True, "linked": True, "enabled": True}
+        body = {"configured": True, "linked": tg_linked, "enabled": True}
     elif "/telegram/alerts" in url:
         body = {"enabled": json.loads(request.post_data or "{}").get("enabled")}
     elif "/drivers" in url:
         body = []
     elif "/auth/me" in url:
-        body = {"email": "demo@loadlens.test", "plan": "pro"}
+        body = {"email": "demo@loadlens.test", "plan": me_plan}
     elif "/rates" in url:
         body = {"diesel": 3.95}
     route.fulfill(status=200, content_type="application/json", body=json.dumps(body))
@@ -56,6 +58,8 @@ def stored_rules(page):
 
 
 def set_auth(page, plan, email):
+    global me_plan
+    me_plan = plan
     page.evaluate(
         "([plan, email]) => chrome.storage.local.set({ ll_auth: { email, plan, planTs: Date.now(),"
         " accessToken: 'test-access', refreshToken: 'test-refresh' }, ll_alert_rules: null })",
@@ -163,14 +167,26 @@ with sync_playwright() as p:
     st = stored_rules(page)
     check("delete: осталось одно правило в UI и storage", len(st["rules"]) == 1 and st["rules"][0]["name"] == "Bonded / TSA / Canada")
 
-    # ---- Free: редактора нет, есть плашка Pro ----
+    # ---- Free + привязан: редактора правил нет, но отвязка доступна, алерты помечены PRO ----
     set_auth(page, "free", "free@loadlens.test")
     page.reload()
     page.wait_for_load_state("networkidle")
-    page.wait_for_selector("text=are a Pro feature", timeout=10000)
+    page.wait_for_selector("#tg-unlink", timeout=10000)
     body = page.inner_text("body")
-    check("free: секция правил скрыта, показана плашка Pro", "Alert rules" not in body and "are a Pro feature" in body)
-    page.screenshot(path=str(OUT / "05-free.png"), full_page=True)
+    check("free+linked: правил нет, привязка сохранена, алерты за Pro",
+          "Alert rules" not in body and "linked ✓" in body and "Send alerts" in body
+          and page.locator("#tg-toggle").count() == 0)
+    page.screenshot(path=str(OUT / "05-free-linked.png"), full_page=True)
+
+    # ---- Free + не привязан: кнопка Connect доступна (сброс пароля не должен упираться в Pro) ----
+    tg_linked = False
+    page.reload()
+    page.wait_for_load_state("networkidle")
+    page.wait_for_selector("#tg-link", timeout=10000)
+    body = page.inner_text("body")
+    check("free: Connect Telegram доступен и объясняет сброс пароля",
+          "Connect Telegram" in body and "password reset code" in body)
+    page.screenshot(path=str(OUT / "06-free-unlinked.png"), full_page=True)
 
     check("нет JS-ошибок страницы", not errors, "; ".join(errors))
     bad = [c for c in console if c.startswith("[error]")]

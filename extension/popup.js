@@ -338,7 +338,7 @@ async function saveField(id, field, value) {
   try { await LLAPI.updateDriver(id, { [field]: value }); } catch (e) { alert(e.message); }
 }
 
-// ---- Telegram-уведомления (Pro): привязка чата + тумблер алертов ----
+// ---- Telegram: привязка чата (любой план — для сброса пароля) + тумблер алертов и правила (Pro) ----
 const tgEl = document.getElementById("telegram");
 
 // ---- правила алертов (ll_alert_rules): список карточек + inline-редактор ----
@@ -464,24 +464,25 @@ function renderRules() {
   if (cancel) cancel.onclick = () => { editingRuleId = null; renderRules(); };
 }
 
+// Секция Telegram. Привязка/отвязка — для ЛЮБОГО плана: код сброса пароля приходит только в бота,
+// без привязки забытый пароль = потерянный аккаунт (бэкенд на link/status/unlink Pro и не требует).
+// Pro-гейт стоит там, где он и есть на бэкенде: тумблер алертов (PATCH /telegram/alerts) и правила.
 async function renderTelegram(me) {
   if (me === undefined) me = await LLAPI.getMe().catch(() => null);
   if (!me) { tgEl.innerHTML = ""; return; }
-  if (me.plan !== "pro") {
-    tgEl.innerHTML = '<h4>Telegram alerts <span class="plan pro">PRO</span></h4>' +
-      '<div class="note">Alerts for profitable loads and custom alert rules (keywords, rate, deadhead, brokers) are a Pro feature.</div>';
-    return;
-  }
+  const isPro = me.plan === "pro";
   const st = await LLAPI.telegramStatus().catch(() => null);
-  if (!st) { tgEl.innerHTML = '<h4>Telegram alerts</h4><div class="note">Could not load status.</div>'; return; }
+  if (!st) { tgEl.innerHTML = '<h4>Telegram</h4><div class="note">Could not load status.</div>'; return; }
   if (!st.configured) {
-    tgEl.innerHTML = '<h4>Telegram alerts</h4><div class="note">The bot is not configured on the server.</div>';
+    tgEl.innerHTML = '<h4>Telegram</h4><div class="note">The bot is not configured on the server.</div>';
     return;
   }
   if (!st.linked) {
-    tgEl.innerHTML = '<h4>Telegram alerts</h4>' +
-      '<div class="note">Connect Telegram to receive profitable loads (green + your equipment filter) as a direct message.</div>' +
-      '<button id="tg-link">Connect Telegram</button>';
+    tgEl.innerHTML = '<h4>Telegram</h4>' +
+      '<div class="note">' + (isPro
+        ? 'Connect Telegram to receive profitable loads (green + your equipment filter) as a direct message. Password reset codes arrive in the bot as well.'
+        : 'Connect Telegram to keep your account recoverable: the password reset code is sent to the bot. With Pro the bot also sends loads that match your alert rules.') +
+      '</div><button id="tg-link">Connect Telegram</button>';
     document.getElementById("tg-link").onclick = async () => {
       try {
         const r = await LLAPI.telegramLink();
@@ -491,22 +492,28 @@ async function renderTelegram(me) {
     };
     return;
   }
-  tgEl.innerHTML = '<h4>Telegram alerts</h4>' +
+  tgEl.innerHTML = '<h4>Telegram</h4>' +
     '<div class="row"><span class="k">Status</span><span>linked ✓</span></div>' +
-    `<div class="row"><span class="k">Send alerts</span>` +
-    `<input id="tg-toggle" type="checkbox"${st.enabled ? " checked" : ""} style="width:auto"></div>` +
+    (isPro
+      ? '<div class="row"><span class="k">Send alerts</span>' +
+        `<input id="tg-toggle" type="checkbox"${st.enabled ? " checked" : ""} style="width:auto"></div>`
+      : '<div class="row"><span class="k">Send alerts</span><span class="plan pro">PRO</span></div>') +
     '<button id="tg-unlink" class="danger">Disconnect Telegram</button>' +
-    '<div class="note">One load = one message, duplicates filtered out. Works only while a DAT tab is open.</div>' +
-    '<div id="tg-rules"></div>';
-  document.getElementById("tg-toggle").onchange = async (e) => {
+    (isPro
+      ? '<div class="note">One load = one message, duplicates filtered out. Works only while a DAT tab is open.</div>' +
+        '<div id="tg-rules"></div>'
+      : '<div class="note">Password reset codes arrive in the bot. Pro adds load alerts with your own rules — keywords, rate, deadhead, brokers.</div>');
+  const toggle = document.getElementById("tg-toggle");
+  if (toggle) toggle.onchange = async (e) => {
     try { await LLAPI.telegramAlerts(e.target.checked); }
     catch (err) { alert(err.message); e.target.checked = !e.target.checked; }
   };
   document.getElementById("tg-unlink").onclick = async () => {
-    if (!confirm("Disconnect Telegram? Alerts will stop.")) return;
+    if (!confirm(isPro ? "Disconnect Telegram? Alerts will stop." : "Disconnect Telegram? Password reset codes will stop arriving.")) return;
     try { await LLAPI.telegramUnlink(); renderTelegram(me); }
     catch (e) { alert(e.message); }
   };
+  if (!isPro) return;
   await loadRules();
   renderRules();
 }

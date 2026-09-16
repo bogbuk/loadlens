@@ -145,7 +145,7 @@ export class TelegramService {
       if (this.token) {
         await this.send(
           String(chatId),
-          n ? "✅ LoadLens is linked. I'll send you profitable loads matching your filter."
+          n ? "✅ LoadLens is linked. Password reset codes arrive here; on Pro I'll also send loads matching your alert rules."
             : '⚠️ This link has expired. Open "Connect Telegram" in the extension again.',
         );
       }

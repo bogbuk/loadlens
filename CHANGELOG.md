@@ -4,6 +4,9 @@ All notable user-facing changes to the LoadLens browser extension.
 
 ## [Unreleased]
 
+### Fixed
+- **Connecting Telegram no longer requires Pro.** The password reset code is delivered only through the bot, so a Free account that could not link Telegram had no way back in after forgetting its password. Any signed-in account can now connect and disconnect Telegram; sending load alerts and the alert rules editor stay Pro.
+
 ## 0.7.0 — 2026-09-15
 
 ### Changed
