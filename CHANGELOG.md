@@ -4,6 +4,11 @@ All notable user-facing changes to the LoadLens browser extension.
 
 ## [Unreleased]
 
+### New
+- **Posting age, everywhere it matters.** DAT tells you when a posting was last refreshed, and after the rate that is the fact that decides whether calling is worth it — an old posting is usually already covered, or a repost used as bait. LoadLens now shows the age as a 🕒 chip on the load card (green under 30 minutes, amber past 6 hours), puts it in the Telegram alert, and adds an `age_min` column to the CSV export.
+- **Freshest first.** "Hot loads" in the panel and the loads inside one Telegram batch are now ordered by posting age, so the newest posting is the one you see and call first; loads whose age DAT did not report go last.
+- **Alert rule: "Max posting age".** A rule can now require a load to have been posted within the last N minutes — the setting that keeps stale reposts out of your Telegram. Blank means any age; loads without a posting time are skipped by such a rule.
+
 ## 0.7.0 — 2026-09-16
 
 ### Changed

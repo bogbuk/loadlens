@@ -22,7 +22,7 @@ test("normalize: правило приводится к канону, дефол
   assert.deepStrictEqual(cfg.rules[0], {
     id: "r_1", name: "Bonded", enabled: true,
     keywordsAny: ["bonded", "TWIC"], keywordsNone: [],
-    minRate: null, minRpm: null, maxDeadhead: null, minMiles: null, maxMiles: null,
+    minRate: null, minRpm: null, maxDeadhead: null, minMiles: null, maxMiles: null, maxAgeMinutes: null,
     equipment: null, destStates: [], brokersAllow: [], brokersBlock: [], minCredit: null, score: "any",
   });
 });
@@ -155,4 +155,27 @@ test("select: OR между правилами, первое совпавшее;
   assert.deepStrictEqual(hits.map((h) => [h.load, h.rule.id]), [[rich, "rpm"]]); // LOAD: "bonded" не подстрока "inbond", hazmat исключает; rpm 2.67 < 8
   assert.deepStrictEqual(LLRULES.select([], [LOAD], ctx), []);
   assert.deepStrictEqual(LLRULES.select(rules, null, ctx), []);
+});
+
+// ---- свежесть постинга: maxAgeMinutes (возраст даёт ctx.ageOf — LLRULES остаётся без зависимостей) ----
+
+test("normalize: maxAgeMinutes из строки, мусор и отрицательное → null", () => {
+  assert.strictEqual(rule({ maxAgeMinutes: "45" }).maxAgeMinutes, 45);
+  assert.strictEqual(rule({ maxAgeMinutes: 0 }).maxAgeMinutes, 0);
+  assert.strictEqual(rule({ maxAgeMinutes: "abc" }).maxAgeMinutes, null);
+  assert.strictEqual(rule({ maxAgeMinutes: -5 }).maxAgeMinutes, null);
+});
+
+test("matches: maxAgeMinutes отсекает протухшие постинги", () => {
+  const age = (min) => ({ ...ctx, ageOf: () => min });
+  assert.ok(LLRULES.matches(rule({ maxAgeMinutes: 30 }), LOAD, age(12)));
+  assert.ok(LLRULES.matches(rule({ maxAgeMinutes: 30 }), LOAD, age(30)));   // граница включительно
+  assert.ok(!LLRULES.matches(rule({ maxAgeMinutes: 30 }), LOAD, age(31)));
+});
+
+test("matches: возраст неизвестен → правило со сроком НЕ пропускает груз", () => {
+  // Иначе «только свежие» молча пропускало бы всё, у чего DAT не отдал время постинга.
+  assert.ok(!LLRULES.matches(rule({ maxAgeMinutes: 30 }), LOAD, { ...ctx, ageOf: () => null }));
+  assert.ok(!LLRULES.matches(rule({ maxAgeMinutes: 30 }), LOAD, ctx));       // ageOf вообще не передан
+  assert.ok(LLRULES.matches(rule({}), LOAD, ctx));                            // без условия — как раньше
 });

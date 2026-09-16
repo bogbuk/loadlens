@@ -33,5 +33,14 @@ test("экранирование ; кавычек и переноса (RFC 4180)
 test("пустые поля → пустые ячейки, rpm пуст без миль", () => {
   const csv = LLCSV.buildLoadsCsv([{ board: "dat", loadId: "X", originMarket: "A", destMarket: "B", equipment: "V" }]);
   const line = csv.slice(1).split("\r\n")[1];
-  assert.strictEqual(line, "dat;X;A;B;V;;;;;;;;;;;");
+  assert.strictEqual(line, "dat;X;A;B;V;;;;;;;;;;;;");   // последняя ячейка — age_min
+});
+
+test("age_min: возраст постинга последней колонкой; неизвестен → пусто", () => {
+  const iso = new Date(Date.now() - 45 * 60000).toISOString();
+  assert.strictEqual(LLCSV.HEAD[LLCSV.HEAD.length - 1], "age_min");
+  const line = (l) => LLCSV.buildLoadsCsv([l]).slice(1).split("\r\n")[1];
+  assert.ok(line({ ...LOAD, servicedWhen: iso }).endsWith(";45"));
+  assert.ok(line({ ...LOAD, postedAge: 7 }).endsWith(";7"));
+  assert.ok(line(LOAD).endsWith(";"));
 });

@@ -365,6 +365,7 @@ function ruleSummary(r) {
   if (r.minRpm != null) bits.push(`≥ $${r.minRpm}/mi`);
   if (r.maxDeadhead != null) bits.push(`DH ≤ ${r.maxDeadhead}`);
   if (r.minMiles != null || r.maxMiles != null) bits.push(`${r.minMiles ?? 0}–${r.maxMiles ?? "∞"} mi`);
+  if (r.maxAgeMinutes != null) bits.push(`posted ≤ ${r.maxAgeMinutes}m ago`);
   if (r.equipment) bits.push(`equip: ${csv(r.equipment)}`);
   if (r.destStates.length) bits.push(`to: ${csv(r.destStates)}`);
   if (r.brokersAllow.length) bits.push(`brokers: ${csv(r.brokersAllow)}`);
@@ -396,6 +397,8 @@ function ruleForm(r) {
     `<div><label>Min credit score</label><input type="text" id="rf-credit" inputmode="numeric" value="${r.minCredit ?? ""}"></div></div>` +
     `<div class="two"><div><label>Min loaded miles</label><input type="text" id="rf-minmi" inputmode="numeric" value="${r.minMiles ?? ""}"></div>` +
     `<div><label>Max loaded miles</label><input type="text" id="rf-maxmi" inputmode="numeric" value="${r.maxMiles ?? ""}"></div></div>` +
+    `<label>Max posting age, min (blank = any; loads without a posting time are skipped)</label>` +
+    `<input type="text" id="rf-age" inputmode="numeric" value="${r.maxAgeMinutes ?? ""}" placeholder="e.g. 60">` +
     `<label>Equipment (none selected = same as global filter)</label><div class="chips" id="rf-equip">` +
     EQUIP_TYPES.map((e) => `<button type="button" class="chip${eqSel.has(e.code) ? " on" : ""}" data-code="${escA(e.code)}" title="${escA(e.label)}">${escA(e.code)}</button>`).join("") +
     `</div>` +
@@ -417,6 +420,7 @@ function readRuleForm(id) {
     minRate: numOrNull("rf-rate"), minRpm: numOrNull("rf-rpm"),
     maxDeadhead: numOrNull("rf-dh"), minCredit: numOrNull("rf-credit"),
     minMiles: numOrNull("rf-minmi"), maxMiles: numOrNull("rf-maxmi"),
+    maxAgeMinutes: numOrNull("rf-age"),
     equipment: [...document.querySelectorAll("#rf-equip .chip.on")].map((c) => c.dataset.code),
     destStates: splitCsv(document.getElementById("rf-states").value),
     brokersAllow: splitCsv(document.getElementById("rf-allow").value),

@@ -168,6 +168,15 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   фича молчит). Патчить `fetch` ПОСЛЕ загрузки страницы бесполезно — полифил EventSource DAT захватывает
   ссылку на fetch при загрузке модуля (мы успеваем только на document_start). Спайк —
   `docs/research/2026-09-15-dat-load-match-alerts-spike.md`.
+- **Свежесть постинга** (`LLMODEL.ageMinutes/formatAge/byFreshness` в `shared/load.model.js`):
+  возраст = `servicedWhen` (ISO из перехвата GraphQL — когда пост обновляли) с фолбэком на
+  `postedAge` DOM-адаптера (уже минуты); часы машины могут отставать от серверных → «из будущего»
+  зажимаем в 0. Показ: чип `🕒` в карточке груза (≤30 мин зелёный, ≥6ч янтарный), строка в сообщении
+  бота, колонка `age_min` в CSV. Порядок: «Выгодные сейчас» и батч Telegram — свежими вперёд
+  (`byFreshness`; неизвестный возраст — в хвост, потолок батча срезает протухшие, а не свежие).
+  Условие правил `maxAgeMinutes`: возраст приходит в `LLRULES.matches` через `ctx.ageOf` (модуль
+  остаётся без зависимостей), **неизвестный возраст такое правило НЕ проходит** — иначе «только
+  свежие» молча пропускало бы всё, у чего DAT не отдал время постинга.
 - **HOS-правила** (11h/14h/30min/70h-8d, split sleeper) живут в `shared/hos-calculator.js` +
   упрощённая мультисменная forward-модель в `planner.stepHos`. Обязательный сон не штрафует ранг.
 - **Broker-trust бейдж** (`LLSCORE.brokerBadge`): good/ok/risk по `creditScore` (≥90 good, <75 risk)

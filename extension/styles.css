@@ -151,6 +151,7 @@
 
 #ll-panel .deal { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12.5px; }
 #ll-panel .deal .p { font-weight: 700; color: #166534; }
+#ll-panel .deal .age { color: #64748b; font-size: 11px; }
 #ll-panel .ll-ft { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
 #ll-panel .ll-ft button { border: 1px solid #e2e8f0; background: #f5f7f9; font-weight: 600; padding: 7px 12px; border-radius: 9px; cursor: pointer; font: inherit; color: #0f1720; }
 #ll-panel .ll-ft button:hover { background: #eef1f4; }

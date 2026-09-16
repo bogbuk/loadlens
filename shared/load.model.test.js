@@ -46,3 +46,54 @@ test("buildLoad: собирает unified Load с lane groupKey", () => {
 test("buildLoad: null при отсутствии гео", () => {
   assert.strictEqual(LLMODEL.buildLoad({ rate: "100" }, "dat"), null);
 });
+
+// ---- свежесть постинга (ageMinutes / formatAge) ----
+
+test("ageMinutes: servicedWhen (ISO) → минуты с момента обновления поста", () => {
+  const now = Date.parse("2026-09-16T12:00:00Z");
+  assert.strictEqual(LLMODEL.ageMinutes({ servicedWhen: "2026-09-16T11:45:00Z" }, now), 15);
+  assert.strictEqual(LLMODEL.ageMinutes({ servicedWhen: "2026-09-16T12:00:00Z" }, now), 0);
+});
+
+test("ageMinutes: часы сервера впереди локальных — не отрицательный возраст", () => {
+  const now = Date.parse("2026-09-16T12:00:00Z");
+  assert.strictEqual(LLMODEL.ageMinutes({ servicedWhen: "2026-09-16T12:03:00Z" }, now), 0);
+});
+
+test("ageMinutes: фолбэк на postedAge из DOM-адаптера (уже минуты)", () => {
+  const now = Date.parse("2026-09-16T12:00:00Z");
+  assert.strictEqual(LLMODEL.ageMinutes({ postedAge: 42 }, now), 42);
+  // servicedWhen точнее — он и выигрывает
+  assert.strictEqual(LLMODEL.ageMinutes({ servicedWhen: "2026-09-16T11:00:00Z", postedAge: 42 }, now), 60);
+});
+
+test("ageMinutes: возраст неизвестен → null (мусор, пусто, нет полей)", () => {
+  const now = Date.parse("2026-09-16T12:00:00Z");
+  assert.strictEqual(LLMODEL.ageMinutes({}, now), null);
+  assert.strictEqual(LLMODEL.ageMinutes({ servicedWhen: "not-a-date" }, now), null);
+  assert.strictEqual(LLMODEL.ageMinutes(null, now), null);
+});
+
+test("formatAge: компактная подпись для чипа", () => {
+  assert.strictEqual(LLMODEL.formatAge(0), "now");
+  assert.strictEqual(LLMODEL.formatAge(7), "7m");
+  assert.strictEqual(LLMODEL.formatAge(59), "59m");
+  assert.strictEqual(LLMODEL.formatAge(60), "1h");
+  assert.strictEqual(LLMODEL.formatAge(150), "2h");    // округление вниз: «не моложе, чем сказано»
+  assert.strictEqual(LLMODEL.formatAge(1440), "1d");
+  assert.strictEqual(LLMODEL.formatAge(null), "");
+});
+
+test("byFreshness: свежие вперёд, грузы без возраста — в хвост, порядок стабилен", () => {
+  const now = Date.parse("2026-09-16T12:00:00Z");
+  const loads = [
+    { loadId: "old", postedAge: 300 },
+    { loadId: "unknown-a" },
+    { loadId: "fresh", postedAge: 5 },
+    { loadId: "unknown-b" },
+    { loadId: "mid", servicedWhen: "2026-09-16T11:00:00Z" },
+  ];
+  const ids = LLMODEL.byFreshness(loads, now).map((l) => l.loadId);
+  assert.deepStrictEqual(ids, ["fresh", "mid", "old", "unknown-a", "unknown-b"]);
+  assert.strictEqual(loads[0].loadId, "old", "исходный массив не мутируется");
+});

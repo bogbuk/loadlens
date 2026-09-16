@@ -27,7 +27,17 @@ function fmtPickup(raw?: string): string | null {
   return `${Number(m[3])} ${mon} ${m[1]}`;
 }
 
-// Текст алерта. Бизнес-поля груза + дата пикапа, контакт брокера и комментарий (PII — по явному решению).
+// Возраст постинга: «now» / «12m» / «2h» / «2d». Округление вниз — подпись не омолаживает груз.
+function fmtAge(min?: number): string | null {
+  if (min == null || !Number.isFinite(Number(min))) return null;
+  const m = Math.max(0, Math.floor(Number(min)));
+  if (m < 1) return 'now';
+  if (m < 60) return `${m}m`;
+  if (m < 1440) return `${Math.floor(m / 60)}h`;
+  return `${Math.floor(m / 1440)}d`;
+}
+
+// Текст алерта. Бизнес-поля груза + возраст постинга, дата пикапа, контакт брокера и комментарий (PII — по явному решению).
 export function formatAlertMessage(l: NotifyItemDto): string {
   const total = (Number(l.loadedMiles) || 0) + (Number(l.deadheadMiles) || 0);
   const hasRate = Number(l.rate) > 0;
@@ -36,8 +46,9 @@ export function formatAlertMessage(l: NotifyItemDto): string {
   const ruleLine = l.ruleName ? `🎯 ${l.ruleName}\n` : '';
   const head = `${ruleLine}🟢 ${l.originMarket} → ${l.destMarket} · ${l.equipment}`;
   // Груз без опубликованной ставки ("call for rate") — печатаем "rate: ask", $/mi посчитать не из чего.
+  const age = fmtAge(l.ageMinutes);
   const line2 = `${hasRate ? money(l.rate) : 'rate: ask'} · ${Math.round(Number(l.loadedMiles) || 0)}mi` +
-    (dh ? ` +${Math.round(dh)}DH` : '') + (hasRate ? ` · $${rpm}/mi` : '');
+    (dh ? ` +${Math.round(dh)}DH` : '') + (hasRate ? ` · $${rpm}/mi` : '') + (age ? ` · 🕒 ${age}` : '');
   const pickup = fmtPickup(l.pickupDate);
   const dateLine = pickup ? `\n📅 Pickup ${pickup}` : '';
   const brokerBits = [

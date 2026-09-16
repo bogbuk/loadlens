@@ -98,6 +98,46 @@ const LLMODEL = (() => {
     return m[2] === "m" ? v : m[2] === "h" ? v * 60 : v * 1440;
   }
 
+  // Возраст постинга в минутах. Приоритет — servicedWhen (ISO из перехвата GraphQL DAT: когда пост
+  // последний раз обновляли), фолбэк — postedAge DOM-адаптера (он уже в минутах). Неизвестен → null.
+  // Часы машины могут отставать от серверных, поэтому «из будущего» зажимаем в 0, а не в минус.
+  function ageMinutes(load, nowMs) {
+    if (!load) return null;
+    const now = Number.isFinite(nowMs) ? nowMs : Date.now();
+    if (load.servicedWhen) {
+      const t = Date.parse(load.servicedWhen);
+      if (Number.isFinite(t)) return Math.max(0, Math.round((now - t) / 60000));
+    }
+    const a = Number(load.postedAge);
+    return Number.isFinite(a) && a >= 0 ? Math.round(a) : null;
+  }
+
+  // Подпись возраста: "now" / "7m" / "2h" / "1d". Округление ВНИЗ — подпись не должна омолаживать груз.
+  function formatAge(min) {
+    const n = Number(min);
+    if (min == null || !Number.isFinite(n)) return "";
+    const m = Math.max(0, Math.floor(n));
+    if (m < 1) return "now";
+    if (m < 60) return m + "m";
+    if (m < 1440) return Math.floor(m / 60) + "h";
+    return Math.floor(m / 1440) + "d";
+  }
+
+  // Копия списка, свежие вперёд. Грузы с неизвестным возрастом — в хвост, взаимный порядок сохраняется
+  // (иначе выдача прыгала бы между рендерами: у DOM-пути возраст есть не всегда).
+  function byFreshness(loads, nowMs) {
+    const now = Number.isFinite(nowMs) ? nowMs : Date.now();
+    return (Array.isArray(loads) ? loads : [])
+      .map((l, i) => ({ l, i, a: ageMinutes(l, now) }))
+      .sort((x, y) => {
+        if (x.a == null && y.a == null) return x.i - y.i;
+        if (x.a == null) return 1;
+        if (y.a == null) return -1;
+        return x.a - y.a || x.i - y.i;
+      })
+      .map((x) => x.l);
+  }
+
   // weight в lbs: "44,000" / "44000 lbs" -> 44000
   function parseWeight(raw) { return parseMiles(raw); }
 
@@ -152,6 +192,7 @@ const LLMODEL = (() => {
   return {
     EQUIP_TYPES,
     normEquipment, parseRate, parseMiles, parseAge, parseWeight,
+    ageMinutes, formatAge, byFreshness,
     marketKey, laneKey, buildLoad,
   };
 })();

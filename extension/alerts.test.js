@@ -100,3 +100,24 @@ test("push: принимает {load, rule} и голый груз; ruleName у�
   assert.strictEqual(_sent[0][1].ruleName, undefined);
   assert.strictEqual(_sent[0][1].rate, 2600);
 });
+
+// ---- свежесть постинга ----
+
+test("toPayload: возраст постинга уходит в минутах (servicedWhen точнее postedAge)", () => {
+  const now = Date.now();
+  const iso = new Date(now - 12 * 60000).toISOString();
+  assert.strictEqual(LLALERT.toPayload({ ...LOAD, servicedWhen: iso }).ageMinutes, 12);
+  assert.strictEqual(LLALERT.toPayload({ ...LOAD, postedAge: 40 }).ageMinutes, 40);
+  assert.strictEqual(LLALERT.toPayload(LOAD).ageMinutes, undefined);   // возраст неизвестен — поля нет
+});
+
+test("push: свежие уходят первыми (потолок батча срезает протухшие, а не свежие)", async () => {
+  _sent = [];
+  LLALERT._setStatus({ linked: true, enabled: true, configured: true });
+  const stale = { ...LOAD, rate: 3100, postedAge: 300 };
+  const fresh = { ...LOAD, rate: 3200, postedAge: 3 };
+  const unknown = { ...LOAD, rate: 3300 };
+  const r = await LLALERT.push([stale, unknown, fresh]);
+  assert.strictEqual(r.sent, 3);
+  assert.deepStrictEqual(_sent[0].map((i) => i.rate), [3200, 3100, 3300]);
+});

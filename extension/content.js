@@ -528,12 +528,21 @@
     return LLSCORE.profitBadge(l, { costPerMile, dieselPrice, laneMedian: laneCache.get(laneKeyOf(l)), targetRpm: targetFor(l) });
   }
 
+  // Свежесть постинга: servicedWhen из перехвата GraphQL, фолбэк — postedAge DOM-адаптера (LLMODEL).
+  // Возраст решает после ставки: протухший пост чаще всего уже взят или это репост-приманка.
+  function ageOf(load) {
+    return (typeof LLMODEL !== "undefined") ? LLMODEL.ageMinutes(load, Date.now()) : null;
+  }
+  function freshestFirst(loads) {
+    return (typeof LLMODEL !== "undefined") ? LLMODEL.byFreshness(loads, Date.now()) : loads;
+  }
+
   // Отбор грузов для Telegram-алертов. Есть включённые правила (ll_alert_rules) → LLRULES.select (OR между
   // правилами, AND внутри); нет → прежнее поведение: green + passEquip (те же грузы, что «Выгодные сейчас»).
   // Используется и в render (вся выдача), и для одиночных live-событий SSE (dat-match-event).
   function selectAlertHits(loads) {
     const activeRules = (typeof LLRULES !== "undefined") ? LLRULES.active(alertRules) : [];
-    if (activeRules.length) return LLRULES.select(activeRules, loads, { equipFilter, badgeFor });
+    if (activeRules.length) return LLRULES.select(activeRules, loads, { equipFilter, badgeFor, ageOf });
     return loads.filter(passEquip).filter((l) => badgeFor(l).level === "green").map((load) => ({ load, rule: null }));
   }
 
@@ -610,7 +619,9 @@
     const pool = chainPool(loads);
     const chains = buildChains(pool, start).filter((c) => c.legs.length >= 1);
     const chainsCtx = chainCtx(loads, pool);
-    const deals = greens.slice(0, 5);
+    // «Выгодные сейчас» — свежие вперёд: из двух зелёных первым нужен тот, что ещё не разобрали.
+    const dealOrder = new Map(freshestFirst(greens.map((d) => d.l)).map((l, i) => [l, i]));
+    const deals = greens.slice().sort((a, b) => dealOrder.get(a.l) - dealOrder.get(b.l)).slice(0, 5);
 
     const p = buildPanel();
     const bd = p.querySelector(".bd");
@@ -634,7 +645,8 @@
         `</select> <button id="ll-sort-dir" title="Sort direction">${sortPref && sortPref.dir === "asc" ? "▲ Low" : "▼ High"}</button></div>` +
       (chains.length ? "<h4>Get-out chains</h4>" + chains.map((c) => chainCard(c, chainsCtx)).join("") : "<div class='note'>Chains appear once enough loads from the start market are visible.</div>") +
       (deals.length ? "<h4>Hot loads</h4>" + deals.map((d) =>
-        `<div class="deal"><span class="m">${esc(d.l.originMarket)} → ${esc(d.l.destMarket)} ${esc(d.l.equipment)}</span>` +
+        `<div class="deal"><span class="m">${esc(d.l.originMarket)} → ${esc(d.l.destMarket)} ${esc(d.l.equipment)}` +
+        (ageOf(d.l) != null ? ` <span class="age">🕒 ${esc(LLMODEL.formatAge(ageOf(d.l)))}</span>` : "") + `</span>` +
         `<span class="p">$${d.b.netRpm.toFixed(2)}/mi</span></div>`).join("") : "") +
       '<div class="ll-ft"><button data-act="csv" title="Export visible loads to CSV">⬇ CSV</button>' +
       '<span class="pro-tag">Pro</span></div>' +
@@ -775,6 +787,12 @@
   // чипы живого плеча из распарсенного Load
   function liveChips(load) {
     const out = [];
+    const age = ageOf(load);
+    if (age != null) {
+      // ≤30 мин — свежак (зелёный), ≥6 ч — почти наверняка уже взят или репост (янтарный)
+      const cls = age <= 30 ? " good" : age >= 360 ? " ok" : "";
+      out.push(`<span class="lchip${cls}">🕒 ${esc(LLMODEL.formatAge(age))}</span>`);
+    }
     // репутация брокера: crowd (если есть отзывы) иначе CS-бейдж
     const rep = load.brokerMc ? repCache.get(String(load.brokerMc)) : null;
     if (rep && rep.n) {

@@ -40,6 +40,11 @@ export class NotifyItemDto {
   @IsOptional() @IsString() @MaxLength(300) @Matches(/^[^\n\r]{1,300}$/)
   comments?: string;
 
+  // Возраст постинга в минутах на момент отправки (servicedWhen/postedAge из выдачи DAT).
+  // Свежесть — решающий факт после ставки: протухший пост чаще всего уже взят или это репост-приманка.
+  @IsOptional() @IsInt() @Min(0)
+  ageMinutes?: number;
+
   // Дата пикапа из выдачи DAT (availability.earliest) — напр. "2026-06-14". Не PII.
   @IsOptional() @IsString() @MaxLength(32) @Matches(/^[0-9T:\-+.Z ]{1,32}$/)
   pickupDate?: string;

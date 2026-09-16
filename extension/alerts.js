@@ -1,11 +1,16 @@
 /* LoadLens alerts — релей подошедших грузов (green + фильтр прицепа) в Telegram.
    Принимает {load, rule} от LLRULES.select; ruleName — имя сработавшего правила, печатается ботом первой строкой.
    Только грузы, которые пользователь уже видит в своей сессии (ToS). Шлём lane/ставку/мили/RPM/
-   брокера (имя+MC+кредит), дату пикапа, контакт и комментарий груза — PII уходит в личный DM
+   брокера (имя+MC+кредит), возраст постинга, дату пикапа, контакт и комментарий груза — PII уходит в личный DM
    пользователя по явному решению. Дедуп: session-Set (сеть) + авторитетный сервер.
    Гейт: Pro + привязанный Telegram + включённые алерты (статус кэшируем). */
 const LLALERT = (() => {
   "use strict";
+
+  // Возраст постинга считает канон-модель (vendor/ — автокопия shared/load.model.js).
+  const MODEL = (typeof LLMODEL !== "undefined") ? LLMODEL
+    : (typeof require === "function" ? require("./vendor/load.model.js") : null);
+  const ageOf = (l) => (MODEL ? MODEL.ageMinutes(l, Date.now()) : null);
 
   const sentKeys = new Set();             // сессионный дедуп: не дёргаем сеть на уже отправленный груз
   let status = { linked: false, enabled: false, configured: false };
@@ -34,6 +39,8 @@ const LLALERT = (() => {
     if (l.brokerName) item.brokerName = String(l.brokerName).replace(/[\n\r]+/g, " ").trim().slice(0, 120);
     if (l.creditScore != null && !isNaN(l.creditScore)) item.creditScore = Math.round(l.creditScore);
     if (l.comments) item.comments = String(l.comments).replace(/[\n\r]+/g, " ").trim().slice(0, 300);
+    const age = ageOf(l);
+    if (age != null) item.ageMinutes = Math.round(age);
     const pickup = l.availability && l.availability.earliest;
     if (pickup) item.pickupDate = String(pickup).slice(0, 32);
     if (l.contactEmail) item.contactEmail = String(l.contactEmail).slice(0, 120);
@@ -67,7 +74,11 @@ const LLALERT = (() => {
     const fresh = pairs.filter((p) => p.load && !sentKeys.has(keyFor(p.load)));
     if (!fresh.length) return { sent: 0 };
 
-    const items = fresh.map((p) => toPayload(p.load, p.rule)).filter(validItem).slice(0, MAX_BATCH);
+    // Свежие вперёд: если подошедших больше MAX_BATCH, срезать надо протухшие постинги, а не те,
+    // что брокер только что обновил (груз без известного возраста — в хвост).
+    const ordered = MODEL ? MODEL.byFreshness(fresh.map((p) => p.load), Date.now())
+      .map((load) => fresh.find((p) => p.load === load)) : fresh;
+    const items = ordered.map((p) => toPayload(p.load, p.rule)).filter(validItem).slice(0, MAX_BATCH);
     if (!items.length) return { sent: 0 };
 
     // оптимистично помечаем отправленными (повторный показ той же выдачи не спамит сеть)

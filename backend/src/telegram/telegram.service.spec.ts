@@ -34,6 +34,14 @@ describe('formatAlertMessage', () => {
     expect(msg).toContain('📞 5551234567');
   });
 
+  it('возраст постинга печатается компактно (m/h/d) и только когда известен', () => {
+    expect(formatAlertMessage({ ...ITEM, ageMinutes: 0 })).toContain('🕒 now');
+    expect(formatAlertMessage({ ...ITEM, ageMinutes: 12 })).toContain('🕒 12m');
+    expect(formatAlertMessage({ ...ITEM, ageMinutes: 150 })).toContain('🕒 2h');
+    expect(formatAlertMessage({ ...ITEM, ageMinutes: 2880 })).toContain('🕒 2d');
+    expect(formatAlertMessage(ITEM)).not.toContain('🕒');
+  });
+
   it('без даты/контакта — строки скрыты', () => {
     const msg = formatAlertMessage(ITEM);
     expect(msg).not.toContain('Pickup');

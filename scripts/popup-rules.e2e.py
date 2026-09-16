@@ -140,10 +140,13 @@ with sync_playwright() as p:
           and page.locator("#rf-equip .chip.on").get_attribute("data-code") == "V")
     check("edit: states подставлены", page.input_value("#rf-states") == "TX, OK, ON", page.input_value("#rf-states"))
     page.fill("#rf-rate", "1500")
+    page.fill("#rf-age", "60")
     page.click("#rf-save")
     page.wait_for_selector(".rule .sum")
     sum1b = page.locator(".rule .sum").first.inner_text()
     check("edit: min rate добавлен, остальное не потеряно", "≥ $1500" in sum1b and "any: bonded" in sum1b, sum1b)
+    check("edit: свежесть (max posting age) в сводке и storage",
+          "posted ≤ 60m ago" in sum1b and stored_rules(page)["rules"][0]["maxAgeMinutes"] == 60, sum1b)
     check("edit: правило не задублировалось", page.locator(".rule").count() == 2)
 
     # ---- cancel ----

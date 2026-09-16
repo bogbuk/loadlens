@@ -1,5 +1,6 @@
 /* LoadLens — правила Telegram-алертов (ll_alert_rules). Чистый модуль: без DOM и сети.
    Внутри правила AND по заданным условиям (null / [] = условие выключено), между правилами OR.
+   Возраст постинга для maxAgeMinutes приходит через ctx.ageOf(load) — модуль не зависит от LLMODEL.
    Нет включённых правил → content.js использует старый отбор (green + фильтр прицепа).
    Спека: docs/superpowers/specs/2026-09-12-alert-rules-engine-design.md */
 const LLRULES = (() => {
@@ -46,6 +47,7 @@ const LLRULES = (() => {
       keywordsNone: words(r.keywordsNone),
       minRate: num(r.minRate), minRpm: num(r.minRpm),
       maxDeadhead: num(r.maxDeadhead), minMiles: num(r.minMiles), maxMiles: num(r.maxMiles),
+      maxAgeMinutes: num(r.maxAgeMinutes),
       equipment: EQ ? EQ.normalize(Array.isArray(r.equipment) ? r.equipment : null) : null,
       destStates: states(r.destStates),
       brokersAllow: mcs(r.brokersAllow), brokersBlock: mcs(r.brokersBlock),
@@ -85,6 +87,13 @@ const LLRULES = (() => {
     if (rule.maxDeadhead != null && dh > rule.maxDeadhead) return false;
     if (rule.minMiles != null && miles < rule.minMiles) return false;
     if (rule.maxMiles != null && miles > rule.maxMiles) return false;
+    // Свежесть: возраст постинга считает вызывающий (ctx.ageOf — LLMODEL.ageMinutes), чтобы модуль
+    // остался без зависимостей. Возраст неизвестен → условие НЕ выполнено: «только свежие» не должно
+    // молча пропускать всё, у чего DAT не отдал время постинга.
+    if (rule.maxAgeMinutes != null) {
+      const age = typeof ctx.ageOf === "function" ? ctx.ageOf(load) : null;
+      if (age == null || age > rule.maxAgeMinutes) return false;
+    }
 
     if (rule.destStates.length) {
       const st = String(load.destMarket || "").split("_").pop();
