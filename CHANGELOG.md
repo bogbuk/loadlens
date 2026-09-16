@@ -4,10 +4,7 @@ All notable user-facing changes to the LoadLens browser extension.
 
 ## [Unreleased]
 
-### Fixed
-- **Connecting Telegram no longer requires Pro.** The password reset code is delivered only through the bot, so a Free account that could not link Telegram had no way back in after forgetting its password. Any signed-in account can now connect and disconnect Telegram; sending load alerts and the alert rules editor stay Pro.
-
-## 0.7.0 — 2026-09-15
+## 0.7.0 — 2026-09-16
 
 ### Changed
 - **Auto-pilot is much quieter on DAT.** It now behaves like a person checking the board rather than a script hammering it: the default interval is 3 minutes instead of 1 (2 minutes is the floor), the auto-scroll pulls every page only for a new search and just a couple of pages after that, and a full page reload is now a rare exception — at most once every 15 minutes, and only when the results really have gone stale — instead of the normal path on every tick. When DAT's live match stream is running, new loads arrive on their own, so the auto-pilot drops to one check every 10 minutes and stops scrolling altogether. All together this cuts the traffic LoadLens causes on DAT by well over an order of magnitude.
@@ -15,6 +12,9 @@ All notable user-facing changes to the LoadLens browser extension.
 
 ### New
 - **Live matches from DAT, no refresh needed.** DAT already streams new matching loads to every open search tab (on plans with live matches, Pro and up). Turn on "Listen to DAT live matches" in the popup and LoadLens reads that stream: new loads land in the panel and go through your Telegram alert rules the moment DAT sends them, with no extra requests to DAT and no need for the auto-pilot to refresh the page. A "● live" mark in the panel header shows the stream is flowing. Off by default.
+
+### Fixed
+- **Connecting Telegram no longer requires Pro.** The password reset code is delivered only through the bot, so a Free account that could not link Telegram had no way back in after forgetting its password. Any signed-in account can now connect and disconnect Telegram; sending load alerts and the alert rules editor stay Pro.
 
 ## 0.6.2 — 2026-09-14
 
