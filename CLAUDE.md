@@ -71,6 +71,9 @@ shared/                     КАНОН: load.model.js, scoring.js, planner.js, e
 npm test                 # sync:shared + тесты shared (17) + extension (10)
 npm run sync:shared      # пересобрать extension/vendor/* и backend/shared/* из shared/ — ПОСЛЕ любой правки shared/*.js
 npm run e2e:popup        # Playwright-прогон редактора правил алертов в попапе (popup.js без юнит-тестов); нужен playwright + chromium
+npm run package:ext      # dist/loadlens-extension-<версия>.zip (список файлов выводится из manifest)
+npm run publish:ext -- --status | --publish   # заливка в Chrome Web Store через API (дашборд скриптовать нельзя),
+                         # доступы в .local_dev.env, разовая OAuth-настройка — docs/chrome-web-store-publishing.md
 cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm install && npm run build && npm test
 # интеграционный тест ingest на реальном Postgres (иначе skip): cd backend && LL_TEST_DATABASE_URL=postgresql://loadlens:loadlens@localhost:5435/loadlens npx jest loads.ingest-concurrency
 # расширение: chrome://extensions → Загрузить распакованное → extension/

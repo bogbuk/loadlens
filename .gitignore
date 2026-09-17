@@ -12,6 +12,7 @@ package-lock.json
 !docs/superpowers/
 !docs/store-listing.md
 !docs/research/
+!docs/chrome-web-store-publishing.md
 backend/node_modules/
 backend/dist/
 backend/.env
