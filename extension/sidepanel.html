@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LoadLens</title>
+<link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div class="hd">
+    <div class="logo">Load<b>Lens</b></div>
+    <nav class="tabs">
+      <button type="button" data-tab="loads" class="on">Loads</button>
+      <button type="button" data-tab="settings">Settings</button>
+    </nav>
+  </div>
+  <section id="tab-loads"><div id="loads" class="bd"></div></section>
+  <section id="tab-settings" hidden>
+    <div class="bd" id="account"><div class="empty">Account…</div></div>
+    <details class="bd settings-wrap"><summary>⚙ Settings</summary>
+      <div id="settings"></div>
+    </details>
+    <div class="bd" id="fleet"></div>
+    <div class="bd" id="telegram"></div>
+    <div class="bd" id="cloud"></div>
+  </section>
+  <script src="vendor/load.model.js"></script>
+  <script src="vendor/scoring.js"></script>
+  <script src="vendor/email-template.js"></script>
+  <script src="cloud.config.js"></script>
+  <script src="cloud.js"></script>
+  <script src="api.js"></script>
+  <script src="hos.js"></script>
+  <script src="drivers.js"></script>
+  <script src="equip-filter.js"></script>
+  <script src="alert-rules.js"></script>
+  <script src="visibility.js"></script>
+  <script src="autopilot-policy.js"></script>
+  <script src="popup.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

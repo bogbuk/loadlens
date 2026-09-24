@@ -1,4 +1,4 @@
-/* LoadLens popup — настройки водителя (cost/mile + HOS-часы) и аккаунт (JWT, план). */
+/* LoadLens — вкладка Settings боковой панели (бывший попап): настройки водителя, аккаунт, парк, Telegram, облако. */
 const escA = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 // ---- настройки ----
@@ -20,8 +20,8 @@ const SORT_FIELDS = [
 ];
 
 async function renderSettings() {
-  const { ll_cpm, ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_panel, ll_hide_badges, ll_mail_template, ll_sse_alerts } =
-    await chrome.storage.local.get(["ll_cpm", "ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_panel", "ll_hide_badges", "ll_mail_template", "ll_sse_alerts"]);
+  const { ll_cpm, ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_badges, ll_mail_template, ll_sse_alerts } =
+    await chrome.storage.local.get(["ll_cpm", "ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_badges", "ll_mail_template", "ll_sse_alerts"]);
   const mailTpl = (typeof ll_mail_template === "string" && ll_mail_template.trim()) ? ll_mail_template : LLMAIL.DEFAULT_TEMPLATE;
   const cpm = ll_cpm != null ? ll_cpm : 1.80;
   const targets = Array.isArray(ll_targets) && ll_targets.length ? ll_targets : DEFAULT_TARGETS;
@@ -49,7 +49,7 @@ async function renderSettings() {
     '<button type="button" class="linkbtn" id="s-equip-none">Clear</button></span></div>' +
     '<h4>DAT tab auto-pilot</h4>' +
     `<div class="row"><span class="k">Enable on DAT tabs</span><input id="s-ar-on" type="checkbox"${ar.on ? " checked" : ""} style="width:auto"></div>` +
-    '<div class="note">Applies to every DAT tab; the Auto-refresh checkbox in the on-page panel overrides it for that tab only.</div>' +
+    '<div class="note">Applies to every DAT tab; the Auto-refresh checkbox on the Loads tab overrides it for that DAT tab only.</div>' +
     `<div class="row"><span class="k">Interval, sec (≥120)</span><input id="s-ar-int" type="number" min="120" step="30" value="${Math.round((ar.intervalMs || 180000) / 1000)}"></div>` +
     `<div class="row"><span class="k">Auto-scroll (pull all pages)</span><input id="s-ar-scroll" type="checkbox"${ar.autoscroll !== false ? " checked" : ""} style="width:auto"></div>` +
     `<div class="row"><span class="k">Quiet hours</span><span><input id="s-ar-quiet" type="checkbox"${quiet ? " checked" : ""} style="width:auto"> ` +
@@ -67,7 +67,6 @@ async function renderSettings() {
     `<div class="row"><span class="k">Listen to DAT live matches</span><input id="s-sse" type="checkbox"${ll_sse_alerts ? " checked" : ""} style="width:auto"></div>` +
     '<div class="note">DAT already streams new matching loads to every open search tab. With this on, LoadLens reads that stream, adds new loads to the panel and runs your Telegram alert rules on them the moment they appear — no refresh needed, no extra requests to DAT. Needs a DAT plan with live matches (Pro and up); on lower plans nothing arrives and the auto-pilot remains the way to get alerts. Applies instantly.</div>' +
     '<h4>On-page display</h4>' +
-    `<div class="row"><span class="k">Hide panel on page</span><input id="s-hide-panel" type="checkbox"${ll_hide_panel ? " checked" : ""} style="width:auto"></div>` +
     `<div class="row"><span class="k">Hide badges in table</span><input id="s-hide-badges" type="checkbox"${ll_hide_badges ? " checked" : ""} style="width:auto"></div>` +
     '<h4>Broker email template</h4>' +
     `<textarea id="s-mail-tpl" rows="9" style="width:100%;box-sizing:border-box;font:11px/1.4 ui-monospace,monospace">${escA(mailTpl)}</textarea>` +
@@ -77,12 +76,11 @@ async function renderSettings() {
     '<div class="note">Target $/mi is the "profitable" (green) threshold: a load is green when its gross $/mile is at or above the target for its distance bucket. Cost/mile is the break-even line below which a load is a loss (red).</div>' +
     '<div class="note">"On-page display" applies instantly to all DAT/Truckstop tabs — no need to press Save.</div>' +
     '<div class="note">Email placeholders: {{origin}} {{dest}} {{equipment}} {{rate}} {{rateBasis}} {{loadedMiles}} {{deadheadMiles}} {{trueRpm}} {{pickupDate}} {{brokerName}} {{brokerMc}} {{driverName}} {{counterOffer}}. A line holding only an empty placeholder is dropped — {{counterOffer}} disappears when the rate or miles are unknown.</div>' +
-    '<div class="note">Auto-pilot: "Enable on DAT tabs" switches it on for every DAT results tab; the "Auto-refresh" toggle in the on-page panel header overrides it for that tab only. Also set here: the shared interval (3 minutes by default, with jitter; 2 minutes is the floor), quiet hours, the sort order to hold, and auto-scroll (scrolls the results so DAT loads every page; the panel accumulates them by searchId). While DAT\'s live match stream is running the auto-pilot checks far less often — new loads arrive on their own.</div>';
+    '<div class="note">Auto-pilot: "Enable on DAT tabs" switches it on for every DAT results tab; the "Auto-refresh" toggle on the Loads tab overrides it for the DAT tab you are on. Also set here: the shared interval (3 minutes by default, with jitter; 2 minutes is the floor), quiet hours, the sort order to hold, and auto-scroll (scrolls the results so DAT loads every page; the panel accumulates them by searchId). While DAT\'s live match stream is running the auto-pilot checks far less often — new loads arrive on their own.</div>';
   document.getElementById("s-save").onclick = save;
   document.getElementById("s-mail-reset").onclick = () => { document.getElementById("s-mail-tpl").value = LLMAIL.DEFAULT_TEMPLATE; };
   wireEquipChips();
   // «Отображение на странице» — instant-apply (без кнопки «Сохранить»); content.js слушает storage.onChanged
-  document.getElementById("s-hide-panel").onchange = (e) => chrome.storage.local.set({ ll_hide_panel: e.target.checked });
   document.getElementById("s-hide-badges").onchange = (e) => chrome.storage.local.set({ ll_hide_badges: e.target.checked });
   document.getElementById("s-sse").onchange = (e) => chrome.storage.local.set({ ll_sse_alerts: e.target.checked });
 }

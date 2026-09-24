@@ -1,4 +1,4 @@
-"""E2E-прогон редактора правил Telegram-алертов в попапе расширения (без юнит-тестов у popup.js).
+"""E2E-прогон редактора правил Telegram-алертов на вкладке Settings боковой панели (без юнит-тестов у popup.js).
 
 Поднимает Chromium (Playwright) с распакованным расширением из extension/, мокает backend
 (аккаунт Pro, Telegram привязан) и гоняет сценарий: пустое состояние → два правила (как у лида:
@@ -67,6 +67,12 @@ def set_auth(page, plan, email):
     )
 
 
+
+def open_settings(page):
+    """Редактор правил живёт на вкладке Settings боковой панели (Loads открыта по умолчанию)."""
+    page.click('[data-tab="settings"]')
+
+
 with sync_playwright() as p:
     ctx = p.chromium.launch_persistent_context(
         PROFILE, channel="chromium", headless=True,
@@ -78,12 +84,14 @@ with sync_playwright() as p:
     page.on("pageerror", lambda e: errors.append(str(e)))
     page.on("console", lambda m: console.append(f"[{m.type}] {m.text}"))
 
-    popup = f"chrome-extension://{unpacked_id(EXT)}/popup.html"
+    popup = f"chrome-extension://{unpacked_id(EXT)}/sidepanel.html"
     page.goto(popup)
     page.wait_for_load_state("networkidle")
+    open_settings(page)
     set_auth(page, "pro", "demo@loadlens.test")  # getMe отдаст кэш plan без сети
     page.reload()
     page.wait_for_load_state("networkidle")
+    open_settings(page)
     page.wait_for_selector("#tg-rules h4", timeout=10000)
     check("секция Alert rules отрисована", page.locator("#tg-rules h4").inner_text().lower() == "alert rules")
     check("пустое состояние: подсказка «No rules»", "No rules" in page.locator("#tg-rules").inner_text())
@@ -128,6 +136,7 @@ with sync_playwright() as p:
     check("storage: правило 2 minRpm=8, enabled", r2["minRpm"] == 8 and r2["enabled"] is True)
     page.reload()
     page.wait_for_load_state("networkidle")
+    open_settings(page)
     page.wait_for_selector(".rule .sum")
     check("после перезагрузки попапа оба правила на месте", page.locator(".rule").count() == 2, str(page.locator(".rule").count()))
 
@@ -174,6 +183,7 @@ with sync_playwright() as p:
     set_auth(page, "free", "free@loadlens.test")
     page.reload()
     page.wait_for_load_state("networkidle")
+    open_settings(page)
     page.wait_for_selector("#tg-unlink", timeout=10000)
     body = page.inner_text("body")
     check("free+linked: правил нет, привязка сохранена, алерты за Pro",
@@ -185,6 +195,7 @@ with sync_playwright() as p:
     tg_linked = False
     page.reload()
     page.wait_for_load_state("networkidle")
+    open_settings(page)
     page.wait_for_selector("#tg-link", timeout=10000)
     body = page.inner_text("body")
     check("free: Connect Telegram доступен и объясняет сброс пароля",

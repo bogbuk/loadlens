@@ -1,6 +1,6 @@
 /* Сборка ZIP расширения для Chrome Web Store.
-   Список файлов НЕ хардкодится — выводится из manifest.json (content_scripts, action.default_popup,
-   icons) и из <script src>/<link href> в popup.html. Поэтому в пакет физически не может попасть
+   Список файлов НЕ хардкодится — выводится из manifest.json (content_scripts, side_panel, background,
+   icons) и из <script src>/<link href> страниц расширения. Поэтому в пакет физически не может попасть
    мусор (*.test.js, __fixtures__, scratch) и не может потеряться файл, который расширение грузит.
    Отсутствие любого объявленного файла — ошибка сборки, а не молчаливо битый пакет. */
 const fs = require("node:fs");
@@ -34,11 +34,13 @@ function collect() {
   for (const f of Object.values(mf.icons || {})) files.add(f);
   for (const f of Object.values(mf.web_accessible_resources || {}).flat?.() || []) files.add(f);
 
-  const popup = mf.action && mf.action.default_popup;
-  if (popup) {
-    files.add(popup);
-    for (const f of assetsFromHtml(popup)) files.add(f);
+  // Страницы расширения (боковая панель; попап — если когда-нибудь вернётся) + их <script>/<link>.
+  for (const page of [mf.side_panel && mf.side_panel.default_path, mf.action && mf.action.default_popup]) {
+    if (!page) continue;
+    files.add(page);
+    for (const f of assetsFromHtml(page)) files.add(f);
   }
+  if (mf.background && mf.background.service_worker) files.add(mf.background.service_worker);
   return { version: mf.version, files: [...files].sort() };
 }
 

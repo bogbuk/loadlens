@@ -1,0 +1,51 @@
+/* LoadLens — боковая панель: стили вкладки Settings (бывший попап) + вкладки Loads. */
+body { margin: 0; font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color:#0f1720; }
+.hd { background: linear-gradient(180deg,#1d4ed8,#1e3a8a); color:#fff; padding:12px 14px; }
+.hd .logo { font-weight:800; font-size:16px; }
+.hd .logo b { color:#bcd0ff; }
+.hd .s { font-size:11px; opacity:.9; margin-top:2px; }
+.bd { padding: 12px 14px; }
+.row { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px dashed #eef1f4; }
+.row .k { color:#6b7785; } .row input { width:80px; box-sizing:border-box; padding:5px 7px; border:1px solid #e7ebef; border-radius:7px; font:inherit; }
+h4 { margin:12px 0 6px; font-size:11px; text-transform:uppercase; letter-spacing:.3px; color:#1e3a8a; }
+button { width:100%; margin-top:10px; border:1px solid #e7ebef; background:#f5f7f9; font-weight:600; padding:8px; border-radius:9px; cursor:pointer; }
+button:hover { background:#eef1f4; }
+button.danger { background:#fff; border-color:#fca5a5; color:#b91c1c; }
+button.danger:hover { background:#fee2e2; }
+.empty { color:#9aa6b2; font-size:12px; }
+a { color:#1d4ed8; text-decoration:none; }
+.acc input { width:100%; box-sizing:border-box; margin:3px 0; padding:7px 8px; border:1px solid #e7ebef; border-radius:8px; font:inherit; }
+.acc .err { color:#c0392b; font-size:11.5px; min-height:14px; margin-top:2px; }
+.acc .who { display:flex; justify-content:space-between; align-items:center; }
+.plan { font-size:10.5px; font-weight:800; padding:2px 7px; border-radius:99px; background:#eef1f4; color:#6b7785; }
+.plan.pro { background:#1d4ed8; color:#fff; }
+.acc .btns { display:flex; gap:8px; } .acc .btns button { margin-top:8px; }
+.linkbtn { background:none; border:none; padding:0; color:#1d4ed8; font:inherit; cursor:pointer; text-decoration:underline; }
+.note { color:#9aa6b2; font-size:11px; margin-top:6px; }
+.chips { display:flex; flex-wrap:wrap; gap:5px; margin:4px 0 2px; }
+.chip { width:auto; margin:0; padding:5px 9px; min-width:30px; border:1px solid #e7ebef; background:#f5f7f9; color:#6b7785; border-radius:99px; font-weight:700; font-size:12px; cursor:pointer; transition:background .12s,color .12s,border-color .12s; }
+.chip:hover { background:#eef1f4; }
+.chip.on { background:#1d4ed8; border-color:#1d4ed8; color:#fff; }
+.chip.on:hover { background:#1b45bd; }
+.chips-bar { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:2px; }
+.chips-bar .note { margin-top:0; }
+.chips-actions { white-space:nowrap; color:#9aa6b2; font-size:11px; }
+.settings-wrap { padding-top: 6px; }
+.settings-wrap > summary { cursor: pointer; font-size: 11px; text-transform: uppercase; letter-spacing: .3px; color:#1e3a8a; font-weight:700; list-style: revert; padding: 4px 0; }
+.rule { border:1px solid #e7ebef; border-radius:9px; padding:8px 10px; margin-top:8px; }
+.rule .rhd { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.rule .rhd b { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rule .rhd .linkbtn { width:auto; margin-top:0; flex:none; }
+.rule .sum { color:#6b7785; font-size:11px; margin-top:4px; }
+.rule input[type=text], .rule select { width:100%; box-sizing:border-box; padding:5px 7px; border:1px solid #e7ebef; border-radius:7px; font:inherit; }
+.rule .two { display:flex; gap:6px; } .rule .two > * { flex:1; }
+.rule label { display:block; color:#6b7785; font-size:11px; margin-top:6px; }
+.rule .actions { display:flex; gap:6px; margin-top:8px; } .rule .actions button { flex:1; }
+.mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+
+/* вкладки боковой панели */
+.hd { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; }
+.tabs { display: flex; gap: 4px; }
+.tabs button { width: auto; margin: 0; padding: 4px 10px; border: 0; border-radius: 99px; background: rgba(255,255,255,.15); color: #fff; font-weight: 700; font-size: 12px; cursor: pointer; }
+.tabs button.on { background: #fff; color: #1e3a8a; }
+#loads .empty-state { color: #6b7785; padding: 24px 4px; text-align: center; }
