@@ -1,4 +1,4 @@
-/* LoadLens — бейджи на строках грузов + плавающая панель. Префикс ll- во избежание коллизий. */
+/* LoadLens — бейджи на строках грузов, FAB и меню отзыва (панель грузов — в боковой панели, sidepanel.css). Префикс ll- во избежание коллизий. */
 
 /* ----- бейджи в строке ----- */
 .ll-badge {
@@ -48,36 +48,6 @@
 .ll-fleet.ll-ok   { background: #fef9c3; color: #854d0e; }
 .ll-fleet.ll-risk { background: #fee2e2; color: #991b1b; }
 .ll-fleet.ll-thin { background: #f1f5f9; color: #64748b; }
-#ll-detail .fleet-match { margin-top: 10px; border-top: 1px solid #eef1f4; padding-top: 8px; }
-#ll-detail .fleet-h { font-weight: 700; color: #1e3a8a; margin-bottom: 4px; }
-#ll-detail .fleet-row { padding: 3px 0; font-size: 12.5px; }
-#ll-detail .fleet-row.ll-ok { color: #166534; }
-#ll-detail .fleet-row.ll-no { color: #94a3b8; }
-
-/* карточка детали груза */
-#ll-detail {
-  position: fixed; right: 16px; top: 16px; width: 360px; max-height: 88vh; overflow: auto;
-  background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; z-index: 2147483647;
-  box-shadow: 0 16px 40px rgba(15,23,42,.28); font: 13px/1.5 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #0f1720;
-}
-#ll-detail .hd {
-  display: flex; justify-content: space-between; align-items: center;
-  background: linear-gradient(180deg,#1d4ed8,#1e3a8a); color: #fff; padding: 11px 14px; border-radius: 14px 14px 0 0;
-  font-weight: 800; font-size: 14px;
-}
-#ll-detail .hd button { background: rgba(255,255,255,.18); color: #fff; border: 0; width: 26px; height: 26px; border-radius: 7px; cursor: pointer; font-size: 18px; line-height: 1; }
-#ll-detail .bd { padding: 10px 14px 14px; }
-#ll-detail .drow { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px dashed #eef1f4; }
-#ll-detail .drow .k { color: #6b7785; min-width: 72px; flex-shrink: 0; }
-#ll-detail .drow .v { font-weight: 600; word-break: break-word; }
-#ll-detail .drow .v a { color: #1d4ed8; text-decoration: none; }
-#ll-detail .comments, #ll-detail .flags { font-weight: 400; white-space: pre-wrap; color: #334155; }
-#ll-detail .flags { color: #991b1b; }
-#ll-detail .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-#ll-detail .btn { border: 1px solid #e2e8f0; background: #f5f7f9; color: #0f1720; padding: 8px 12px; border-radius: 9px; cursor: pointer; font: 600 13px inherit; text-decoration: none; }
-#ll-detail .btn:hover { background: #eef1f4; }
-#ll-detail .btn.primary { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
-
 /* меню отзыва о брокере */
 #ll-report-menu {
   position: fixed; z-index: 2147483647; min-width: 190px;
@@ -93,73 +63,18 @@
 #ll-report-menu .ll-rep-opt:hover { background: #eef2ff; }
 #ll-report-menu .ll-rep-opt:disabled { opacity: .5; cursor: default; }
 
-/* ----- плавающая панель ----- */
-#ll-panel {
-  position: fixed; right: 16px; bottom: 16px; width: 320px; max-height: 70vh; overflow: auto;
-  background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; z-index: 2147483646;
-  box-shadow: 0 10px 30px rgba(15,23,42,.18); font: 13px/1.45 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #0f1720;
-}
-#ll-panel .hd {
-  display: flex; justify-content: space-between; align-items: center;
-  background: linear-gradient(180deg,#1d4ed8,#1e3a8a); color: #fff; padding: 10px 12px; border-radius: 14px 14px 0 0;
-}
-#ll-panel .hd .logo { font-weight: 800; } #ll-panel .hd .logo b { color: #bcd0ff; }
-#ll-panel .hd button { background: rgba(255,255,255,.18); color: #fff; border: 0; width: 24px; height: 24px; border-radius: 7px; cursor: pointer; font-size: 16px; }
-#ll-panel .hd .hd-actions { display: flex; gap: 6px; align-items: center; }
-#ll-panel .bd { padding: 10px 12px; }
-#ll-panel .row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #eef1f4; }
-#ll-panel .row .k { color: #6b7785; }
-#ll-panel h4 { margin: 10px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .3px; color: #1e3a8a; }
-#ll-panel .ll-cfg { font-size: 12px; color: #475569; margin: 8px 0; }
-#ll-panel .ll-cfg input { border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 5px; font: inherit; }
-#ll-panel .ll-live { color: #16a34a; font-weight: 600; font-size: 11px; letter-spacing: .02em; }
-#ll-panel .chain { padding: 6px 8px; margin: 5px 0; border-radius: 9px; background: #f8fafc; border-left: 3px solid #94a3b8; }
-#ll-panel .chain.ll-green { border-left-color: #16a34a; }
-#ll-panel .chain.ll-amber { border-left-color: #d97706; }
-#ll-panel .chain.ll-red   { border-left-color: #dc2626; }
-#ll-panel .chain .route { font-weight: 700; font-size: 12.5px; }
-#ll-panel .chain .meta { color: #64748b; font-size: 11.5px; margin-top: 2px; }
-
-/* аккордеон цепочки */
-#ll-panel .chain .chain-hd { cursor: pointer; }
-#ll-panel .chain .chain-hd .route .caret { color: #94a3b8; font-weight: 700; }
-#ll-panel .chain.open { background: #eef4ff; }
-#ll-panel .chain-legs { margin-top: 6px; border-top: 1px dashed #e2e8f0; }
-#ll-panel .leg { padding: 7px 2px 7px 8px; border-bottom: 1px dashed #eef1f4; }
-#ll-panel .leg:last-child { border-bottom: 0; }
-#ll-panel .leg.leg-live { cursor: pointer; }
-#ll-panel .leg.leg-live:hover { background: #f1f5f9; border-radius: 6px; }
-#ll-panel .leg.leg-fc { opacity: .72; }
-#ll-panel .leg .leg-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
-#ll-panel .leg .leg-tag { font-size: 9.5px; font-weight: 800; padding: 1px 6px; border-radius: 9px; white-space: nowrap; }
-#ll-panel .leg .leg-tag.live { background: #dcfce7; color: #166534; }
-#ll-panel .leg .leg-tag.fc { background: #eef1f4; color: #64748b; }
-#ll-panel .leg .leg-idx { font-size: 10px; color: #94a3b8; white-space: nowrap; }
-#ll-panel .leg .leg-route { font-weight: 700; font-size: 12px; margin-top: 3px; }
-#ll-panel .leg .leg-eco { font-size: 11.5px; color: #475569; margin-top: 2px; }
-#ll-panel .leg .leg-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
-#ll-panel .leg .lchip { font-size: 10px; padding: 1px 6px; border-radius: 8px; background: #eef1f4; color: #475569; white-space: nowrap; }
-#ll-panel .leg .lchip.good { background: #dcfce7; color: #166534; }
-#ll-panel .leg .lchip.ok   { background: #fef9c3; color: #854d0e; }
-#ll-panel .leg .lchip.risk { background: #fee2e2; color: #991b1b; }
-#ll-panel .leg .lchip.book { background: #dbeafe; color: #1e40af; }
-#ll-panel .leg .leg-nb { margin-left: 6px; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 8px; background: #eef1f4; color: #64748b; white-space: nowrap; }
-
 /* подсветка строки в выдаче DAT при клике по живому плечу */
 @keyframes ll-row-flash { 0%,100% { background: transparent; } 30% { background: rgba(29,78,216,.22); } }
 .ll-row-flash { animation: ll-row-flash 1s ease-in-out 2; outline: 2px solid #1d4ed8 !important; outline-offset: -2px; }
-
-#ll-panel .deal { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12.5px; }
-#ll-panel .deal .p { font-weight: 700; color: #166534; }
-#ll-panel .deal .age { color: #64748b; font-size: 11px; }
-#ll-panel .ll-ft { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
-#ll-panel .ll-ft button { border: 1px solid #e2e8f0; background: #f5f7f9; font-weight: 600; padding: 7px 12px; border-radius: 9px; cursor: pointer; font: inherit; color: #0f1720; }
-#ll-panel .ll-ft button:hover { background: #eef1f4; }
-#ll-panel .ll-ft .pro-tag { font-size: 10.5px; font-weight: 800; padding: 2px 7px; border-radius: 99px; background: #1d4ed8; color: #fff; }
-#ll-panel .note { color: #9aa6b2; font-size: 11px; margin-top: 8px; }
 
 #ll-fab {
   position: fixed; right: 16px; bottom: 16px; z-index: 2147483646;
   background: #1d4ed8; color: #fff; border: 0; padding: 10px 14px; border-radius: 99px; cursor: pointer;
   font: 700 13px -apple-system, "Segoe UI", Roboto, Arial, sans-serif; box-shadow: 0 8px 20px rgba(29,78,216,.35);
+}
+
+#ll-toast {
+  position: fixed; right: 16px; bottom: 64px; z-index: 2147483647; max-width: 280px;
+  background: #0f1720; color: #fff; padding: 9px 12px; border-radius: 10px;
+  font: 600 12.5px/1.4 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; box-shadow: 0 8px 20px rgba(15,23,42,.3);
 }

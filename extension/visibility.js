@@ -1,16 +1,12 @@
-/* LoadLens — видимость наших наложений на странице DAT/Truckstop.
-   Сводит 4 флага в решения «рисовать / не рисовать»:
-   - hintsOff       — per-tab «скрыть всё на этой вкладке» (кнопка 🙈 в шапке панели)
-   - hideBadges     — глобальная настройка попапа (ll_hide_badges)
-   - hidePanel      — глобальная настройка попапа (ll_hide_panel)
-   - panelCollapsed — per-tab сворачивание панели (кнопка «–») */
+/* LoadLens — видимость наших наложений на странице DAT/Truckstop. Панель грузов живёт в боковой
+   панели Chrome, на странице — только построчные бейджи и FAB (вход в боковую панель):
+   - hintsOff  — per-tab «скрыть всё на этой вкладке» (кнопка в боковой панели)
+   - hideBadges — глобальная настройка (ll_hide_badges, вкладка Settings)
+   - panelOpen — боковая панель подключена к этой вкладке (порт ll-panel) */
 const LLVIS = (() => {
   function badgesVisible(s) { return !s.hintsOff && !s.hideBadges; }
-  function panelVisible(s) { return !s.hintsOff && !s.hidePanel && !s.panelCollapsed; }
-  // FAB-возврат показываем, только когда панель скрыта per-tab (сворачивание/hintsOff),
-  // но НЕ когда её прячет глобальная настройка — ей управляют из попапа.
-  function fabVisible(s) { return !panelVisible(s) && !s.hidePanel; }
-  return { badgesVisible, panelVisible, fabVisible };
+  function fabVisible(s) { return !s.hintsOff && !s.panelOpen; }
+  return { badgesVisible, fabVisible };
 })();
 
 if (typeof module !== "undefined" && module.exports) { module.exports = LLVIS; }
