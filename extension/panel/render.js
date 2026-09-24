@@ -5,6 +5,10 @@ const LLPANEL = (() => {
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const BOARD_RE = /^https:\/\/([a-z0-9-]+\.)*(dat|truckstop)\.com\//i;
   const isBoardUrl = (url) => typeof url === "string" && BOARD_RE.test(url);
+  // Любая ссылка из снапшота проходит allowlist схем: рендер — последняя граница перед разметкой,
+  // даже если view-model уже чистит bookingUrl (javascript:/data: → «#»).
+  const SAFE_HREF_RE = /^(https?:|mailto:|tel:)/i;
+  const safeHref = (u) => { const s = String(u == null ? "" : u).trim(); return SAFE_HREF_RE.test(s) ? s : "#"; };
   const row = (k, vHtml) => `<div class="row"><span class="k">${esc(k)}</span><span class="v">${vHtml}</span></div>`;
   const REPORT_OPTS = [
     { o: "paid", t: "✅ Paid" },
@@ -59,9 +63,9 @@ const LLPANEL = (() => {
 
   function detailHtml(d) {
     const a = d.actions;
-    const link = (href, label, primary) => `<a class="btn${primary ? " primary" : ""}" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+    const link = (href, label, primary) => `<a class="btn${primary ? " primary" : ""}" href="${esc(safeHref(href))}" target="_blank" rel="noopener noreferrer">${label}</a>`;
     return `<div class="detail"><div class="dhd"><button type="button" class="back" data-cmd="closeDetail">← Back</button><span class="ttl">${esc(d.title)}</span></div>` +
-      d.rows.map((r) => `<div class="drow"><span class="k">${esc(r.k)}</span><span class="v">${r.href ? `<a href="${esc(r.href)}">${esc(r.v)}</a>` : esc(r.v)}</span></div>`).join("") +
+      d.rows.map((r) => `<div class="drow"><span class="k">${esc(r.k)}</span><span class="v">${r.href ? `<a href="${esc(safeHref(r.href))}">${esc(r.v)}</a>` : esc(r.v)}</span></div>`).join("") +
       (d.flags.length ? `<div class="flags">${d.flags.map((f) => "• " + esc(f)).join("\n")}</div>` : "") +
       (d.comments ? `<div class="drow"><span class="k">Notes</span><span class="v comments">${esc(d.comments)}</span></div>` : "") +
       (d.fleet ? `<div class="fleet-match"><div class="fleet-h">${esc(d.fleet.title)}</div>` +
@@ -69,7 +73,7 @@ const LLPANEL = (() => {
       `<div class="actions">` +
         (a.book ? link(a.book.url, esc(a.book.label), true) : "") +
         (a.mail ? link(a.mail.url, "✉️ Email broker", a.mail.primary) : "") +
-        (a.call ? `<a class="btn${a.call.primary ? " primary" : ""}" href="${esc(a.call.href)}">📞 Call</a>` : "") +
+        (a.call ? `<a class="btn${a.call.primary ? " primary" : ""}" href="${esc(safeHref(a.call.href))}">📞 Call</a>` : "") +
         (a.copyEmail ? `<button type="button" class="btn" data-cmd="copy" data-what="email">📋 Copy email</button>` : "") +
         `<button type="button" class="btn" data-cmd="copy" data-what="load">Copy</button>` +
       `</div>` +

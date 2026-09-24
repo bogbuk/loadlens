@@ -86,3 +86,14 @@ test("notice и пустые состояния", () => {
   assert.match(LLPANEL.empty("no-script"), /Reload the DAT tab/);
   assert.match(LLPANEL.empty("connecting"), /Connecting/);
 });
+
+test("ссылки: только http(s)/mailto/tel — javascript:/data: превращаются в #", () => {
+  const detail = {
+    loadId: "L1", title: "t", rows: [{ k: "Email", v: "x", href: "javascript:alert(1)" }], flags: [], comments: null, fleet: null,
+    actions: { book: { url: "data:text/html,x", label: "Open ↗" }, mail: { url: " JavaScript:alert(2)", primary: true }, call: { href: "tel:555", primary: false }, copyEmail: null, copy: "c", brokerMc: null },
+  };
+  const html = LLPANEL.loadsView(snap({ detail }), UI);
+  assert.doesNotMatch(html, /javascript:|data:text/i);
+  assert.strictEqual((html.match(/href="#"/g) || []).length, 3);
+  assert.match(html, /href="tel:555"/);
+});
