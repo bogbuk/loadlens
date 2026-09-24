@@ -31,7 +31,8 @@ Status: approved (дизайн), ждёт план
 - `background.service_worker: "background.js"` (новый файл):
   - `onInstalled` → `chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })`;
   - `runtime.onMessage` `{type:"open-panel", detailLoadId?}` от content → `sidePanel.open({ tabId: sender.tab.id })`
-    + запоминает `pendingDetail` (`chrome.storage.session`), чтобы панель после открытия показала деталь.
+    (без `pendingDetail`: открытую карточку помнит сама вкладка — `detailLoadId` в content.js — и отдаёт её
+    в первом же снапшоте, когда панель подключится).
 - `sidepanel.html` — две вкладки UI:
   - **Loads** — выдача активной DAT-вкладки (бывший `#ll-panel`);
   - **Settings** — бывший попап целиком. `popup.js` переиспользуется (монтируется в контейнер вкладки);
@@ -68,8 +69,8 @@ Status: approved (дизайн), ждёт план
 
 ## 4. Карточка груза
 
-- Клик по `ⓘ details` / 👤 в строке → `runtime.sendMessage({type:"open-panel", detailLoadId})` +
-  локально `detailLoadId = id; render()`. Снапшот несёт `detail`: поля груза, разбивка «Кому
+- Клик по `ⓘ details` / 👤 в строке → `runtime.sendMessage({type:"open-panel"})` +
+  локально `detailLoadId = id; render()`. Hot loads в панели тоже кликабельны (`openDetail`). Снапшот несёт `detail`: поля груза, разбивка «Кому
   подходит» (`LLFLEET`), `counterOffer`, Gmail compose URL, `preferredContactMethod`, safe bookingUrl.
 - В панели: Email → `chrome.tabs.create({url})`, Call → `tel:`, Copy → `navigator.clipboard.writeText`.
   Отзыв о брокере из детали → команда во вкладку (кэш репутаций живёт там).
@@ -101,4 +102,4 @@ Status: approved (дизайн), ждёт план
 
 Проброс user gesture из клика в content script через `runtime.sendMessage` в `sidePanel.open()`.
 Если не работает: FAB/бейдж при закрытой панели показывает тултип «Click the LoadLens icon»,
-а `pendingDetail` отрисуется, когда пользователь откроет панель сам.
+а карточка (`detailLoadId` во вкладке) отрисуется, когда пользователь откроет панель сам.
