@@ -32,7 +32,9 @@ extension/                  MV3-расширение (грузит vendor/* → 
     dat.adapter.js          DOM-адаптер DAT (fallback / построчные бейджи); *_SELECTORS — ★ ЗАГЛУШКИ
     truckstop.adapter.js    DOM-адаптер Truckstop; *_SELECTORS — ★ ЗАГЛУШКИ
     adapters.js             реестр adapterFor(host); __fixtures__/ — фикстуры для тестов
-  content.js                источник: gqlLoads (перехват, приоритет) → панель/скоринг/sync; DOM → построчные бейджи
+  content.js                источник: gqlLoads (перехват, приоритет) → скоринг/sync/снапшот панели; свой DOM — построчные бейджи, FAB, меню отзыва
+  view-model.js (LLVIEW)    чистая сборка снапшота боковой панели (только данные) из состояния content.js
+  background.js             SW: setPanelBehavior (иконка → боковая панель) + open-panel (FAB/бейдж → sidePanel.open)
   api.js (LLAPI)            JWT-клиент + sanitizeLoad (whitelist+нормализация; с 2026-07-17 шлёт ВСЁ, вкл. контакты) + sendLoads/getLane/getMarket/getDistance
   geo.js, hos.js            обёртки: дистанции (backend+haversine), HOS-состояние водителя
   drivers.js (LLDRV)        парк диспетчера: resolveDriverContext (чистая, выбор контекста планировщика) + per-device активный водитель (ll_active_driver)
@@ -41,8 +43,10 @@ extension/                  MV3-расширение (грузит vendor/* → 
   alert-rules.js (LLRULES)  чистые normalize/active/matches/select правил Telegram-алертов (ll_alert_rules): AND внутри правила, OR между; пусто → green+equip. Спека 2026-09-12
   autopilot-policy.js (LLPOLICY) ★ чистая политика футпринта авто-пилота: nextTick (база тика, окно тишины,
                             джиттер) / allowReload (потолок reload) / scrollBudget (сколько страниц скроллить)
-  visibility.js (LLVIS)     чистый badgesVisible/panelVisible/fabVisible: сводит hintsOff(per-tab) + ll_hide_panel/ll_hide_badges(глоб.попап) + panelCollapsed в решения «рисовать/нет»
-  popup.*                   настройки водителя (cost/mile, HOS-часы) + секция «Отображение на странице» (instant-apply тумблеры ll_hide_panel/ll_hide_badges) + аккаунт + секция «Парк» (CRUD водителей) + секция «Telegram» (привязка — любой план, алерты и правила — Pro)
+  visibility.js (LLVIS)     чистый badgesVisible/fabVisible: hintsOff(per-tab) + ll_hide_badges(Settings) + panelOpen (порт панели подключён)
+  sidepanel.html/css/js     ★ боковая панель (chrome.sidePanel, Chrome 116+): вкладка Loads (порт ll-panel к активной вкладке борда) + Settings
+  panel/render.js (LLPANEL) снапшот → HTML вкладки Loads (экранирование, allowlist схем ссылок)
+  popup.js                  вкладка Settings (бывший попап): настройки водителя (cost/mile, HOS-часы) + «Отображение на странице» (ll_hide_badges) + аккаунт + «Парк» (CRUD водителей) + «Telegram» (привязка — любой план, алерты и правила — Pro)
   vendor/                   ★ АВТОКОПИИ из shared/ (load.model, scoring, planner, fleet, email-template, markets.seed). `npm run sync:shared`
   cloud.js (LLCLOUD)        cloud mode: чтение globalThis.LL_CLOUD, heartbeat/detectState (ok/stale/logged_out), метки в sessionStorage
   cloud.config.js           заглушка (обычный режим); в облачном образе перезаписывается start-chromium.sh
@@ -70,7 +74,7 @@ shared/                     КАНОН: load.model.js, scoring.js, planner.js, e
 ```bash
 npm test                 # sync:shared + тесты shared (17) + extension (10)
 npm run sync:shared      # пересобрать extension/vendor/* и backend/shared/* из shared/ — ПОСЛЕ любой правки shared/*.js
-npm run e2e:popup        # Playwright-прогон редактора правил алертов в попапе (popup.js без юнит-тестов); нужен playwright + chromium
+npm run e2e:popup        # Playwright-прогон редактора правил алертов на вкладке Settings боковой панели (popup.js без юнит-тестов); нужен playwright + chromium
 npm run package:ext      # dist/loadlens-extension-<версия>.zip (список файлов выводится из manifest)
 npm run publish:ext -- --status | --publish   # заливка в Chrome Web Store через API (дашборд скриптовать нельзя),
                          # доступы в .local_dev.env, разовая OAuth-настройка — docs/chrome-web-store-publishing.md
@@ -80,6 +84,16 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
 ```
 
 ## Конвенции (важное)
+
+- **Боковая панель (с 2026-09-24, 0.9.0).** UI — `chrome.sidePanel`, не попап и не DOM страницы; «попап» ниже =
+  вкладка Settings панели, «шапка панели» = вкладка Loads. `content.js` — «мозг»: на каждый render строит
+  `LLVIEW.build` (только данные) и шлёт в порт `ll-panel`, который панель открывает к АКТИВНОЙ вкладке борда
+  (фоновые вкладки не платят за снапшоты; без порта цепочки/Hot loads не считаются, скоринг/алерты — всегда).
+  Панель рисует `LLPANEL` и шлёт команды (`setDriver/setSort/setAutorefresh/scrollToRow/openDetail/exportCsv/
+  setHintsOff/reportBroker`). Снапшот дедупится по JSON с обеих сторон — DAT шумит мутациями; перерисовка
+  откладывается, пока фокус в поле панели. `sidePanel.open` — только по жесту: FAB/бейдж зовут `open-panel`
+  синхронно из клика, при отказе — тост «Click the LoadLens icon». CSV собирает вкладка, скачивает панель.
+  Спека — `docs/superpowers/specs/2026-09-24-side-panel-design.md`.
 
 - **One-click письмо брокеру + контр-оффер** (`shared/email-template.js` `LLMAIL` + `LLSCORE.counterOffer`):
   в карточке груза кнопки `✉️ Email broker` / `📞 Call` / `📋 Copy email`; ведущая выбирается по
@@ -131,7 +145,7 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   Convoy: GraphQL/REST DAT с токеном напрямую по-прежнему НЕЛЬЗЯ. Сорт-дропдаун (`applySort`) — селекторы
   ★ ЗАГЛУШКИ до живой сессии. Настройки — `ll_autorefresh`/`ll_sort`. **Вкл/выкл (с 2026-09-12):**
   глобальный тумблер `ll_autorefresh.on` в попапе («Enable on DAT tabs») + per-tab override галкой
-  в шапке панели (`sessionStorage`, `LLTAB.resolveAutorefresh`); побеждает последнее действие —
+  на вкладке Loads боковой панели (`sessionStorage`, `LLTAB.resolveAutorefresh`); побеждает последнее действие —
   переключение в попапе снимает override на всех вкладках. Раньше `on` был ТОЛЬКО per-tab, и настройки
   попапа (интервал/скролл) молча ничего не запускали. Спека — `docs/superpowers/specs/2026-06-22-dat-autopilot-refresh-sort-design.md`.
 - **Футпринт авто-пилота — вся арифметика в `extension/autopilot-policy.js` (LLPOLICY), не в `content.js`**
