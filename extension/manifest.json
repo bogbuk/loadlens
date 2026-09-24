@@ -58,6 +58,7 @@
         "visibility.js",
         "autopilot-policy.js",
         "loads-accumulator.js",
+        "view-model.js",
         "content.js"
       ],
       "css": [
