@@ -51,6 +51,7 @@
   let panelPort = null;          // порт боковой панели (runtime.onConnect "ll-panel"), null — панель не смотрит на эту вкладку
   let lastSnapJson = "";         // последний отправленный снапшот — не слать одинаковые (MutationObserver DAT шумит)
   let detailLoadId = null;       // груз, открытый в карточке боковой панели
+  let booted = false;            // boot() дочитал настройки — можно рисовать и принимать команды панели
   const laneCache = new Map();    // "O>D|E" -> {medianRpm|null}  (из backend)
   const marketCache = new Map();  // market -> strength 0..1
   const repCache = new Map();     // brokerMc -> reputation (crowd)
@@ -850,15 +851,7 @@
       setInterval(tick, HEARTBEAT_TICK_MS);
     }
 
-    // боковая панель подключается к активной вкладке борда портом ll-panel
-    chrome.runtime.onConnect.addListener((port) => {
-      if (port.name !== "ll-panel") return;
-      panelPort = port;
-      lastSnapJson = ""; // новому слушателю — полный снапшот сразу
-      port.onMessage.addListener((m) => { onPanelCmd(m).catch((err) => log("panel cmd error", err)); });
-      port.onDisconnect.addListener(() => { if (panelPort === port) { panelPort = null; render(); } });
-      render();
-    });
+    booted = true; // порт мог подключиться раньше — финальный render ниже отдаст ему первый снапшот
     render();
     scheduleAuto(); // запустить авто-рефреш, если включён в настройках
     const obs = new MutationObserver(() => schedule());
@@ -875,5 +868,16 @@
       if (onward.length) fetchCrowdLoads(onward, { poll: true });
     }, POLL_MS);
   }
+  // Боковая панель подключается портом ll-panel. Слушатель вешаем СИНХРОННО до boot(): boot ждёт сеть
+  // (дизель, парк водителей), и панель, постучавшаяся в это время, получила бы «Receiving end does not
+  // exist». Порт запоминаем сразу, а рисуем только после boot — до него настройки ещё дефолтные.
+  chrome.runtime.onConnect.addListener((port) => {
+    if (port.name !== "ll-panel") return;
+    panelPort = port;
+    lastSnapJson = ""; // новому слушателю — полный снапшот сразу
+    port.onMessage.addListener((m) => { if (booted) onPanelCmd(m).catch((err) => log("panel cmd error", err)); });
+    port.onDisconnect.addListener(() => { if (panelPort === port) { panelPort = null; if (booted) render(); } });
+    if (booted) render();
+  });
   boot();
 })();

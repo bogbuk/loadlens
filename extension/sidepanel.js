@@ -10,8 +10,12 @@
   let snap = null, lastJson = "", lastDetailId = null;
   let expandedSig = null;        // раскрытая цепочка — чисто панельное состояние
   let notice = "", noticeTimer = null;
+  let lastHtml = "";             // уже нарисованная разметка — одинаковую не трогаем (открытые <details>, выделение)
   let deferred = false;          // снапшот пришёл, пока пользователь в поле ввода — рисуем на blur
-  let retriedTab = null;         // одна повторная попытка на вкладку (content ещё не успел загрузиться)
+  // Повторы подключения: content-скрипт стартует на document_idle, т.е. после onUpdated(complete).
+  // Счётчик — на вкладку; сбрасывается успехом, сменой вкладки и новой загрузкой страницы.
+  const RETRY_MS = [700, 1500, 3000, 5000];
+  let retry = { tabId: null, n: 0 };
 
   function showTab(name) {
     document.querySelectorAll("[data-tab]").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
@@ -21,17 +25,23 @@
   document.querySelectorAll("[data-tab]").forEach((b) => { b.onclick = () => showTab(b.dataset.tab); });
 
   // Перерисовка innerHTML сбросила бы ввод — пока фокус в поле/селекте панели, откладываем.
+  // document.hasFocus(): ушёл в DAT — activeElement остаётся тем же полем, но пользователь уже не печатает.
   function editing() {
     const a = document.activeElement;
-    return !!a && $loads.contains(a) && (a.tagName === "SELECT" || (a.tagName === "INPUT" && (a.type === "text" || a.type === "number")));
+    return document.hasFocus() && !!a && $loads.contains(a) && (a.tagName === "SELECT" || (a.tagName === "INPUT" && (a.type === "text" || a.type === "number")));
   }
   function paint() {
     if (!snap) return;
     if (editing()) { deferred = true; return; }
     deferred = false;
-    $loads.innerHTML = LLPANEL.loadsView(snap, { expandedSig, notice });
+    // В режиме карточки рисуется только деталь: смена шапки/цепочек/возраста не должна пересоздавать DOM.
+    const html = LLPANEL.loadsView(snap, { expandedSig, notice });
+    if (html === lastHtml) return;
+    lastHtml = html;
+    $loads.innerHTML = html;
   }
   $loads.addEventListener("focusout", () => { if (deferred) setTimeout(paint, 0); });
+  window.addEventListener("blur", () => { if (deferred) setTimeout(paint, 0); }); // панель потеряла фокус целиком
 
   function flash(text) {
     notice = text; paint();
@@ -45,7 +55,7 @@
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
-  function showEmpty(kind) { snap = null; lastJson = ""; $loads.innerHTML = LLPANEL.empty(kind); }
+  function showEmpty(kind) { snap = null; lastJson = ""; lastHtml = ""; $loads.innerHTML = LLPANEL.empty(kind); }
 
   function onMsg(m) {
     if (!m) return;
@@ -85,20 +95,22 @@
     const p = chrome.tabs.connect(tab.id, { name: "ll-panel" });
     port = p; portTabId = tab.id;
     let gotAny = false;
-    p.onMessage.addListener((m) => { gotAny = true; onMsg(m); });
+    p.onMessage.addListener((m) => { if (!gotAny) { gotAny = true; retry = { tabId: null, n: 0 }; } onMsg(m); });
     p.onDisconnect.addListener(() => {
       void chrome.runtime.lastError; // «Could not establish connection» — ожидаемо, не шумим в консоль
       if (port !== p) return;       // уже переподключились к другой вкладке
       port = null; portTabId = null;
       if (gotAny) return;           // вкладка перезагружается — переподключимся на onUpdated(complete)
-      if (retriedTab !== tab.id) { retriedTab = tab.id; setTimeout(connectActive, 1500); return; }
+      if (retry.tabId !== tab.id) retry = { tabId: tab.id, n: 0 };
+      if (retry.n < RETRY_MS.length) { setTimeout(connectActive, RETRY_MS[retry.n++]); return; }
       showEmpty("no-script");
     });
   }
 
-  chrome.tabs.onActivated.addListener((info) => { if (info.windowId === winId) { retriedTab = null; connectActive(); } });
+  chrome.tabs.onActivated.addListener((info) => { if (info.windowId === winId) { retry = { tabId: null, n: 0 }; connectActive(); } });
   chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
     if (!tab.active || tab.windowId !== winId) return;
+    if (info.status === "complete") retry = { tabId: null, n: 0 }; // новая загрузка — новые попытки
     if (info.status === "complete" || info.url) connectActive();
   });
 
