@@ -2,7 +2,7 @@ import { Column, DataType, Model, Table } from 'sequelize-typescript';
 
 // Крауд-база грузов: полный набор полей, извлекаемых DAT_GQL.mapResult.
 // С 2026-07-17 (осознанное решение) храним и контакты брокера/comments (PII) — только храним;
-// читающие эндпоинты (CrowdLoad/PartnerLoad) их не отдают.
+// читающие эндпоинты (CrowdLoad) их не отдают.
 @Table({
   tableName: 'loads',
   timestamps: false,

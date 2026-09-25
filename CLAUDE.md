@@ -129,7 +129,7 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   бизнес-данные, не PII. **Хранение PII (осознанный сдвиг 2026-07-17):** крауд-БД (`POST /loads`)
   принимает полный набор полей парсера, ВКЛЮЧАЯ `contactEmail`/`contactPhone`/`comments` —
   `LLAPI.sanitizeLoad` больше не PII-фильтр, а whitelist+нормализация. Граница переехала на чтение:
-  читающие эндпоинты (`GET /loads`/`near`, CrowdLoad/PartnerLoad) PII-поля НЕ отдают — раздача чужих
+  читающие эндпоинты (`GET /loads`/`near`, CrowdLoad) PII-поля НЕ отдают (партнёрская выдача `GET /loads/partner` УДАЛЕНА 2026-09-25: передача собранных постингов третьим лицам нарушает Limited Use Chrome Web Store; privacy.html обещает не отдавать данные другим компаниям) — раздача чужих
   контактов другим пользователям осталась бы редистрибуцией Product Data (отдельное решение, если
   понадобится). **Живые DAT-токены в чат/файлы не вставлять и не использовать для скрейпинга.**
   Прецедент DAT v. Convoy.

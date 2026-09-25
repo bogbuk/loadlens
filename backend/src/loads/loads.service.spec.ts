@@ -97,51 +97,6 @@ describe('LoadsService.ingest seen_count', () => {
   });
 });
 
-describe('LoadsService.partnerSearch', () => {
-  it('фильтрует по origin+dest (регекс-матч) и отдаёт rpmCents/ageMinutes', async () => {
-    const lastSeen = new Date(Date.now() - 30 * 60 * 1000); // 30 мин назад
-    const findAll = jest.fn().mockResolvedValue([
-      { board: 'dat', loadId: 'L1', originMarket: 'Atlanta, GA', destMarket: 'Dallas, TX',
-        equipment: 'V', groupKey: 'g', rate: 2000, loadedMiles: 780, deadheadMiles: 20,
-        rpmCents: 250, weight: 42000, brokerMc: '123', brokerName: 'ACME', lastSeen },
-    ]);
-    const svc = new LoadsService({ findAll } as any, { query: jest.fn() } as any);
-    const res = await svc.partnerSearch('Atlanta, GA', { dest: 'Dallas, TX', equipment: 'V' });
-    const whereArg = findAll.mock.calls[0][0].where;
-    expect(whereArg.originMarket[Op.iRegexp]).toBe('^Atlanta[,_ ]+GA$');
-    expect(whereArg.destMarket[Op.iRegexp]).toBe('^Dallas[,_ ]+TX$');
-    expect(whereArg.equipment).toBe('V');
-    expect(res[0].rpmCents).toBe(250);
-    expect(typeof res[0].ageMinutes).toBe('number');
-    expect(res[0].lastSeen).toBe(lastSeen.toISOString());
-  });
-
-  it('origin по коду штата → трейлинг-стейт паттерн; без dest — нет destMarket фильтра', async () => {
-    const findAll = jest.fn().mockResolvedValue([]);
-    const svc = new LoadsService({ findAll } as any, { query: jest.fn() } as any);
-    await svc.partnerSearch('IL', {});
-    const whereArg = findAll.mock.calls[0][0].where;
-    expect(whereArg.originMarket[Op.iRegexp]).toBe('[,_ ]IL$');
-    expect(whereArg.destMarket).toBeUndefined();
-    expect(whereArg.equipment).toBeUndefined();
-  });
-
-  it('origin по городу → префиксный паттерн', async () => {
-    const findAll = jest.fn().mockResolvedValue([]);
-    const svc = new LoadsService({ findAll } as any, { query: jest.fn() } as any);
-    await svc.partnerSearch('Atlanta', {});
-    expect(findAll.mock.calls[0][0].where.originMarket[Op.iRegexp]).toBe('^Atlanta[,_ ]');
-  });
-
-  it('пустой/пробельный origin → [] без обращения к БД', async () => {
-    const findAll = jest.fn().mockResolvedValue([]);
-    const svc = new LoadsService({ findAll } as any, { query: jest.fn() } as any);
-    const res = await svc.partnerSearch('   ', {});
-    expect(res).toEqual([]);
-    expect(findAll).not.toHaveBeenCalled();
-  });
-});
-
 describe('LoadsService.near', () => {
   it('возвращает соседей с originDeadheadMi и делит на loads/gone', async () => {
     const now = new Date('2026-06-17T12:00:00Z');

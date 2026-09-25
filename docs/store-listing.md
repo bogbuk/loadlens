@@ -98,7 +98,7 @@ get-out chain planner and driver fleet matching.
 
 Итог для текстов:
 - Collects: account email and password hash; loads you view incl. broker contacts and comments (not linked to the user); install ID and device last-seen; driver profiles; broker reviews; Telegram chat ID; cloud browser profile (incl. the DAT session) for Pro Cloud.
-- Shared: other users — only aggregates and load summaries without contacts; data partners by API key — load summaries without contacts; Telegram — alerts to the user's own chat; hosting — Hetzner (DE).
+- Shared: other users — only aggregates and load summaries without contacts; Telegram — alerts to the user's own chat; hosting — Hetzner (DE).
 - Sold: No.
 - Encrypted in transit: Yes (HTTPS).
 - Deletion: in-app (боковая панель → Settings → Delete account → `DELETE /api/v1/users/me`: аккаунт, водители, устройства, Telegram, облачный браузер сразу); крауд-грузы и отзывы не привязаны к юзеру и остаются; также по email.

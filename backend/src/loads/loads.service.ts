@@ -6,12 +6,11 @@ import { IngestLoadsDto } from './dto/ingest.dto';
 import { loadSeed } from '../common/seed';
 import { nearbyMarkets } from '../geo/nearby';
 import { computeLiveness } from './freshness';
-import { buildMarketMatch } from './market-match';
 
 const CROWD_WINDOW_HOURS = 72;
 
 // Расширенные поля парсера (2026-07-17): 1:1 DTO → колонка модели; upsert перезаписывает свежими.
-// PII (comments/контакты) — только хранение; в CrowdLoad/PartnerLoad не отдаётся.
+// PII (comments/контакты) — только хранение; в CrowdLoad не отдаётся.
 const EXTENDED_FIELDS = [
   'originCity', 'originState', 'destCity', 'destState',
   'lengthFt', 'equipmentCode', 'fullPartial', 'tripMethod', 'destDeadheadMiles', 'rateBasis',
@@ -32,13 +31,6 @@ export interface CrowdLoad {
   equipment: string; groupKey: string; lastSeen: Date;
   rate: number | null; loadedMiles: number | null; deadheadMiles: number | null;
   weight: number | null; brokerMc: string | null; brokerName: string | null;
-}
-
-export interface PartnerLoad {
-  board: string; loadId: string; originMarket: string; destMarket: string; equipment: string;
-  rate: number | null; loadedMiles: number | null; deadheadMiles: number | null; rpmCents: number | null;
-  weight: number | null; brokerName: string | null; brokerMc: string | null;
-  lastSeen: string; ageMinutes: number;
 }
 
 export interface CrowdLoadNear extends CrowdLoad {
@@ -128,34 +120,6 @@ export class LoadsService {
     if (equipment) where.equipment = equipment;
     const rows = await this.model.findAll({ where, order: [['lastSeen', 'DESC']], limit: lim });
     return rows.map((r) => this.toCrowdLoad(r));
-  }
-
-  async partnerSearch(
-    origin: string,
-    opts: { dest?: string; equipment?: string; limit?: number } = {},
-  ): Promise<PartnerLoad[]> {
-    const lim = Math.min(Math.max(1, opts.limit ?? 100), 200);
-    const where: any = {
-      lastSeen: { [Op.gt]: new Date(Date.now() - CROWD_WINDOW_HOURS * 3600 * 1000) },
-    };
-    // origin is required; a blank/whitespace value must not fall through to an unfiltered window.
-    const originMatch = buildMarketMatch(origin);
-    if (!originMatch) return [];
-    where.originMarket = originMatch;
-    if (opts.dest) {
-      const destMatch = buildMarketMatch(opts.dest);
-      if (destMatch) where.destMarket = destMatch;
-    }
-    if (opts.equipment) where.equipment = opts.equipment;
-    const rows = await this.model.findAll({ where, order: [['lastSeen', 'DESC']], limit: lim });
-    const now = Date.now();
-    return rows.map((r) => ({
-      board: r.board, loadId: r.loadId, originMarket: r.originMarket, destMarket: r.destMarket,
-      equipment: r.equipment, rate: r.rate, loadedMiles: r.loadedMiles, deadheadMiles: r.deadheadMiles,
-      rpmCents: r.rpmCents, weight: r.weight, brokerName: r.brokerName, brokerMc: r.brokerMc,
-      lastSeen: new Date(r.lastSeen).toISOString(),
-      ageMinutes: Math.round((now - new Date(r.lastSeen).getTime()) / 60000),
-    }));
   }
 
   private toCrowdLoad(r: Load): CrowdLoad {
