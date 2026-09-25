@@ -92,7 +92,7 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   Панель рисует `LLPANEL` и шлёт команды (`setDriver/setSort/setAutorefresh/scrollToRow/openDetail/exportCsv/
   setHintsOff/reportBroker`). Снапшот дедупится по JSON с обеих сторон — DAT шумит мутациями; перерисовка
   откладывается, пока фокус в поле панели. `sidePanel.open` — только по жесту: FAB/бейдж зовут `open-panel`
-  синхронно из клика, при отказе — тост «Click the LoadLens icon». CSV собирает вкладка, скачивает панель.
+  синхронно из клика (проверено вживую 25.09 — работает), при отказе — тост «Click the LoadLens icon». CSV собирает вкладка, скачивает панель.
   Спека — `docs/superpowers/specs/2026-09-24-side-panel-design.md`.
 
 - **One-click письмо брокеру + контр-оффер** (`shared/email-template.js` `LLMAIL` + `LLSCORE.counterOffer`):
