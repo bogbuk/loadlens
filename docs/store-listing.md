@@ -50,10 +50,13 @@ it legally and profitably. One click breaks it down driver by driver.
 
 PRIVACY AND HOW IT WORKS
 
-LoadLens only reads the load data your own logged-in session already loaded. It
-does not log into anything for you and does not pull data on its own. Broker
-contact details (phones and emails) never leave your browser. Only de-identified
-lane and rate aggregates are shared to power market medians. Full policy:
+LoadLens reads the load data your own signed-in session already loaded. It does
+not sign into anything for you and never sends its own requests to the board.
+The loads you view, including broker contact details and posting comments when
+the board shows them, are sent to the LoadLens server to build market rates and
+route plans. They are never linked to you, and other users never see broker
+contacts or comments. Telegram alerts include the broker's contact details so
+you can call or email right away. Full policy:
 https://loadlens.krait.studio/privacy.html
 
 REQUIREMENTS
@@ -74,18 +77,31 @@ get-out chain planner and driver fleet matching.
 ## Permission justifications
 
 - `storage` — saves your login session and caches settings and market data locally so the extension works fast and offline.
+- `sidePanel` — shows the LoadLens panel (scored loads, route planner, load details, settings) in Chrome's side panel next to the load board instead of covering the board's results.
 - Host `*.dat.com` / `*.truckstop.com` — reads the loads rendered on the board pages you open, to score them and draw badges.
 - Host `loadlens.krait.studio` — the extension's own backend for accounts, lane-rate medians, and broker reputation.
 - Remote code: No. All logic ships inside the package.
 
-## Data safety
+## Data safety (Privacy practices в dashboard — должно совпадать с privacy.html, иначе нарушение политики CWS)
 
-- Collects: account email (authentication); load postings you view and broker reports you submit (app functionality); anonymous device ID.
-- Does NOT collect: broker contact PII (phone/email stripped in the browser before anything is sent); no location; no browsing history.
-- Shared with third parties: No. Data goes only to the LoadLens backend.
+Обновлено 2026-09-25: с 2026-07-17 контакты брокеров и comments сохраняются на сервере (см. CLAUDE.md, ToS/PII).
+
+Галочки «What user data do you plan to collect»:
+- **Personally identifiable information** — да: email аккаунта; телефоны/email брокеров из постингов; имена водителей.
+- **Authentication information** — да: пароль (хэш на сервере), токены сессии; DAT-сессия в облачном браузере.
+- **Personal communications** — нет (Telegram — только исходящие алерты нашим ботом).
+- **Website content** — да: постинги грузов с DAT/Truckstop (включая comments).
+- **User activity** — нет (клики/нажатия не пишем; авто-пилот не логирует действия).
+- **Location / Health / Financial and payment / Web history** — нет.
+
+Три сертификации Limited Use — отметить все (не продаём, не для несвязанных целей, не для кредитоспособности).
+
+Итог для текстов:
+- Collects: account email and password hash; loads you view incl. broker contacts and comments (not linked to the user); install ID and device last-seen; driver profiles; broker reviews; Telegram chat ID; cloud browser profile (incl. the DAT session) for Pro Cloud.
+- Shared: other users — only aggregates and load summaries without contacts; data partners by API key — load summaries without contacts; Telegram — alerts to the user's own chat; hosting — Hetzner (DE).
 - Sold: No.
 - Encrypted in transit: Yes (HTTPS).
-- Deletion: in-app («Удалить аккаунт» в попапе → `DELETE /api/v1/users/me`, hard-delete + каскад водителей); также по email.
+- Deletion: in-app (боковая панель → Settings → Delete account → `DELETE /api/v1/users/me`: аккаунт, водители, устройства, Telegram, облачный браузер сразу); крауд-грузы и отзывы не привязаны к юзеру и остаются; также по email.
 
 ## Screenshots (1280×800, до 5; заголовок крупно + строка под ним; фон #1d4ed8)
 
@@ -101,7 +117,7 @@ get-out chain planner and driver fleet matching.
 
 3. **Plan your way out of dead markets**
    LoadLens chains two or three loads ahead and ranks routes by the strength of the destination market.
-   _Снять:_ панель с секцией get-out цепочек.
+   _Снять:_ боковую панель (вкладка Loads) с секцией get-out цепочек.
 
 4. **Match every load to the right driver**
    See which of your drivers can run a load legally and profitably, ranked by net per mile.
@@ -109,4 +125,4 @@ get-out chain planner and driver fleet matching.
 
 5. **Run your whole fleet**
    Add drivers with their market, trailer, and remaining hours. LoadLens handles the matching.
-   _Снять:_ попап с секцией «Парк».
+   _Снять:_ боковую панель, вкладка Settings, секция «Парк».

@@ -28,102 +28,144 @@
 <body>
   <header>
     <h1>Load<b>Lens</b> — Privacy Policy</h1>
-    <p class="sub">Last updated: June 15, 2026</p>
+    <p class="sub">Last updated: September 25, 2026</p>
   </header>
 
-  <p>LoadLens is a Chrome extension that overlays the freight load boards <strong>DAT One</strong> and
-    <strong>Truckstop</strong> that you are already logged into, and scores each load's profitability
-    (revenue-per-mile after deadhead, fuel and the lane market median) together with an Hours-of-Service
-    feasibility badge. This policy explains exactly what data the extension handles, why, and what we do
-    and do not do with it.</p>
+  <p>LoadLens is a Chrome extension that works on top of the freight load boards <strong>DAT One</strong> and
+    <strong>Truckstop</strong> that you are already signed into. It scores each load's profitability
+    (revenue per mile after deadhead, fuel and the lane market median), checks Hours-of-Service feasibility,
+    shows broker context, plans multi-load routes and, if you turn them on, sends you alerts in Telegram.
+    This policy explains exactly what data the extension handles, why, who can see it and how to delete it.</p>
 
-  <h2>1. Data we process</h2>
-
-  <h3>Stored locally on your device (chrome.storage.local)</h3>
+  <h2>1. How the extension reads load boards</h2>
   <ul>
-    <li><strong>Anonymous client ID</strong> — a random UUID generated on first run, so the backend can
-      aggregate anonymized lane rate statistics without requiring an account. It contains no personal
-      information and is not linked to your identity.</li>
-    <li><strong>Account session</strong> — if you choose to sign in, your authentication token (JWT),
-      email and current plan are cached locally.</li>
-    <li><strong>Local settings</strong> — driver cost-per-mile, Hours-of-Service hours, the active-driver
-      selection and a cached diesel price.</li>
+    <li>On <code>dat.com</code> and <code>truckstop.com</code> pages, LoadLens reads the load data that the board
+      has already loaded into your own signed-in session (the page content and the board's own responses to
+      your searches). It does <strong>not</strong> send its own requests to DAT or Truckstop APIs and does
+      not sign in anywhere for you.</li>
+    <li>If you turn on the optional <strong>auto-refresh</strong> (off by default), the extension periodically
+      scrolls your open search tab, clicks the board's own Search button or reloads that tab, so the board
+      itself fetches fresh results. It pauses during quiet hours you can configure.</li>
   </ul>
 
-  <h3>Sent to our backend (<code>loadlens.krait.studio</code>)</h3>
+  <h2>2. Data stored only on your device</h2>
+  <ul>
+    <li><strong>Settings</strong> — cost per mile, target rates, Hours-of-Service hours, equipment filter,
+      alert rules, email template, display and auto-refresh preferences, the active driver, a cached diesel
+      price.</li>
+    <li><strong>Sign-in session</strong> — if you sign in, your access and refresh tokens, email and plan.</li>
+    <li><strong>Install ID</strong> — a random identifier generated on first run (see section 3).</li>
+  </ul>
+
+  <h2>3. Data sent to our server (<code>loadlens.krait.studio</code>)</h2>
   <table>
     <thead>
-      <tr><th>Data</th><th>Purpose</th></tr>
+      <tr><th>Data</th><th>Why</th></tr>
     </thead>
     <tbody>
       <tr>
-        <td>Aggregated load attributes — origin/destination market, equipment type, posted rate, loaded
-          and deadhead miles, weight, broker MC number</td>
-        <td>Building anonymized per-lane rate medians and market-strength signals shared back to all users.
-          Broker/dispatcher contact details (phone numbers, emails, names matching contact patterns) are
-          stripped on the device before sending.</td>
+        <td><strong>Load postings you view</strong> — lane, equipment, rate, miles, weight, dates, booking
+          details, broker name, MC number, credit score and days-to-pay, and, when the board shows them, the
+          <strong>broker's contact phone and email, preferred contact method and the posting's comments</strong>.
+          Sent whether or not you are signed in.</td>
+        <td>Building lane rate medians and market-strength signals, finding onward loads for route planning,
+          and flagging suspicious postings. Load records are <strong>not linked to you</strong>: we store no
+          account, install ID or IP address with them. Broker contacts and comments are never shown to other
+          users (see section 5).</td>
       </tr>
       <tr>
-        <td>Account email and password</td>
-        <td>Optional sign-in for Pro features. Passwords are transmitted over HTTPS and stored only as a
-          salted hash on the server; they are never stored in the extension.</td>
+        <td><strong>Account</strong> — email, password (stored only as a salted hash), plan, account role,
+          sign-in token version</td>
+        <td>Optional sign-in for Pro features and account recovery.</td>
       </tr>
       <tr>
-        <td>Driver profiles you create — name, home market, equipment, HOS hours, cost-per-mile, status</td>
-        <td>Stored under your account so your fleet settings power load scoring across devices.</td>
+        <td><strong>Devices</strong> — the install ID of each browser you sign in from and when it was last
+          used (no IP address, no device details)</td>
+        <td>Enforcing the number of devices allowed per plan. A device unused for 30 days is removed.</td>
       </tr>
       <tr>
-        <td>Broker reputation reports you submit (MC number + outcome such as paid / slow / flaked)</td>
-        <td>Crowd-sourced broker reliability shown to other users. One verdict per user per broker.</td>
+        <td><strong>Driver profiles you create</strong> — name, current and home market, equipment, HOS hours,
+          cost per mile, status</td>
+        <td>Matching loads to your drivers across your devices.</td>
       </tr>
       <tr>
-        <td>Anonymous client ID</td>
-        <td>Deduplicating crowd submissions without an account.</td>
+        <td><strong>Broker reviews you submit</strong> — broker MC number, outcome (paid, no issues, slow pay,
+          flaked, double-brokered), optional note, your install ID</td>
+        <td>Community broker reputation. Other users see only aggregated counts, never your note or ID. The
+          install ID keeps it to one review per broker per install.</td>
+      </tr>
+      <tr>
+        <td><strong>Telegram</strong> (only if you link it) — your Telegram chat ID, whether alerts are on,
+          and a short record of which loads were already sent (lane, equipment, rate, miles, broker MC and the
+          time)</td>
+        <td>Delivering load alerts and password-reset codes to you, without sending the same load twice. The
+          text of alert messages is not stored on our server.</td>
+      </tr>
+      <tr>
+        <td><strong>Password-reset codes</strong> — stored only as a hash, valid for 30 minutes</td>
+        <td>Resetting a forgotten password through your linked Telegram chat.</td>
+      </tr>
+      <tr>
+        <td><strong>Cloud browser</strong> (optional Pro Cloud feature) — a browser that runs for you on our
+          server. Its profile, including <strong>your DAT sign-in session</strong> and anything you choose to
+          save in that browser, is stored on our server. We also store the screen address, its access password
+          and status reports (working / signed out / stalled, number of loads seen)</td>
+        <td>Keeping LoadLens working when your own computer is off. You sign in to DAT yourself inside the
+          cloud browser; we never ask for or store your DAT password outside it.</td>
       </tr>
     </tbody>
   </table>
 
-  <h2>2. What we do NOT collect</h2>
+  <h2>4. What we do NOT collect</h2>
   <ul>
     <li>We do <strong>not</strong> collect your browsing history. The extension runs only on
-      <code>dat.com</code> and <code>truckstop.com</code> pages and on our own API.</li>
-    <li>We do <strong>not</strong> log your clicks, keystrokes, mouse movement or scrolling.</li>
-    <li>We do <strong>not</strong> collect broker or dispatcher personal contact details — these are
-      filtered out on your device before any data leaves the browser.</li>
-    <li>We do <strong>not</strong> initiate requests to DAT or Truckstop APIs. The extension only reads
-      data that the load board has already loaded into your own logged-in session.</li>
-    <li>We do <strong>not</strong> collect health, payment-card or precise-location data.</li>
+      <code>dat.com</code> and <code>truckstop.com</code> pages and talks only to our own server.</li>
+    <li>We do <strong>not</strong> record your clicks, keystrokes, mouse movement or scrolling.</li>
+    <li>We do <strong>not</strong> store IP addresses in our database. Our hosting may keep short-lived
+      technical access logs needed to run and protect the service.</li>
+    <li>We do <strong>not</strong> collect health, financial, payment-card or location data.</li>
   </ul>
 
-  <h2>3. How we use the data</h2>
-  <p>Data is used solely to operate the extension's single purpose: scoring the loads you see and showing
-    market and broker context. Load attributes are aggregated into anonymized lane statistics; individual
-    postings are not republished.</p>
-
-  <h2>4. Data sharing</h2>
+  <h2>5. Who can see your data</h2>
   <ul>
-    <li>We do <strong>not</strong> sell or transfer your data to third parties.</li>
-    <li>We do <strong>not</strong> use or transfer your data for any purpose unrelated to the extension's
-      single purpose.</li>
-    <li>We do <strong>not</strong> use your data to determine creditworthiness or for lending purposes.</li>
+    <li><strong>Other LoadLens users</strong> see lane rate aggregates, community broker review counts and,
+      for route planning, summaries of loads seen by the community: markets, equipment, rate, miles, weight,
+      broker name and MC number. They never see broker contacts, comments, your identity or your notes.</li>
+    <li><strong>Data partners</strong> with a LoadLens API key may receive the same load summaries (plus rate
+      per mile and posting age). They never receive broker contacts, comments or any information about you.</li>
+    <li><strong>Telegram</strong> receives alert and password-reset messages we send to your chat, only after
+      you link it. Alerts can include the broker's name, MC number, phone, email and the posting's comments,
+      so you can contact the broker right away. Telegram's own privacy policy applies to those messages.</li>
+    <li><strong>Our hosting provider</strong> (Hetzner, Germany) stores our servers and data on our behalf.</li>
+    <li>We do <strong>not</strong> sell your data, use it for advertising, or use it to determine
+      creditworthiness or for lending.</li>
   </ul>
-  <p>Data is processed only by LoadLens and our hosting infrastructure required to run the service.</p>
+  <p>The use of information received from Chrome APIs complies with the Chrome Web Store User Data Policy,
+    including the Limited Use requirements.</p>
 
-  <h2>5. Data retention and deletion</h2>
-  <p>Locally stored data can be cleared at any time by removing the extension or clearing its storage.
-    You can permanently delete your account from the extension popup: open the account section and use
-    "Delete account". This immediately and permanently removes your account and your driver profiles
-    from our servers. You can also email us at the address below to request deletion.</p>
+  <h2>6. Retention and deletion</h2>
+  <ul>
+    <li>You can permanently delete your account in the extension: open the LoadLens side panel, go to the
+      <strong>Settings</strong> tab and use <strong>Delete account</strong>. This immediately removes your
+      account, driver profiles, device records, Telegram link and alert history, and your cloud browser
+      together with its stored profile.</li>
+    <li>Load records and broker reviews are not linked to your account and stay in the community data after
+      you delete your account. We currently keep load records without a fixed expiry.</li>
+    <li>If you turn the cloud browser off, it is stopped and its profile is deleted after 30 days.</li>
+    <li>Data stored on your device is removed when you uninstall the extension or clear its storage.</li>
+    <li>You can also email us at the address below to request deletion.</li>
+  </ul>
 
-  <h2>6. Security</h2>
-  <p>All communication between the extension and our backend uses HTTPS. Account passwords are stored only
-    as salted hashes. Authentication uses short-lived access tokens with refresh rotation.</p>
+  <h2>7. Security</h2>
+  <p>All communication between the extension and our server uses HTTPS. Passwords and password-reset codes
+    are stored only as hashes. Sign-in uses short-lived access tokens with refresh rotation. The cloud browser
+    screen is protected by a random password that changes every time you turn the cloud browser on.</p>
 
-  <h2>7. Changes to this policy</h2>
+  <h2>8. Changes to this policy</h2>
   <p>If this policy changes materially, we will update the date above and reflect the change in the
     extension's Chrome Web Store listing.</p>
 
-  <h2>8. Contact</h2>
+  <h2>9. Contact</h2>
   <p>Questions or data-deletion requests: <a href="mailto:bogbuk@gmail.com">bogbuk@gmail.com</a></p>
 
   <div class="foot">LoadLens · <a href="/">dashboard</a> · <a href="/healthz">health</a></div>
