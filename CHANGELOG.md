@@ -4,6 +4,19 @@ All notable user-facing changes to the LoadLens browser extension.
 
 ## [Unreleased]
 
+## 0.9.1 — 2026-09-26
+
+### New
+- **Monthly DAT search budget for the auto-pilot.** DAT's terms treat more than 500 load searches per user per month as a breach of the subscription, and an auto-refresh can run past that in about a week. LoadLens now counts every new search on this device, yours included, and the auto-pilot stops refreshing once the monthly budget is spent (450 by default). It also spreads the budget evenly over the month, so it doesn't burn it in the first days and then sit idle. Settings shows how many searches you've used this month. You can change the limit or ignore it at your own risk. Your own searches are never blocked.
+
+### Fixed
+- **Side panel connects reliably.** The Loads tab now connects to the DAT tab even when the panel opens before the page finishes loading, retries if the first connection fails, updates while the panel isn't focused, and redraws less often.
+
+## 0.9.0 — 2026-09-25
+
+### Changed
+- **LoadLens moved into Chrome's side panel.** The popup and the floating panel on the DAT page are replaced by one side panel: a Loads tab for the current DAT tab and a Settings tab. Click the LoadLens icon, the floating button or a badge to open it.
+
 ## 0.8.0 — 2026-09-16
 
 ### New
