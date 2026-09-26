@@ -28,6 +28,9 @@ async function renderSettings() {
   const ar = (ll_autorefresh && typeof ll_autorefresh === "object") ? ll_autorefresh : { on: false, intervalMs: 180000 };
   // ключа ещё нет (старая настройка) → LLPOLICY подставит дефолтное ночное окно 22–5
   const quiet = LLPOLICY.normalizeQuiet("quiet" in ar ? ar.quiet : undefined);
+  const { ll_search_budget, ll_search_count } = await chrome.storage.local.get(["ll_search_budget", "ll_search_count"]);
+  const budget = LLPOLICY.normalizeBudget(ll_search_budget);
+  const used = LLPOLICY.searchesUsed(ll_search_count, Date.now());
   const sort = (ll_sort && ll_sort.field) ? { field: ll_sort.field, dir: ll_sort.dir === "asc" ? "asc" : "desc" } : { field: "", dir: "desc" };
   const equipSel = new Set(LLEQUIP.normalize(ll_equip_filter) || []);
   const hos = await LLHOS.load();
@@ -56,6 +59,10 @@ async function renderSettings() {
     `from <input id="s-ar-quiet-from" type="number" min="0" max="23" value="${quiet ? quiet.from : 22}" style="width:48px"> ` +
     `to <input id="s-ar-quiet-to" type="number" min="0" max="23" value="${quiet ? quiet.to : 5}" style="width:48px"></span></div>` +
     `<div class="note">Auto-pilot pauses overnight — brokers barely post then, and a flat round-the-clock pattern is what stands out most. Hours follow this machine's clock, which now reads <b>${escA(machineClock())}</b> (in the cloud browser that is the server's time, not yours).</div>` +
+    `<div class="row"><span class="k">DAT searches this month</span><span id="s-sb-used"><b>${used}</b> / ${budget.limit}${budget.ignore ? " (limit ignored)" : ""}</span></div>` +
+    `<div class="row"><span class="k">Monthly search limit</span><input id="s-sb-limit" type="number" min="1" step="10" value="${budget.limit}"></div>` +
+    `<div class="row"><span class="k">Ignore the limit</span><input id="s-sb-ignore" type="checkbox"${budget.ignore ? " checked" : ""} style="width:auto"></div>` +
+    `<div class="note">DAT's terms treat more than 500 searches per user per month as a breach of your subscription. LoadLens counts every new search on this device, including the ones you run yourself, and the auto-pilot stops refreshing once the budget is spent. It also spreads the budget evenly across the month, so it doesn't use it all up in the first few days. Your own searches are never blocked. Searches you run on other devices aren't counted here, so keep a margin below 500. Ignoring the limit is at your own risk.</div>` +
     `<div class="row"><span class="k">Sort</span><select id="s-sort-f">` +
     ['<option value="">— keep current —</option>'].concat(SORT_FIELDS.map((s) =>
       `<option value="${s.field}"${sort.field === s.field ? " selected" : ""}>${escA(s.label)}</option>`)).join("") +
@@ -142,9 +149,15 @@ async function save() {
   }) : null;
   const sortField = document.getElementById("s-sort-f").value || null;
   const arOn = document.getElementById("s-ar-on").checked;
+  // бюджет поисков DAT: пустое/мусорное поле → дефолтный лимит (LLPOLICY.normalizeBudget)
+  const searchBudget = LLPOLICY.normalizeBudget({
+    limit: document.getElementById("s-sb-limit").value,
+    ignore: document.getElementById("s-sb-ignore").checked,
+  });
   await chrome.storage.local.set({
     // on — глобальный тумблер (per-tab override живёт в sessionStorage вкладки, см. content.js)
     ll_autorefresh: { on: arOn, intervalMs: intSec * 1000, autoscroll, quiet: quietVal },
+    ll_search_budget: searchBudget,
     ll_sort: sortField ? { field: sortField, dir: document.getElementById("s-sort-d").value === "asc" ? "asc" : "desc" } : { field: null },
   });
   await LLHOS.save(LLHOS.fromHours({ driveH, dutyH, cycleH }));
@@ -592,6 +605,16 @@ async function addDriver() {
 }
 
 renderSettings();
+// Счётчик поисков пишут вкладки DAT — обновляем только строку «this month», не всю форму:
+// перерисовка renderSettings стёрла бы несохранённые правки в полях.
+chrome.storage.onChanged.addListener(async (ch) => {
+  if (!ch.ll_search_count && !ch.ll_search_budget) return;
+  const el = document.getElementById("s-sb-used");
+  if (!el) return;
+  const { ll_search_budget, ll_search_count } = await chrome.storage.local.get(["ll_search_budget", "ll_search_count"]);
+  const b = LLPOLICY.normalizeBudget(ll_search_budget);
+  el.innerHTML = `<b>${LLPOLICY.searchesUsed(ll_search_count, Date.now())}</b> / ${b.limit}${b.ignore ? " (limit ignored)" : ""}`;
+});
 LLAPI.getMe().then(
   async (u) => {
     if (u) accRow(u); else accForm(await LLAPI.takeSignoutMessage());

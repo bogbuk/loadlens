@@ -23,6 +23,11 @@ const LLPOLICY = (() => {
   const TICK_SCROLL_STEPS = 2;        // сколько страниц доскролливаем на обычном тике
   const DEFAULT_MAX_STEPS = 10;       // потолок полного доскролла новой выдачи
   const DEFAULT_QUIET = { from: 22, to: 5 };
+  // DAT One: «Search activity in excess of five hundred (500) searches per user per month will be
+  // considered breach» (Product and Delivery Schedule, ред. 30.07.2026). 450 — запас под ручные
+  // поиски с других устройств, которых мы не видим. Ресерч: docs/research/2026-09-26-dat-tos-on-extensions.md
+  const DEFAULT_SEARCH_LIMIT = 450;
+  const RECENT_SEARCH_IDS = 50;       // сколько последних searchId помним для дедупа между вкладками
 
   // Number(null) === 0 и Number("") === 0 — для часов это молчаливый «полночь», а не «не задано».
   const num = (v) => (v === null || v === undefined || v === "" ? NaN : Number(v));
@@ -89,10 +94,59 @@ const LLPOLICY = (() => {
     return Math.min(TICK_SCROLL_STEPS, cap);
   }
 
+  // ---- бюджет поисков DAT ----
+  // Поиск = новый searchId в ответе FindLoads (пагинация fetchMore приходит с тем же searchId).
+  // Считаем ВСЕ поиски на устройстве, ручные тоже: лимит DAT — на пользователя, а не на авто-пилот.
+  // Точного определения «search» DAT не даёт — это наша лучшая оценка, не их счётчик.
+  function monthKey(now) {
+    const d = new Date(now);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }
+
+  // ll_search_budget → { limit, ignore }. ignore — осознанный выбор пользователя «не ограничивать».
+  function normalizeBudget(b) {
+    const lim = Math.floor(num(b && b.limit));
+    return {
+      limit: Number.isFinite(lim) && lim > 0 ? lim : DEFAULT_SEARCH_LIMIT,
+      ignore: !!(b && b.ignore),
+    };
+  }
+
+  // ll_search_count → { month, count, recent }. Возвращает ТУ ЖЕ ссылку, если считать нечего —
+  // вызывающий по ней понимает, что писать в storage не нужно.
+  function countSearch(rec, searchId, now) {
+    const month = monthKey(now);
+    const cur = rec && rec.month === month && Array.isArray(rec.recent) ? rec : null;
+    if (!searchId) return cur || rec;
+    if (cur && cur.recent.includes(searchId)) return cur;
+    const base = cur || { month, count: 0, recent: [] };
+    return { month, count: base.count + 1, recent: base.recent.concat(searchId).slice(-RECENT_SEARCH_IDS) };
+  }
+
+  function searchesUsed(rec, now) {
+    return rec && rec.month === monthKey(now) ? (Number(rec.count) || 0) : 0;
+  }
+
+  // Можно ли авто-пилоту запустить ещё один поиск (клик SEARCH или reload). Кроме месячного
+  // потолка — равномерный темп: к концу d-го дня тратим не больше limit·d/D, иначе интервал в
+  // 3 минуты выжег бы месяц за пару дней, и остаток месяца авто-пилот бы молчал.
+  function allowSearch({ used, budget, now } = {}) {
+    const b = normalizeBudget(budget);
+    if (b.ignore) return { allow: true, reason: "ignored", limit: b.limit };
+    const n = Number(used) || 0;
+    if (n >= b.limit) return { allow: false, reason: "limit", limit: b.limit };
+    const d = new Date(now || Date.now());
+    const days = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const pace = Math.ceil(b.limit * d.getDate() / days);
+    if (n >= pace) return { allow: false, reason: "pace", pace, limit: b.limit };
+    return { allow: true, reason: "ok", pace, limit: b.limit };
+  }
+
   return {
     normalizeQuiet, inQuiet, msUntilQuietEnd, nextTick, allowReload, scrollBudget,
+    monthKey, normalizeBudget, countSearch, searchesUsed, allowSearch,
     MIN_INTERVAL_MS, SSE_INTERVAL_MS, RELOAD_GAP_MS, DATA_STALE_MS, WAKE_JITTER_MS,
-    TICK_SCROLL_STEPS, DEFAULT_MAX_STEPS, DEFAULT_QUIET,
+    TICK_SCROLL_STEPS, DEFAULT_MAX_STEPS, DEFAULT_QUIET, DEFAULT_SEARCH_LIMIT, RECENT_SEARCH_IDS,
   };
 })();
 

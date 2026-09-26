@@ -142,3 +142,70 @@ test("normalizeQuiet: часы приводятся к целым 0..23", () => 
 test("normalizeQuiet: мусор → дефолт", () => {
   assert.deepStrictEqual(LLPOLICY.normalizeQuiet({ from: 99, to: -3 }), { from: 22, to: 5 });
 });
+
+// ---------- бюджет поисков DAT (лимит 500/мес из Product and Delivery Schedule) ----------
+test("normalizeBudget: пусто → дефолтный лимит, не игнорируем", () => {
+  assert.deepStrictEqual(LLPOLICY.normalizeBudget(undefined), { limit: LLPOLICY.DEFAULT_SEARCH_LIMIT, ignore: false });
+});
+test("normalizeBudget: мусор в лимите → дефолт, ignore сохраняется", () => {
+  assert.deepStrictEqual(LLPOLICY.normalizeBudget({ limit: "abc", ignore: true }), { limit: LLPOLICY.DEFAULT_SEARCH_LIMIT, ignore: true });
+  assert.strictEqual(LLPOLICY.normalizeBudget({ limit: 0 }).limit, LLPOLICY.DEFAULT_SEARCH_LIMIT);
+});
+test("normalizeBudget: свой лимит принимается и округляется вниз", () => {
+  assert.strictEqual(LLPOLICY.normalizeBudget({ limit: "300.7" }).limit, 300);
+});
+
+test("countSearch: новый searchId прибавляет поиск", () => {
+  const r = LLPOLICY.countSearch(null, "s1", at(14, 0));
+  assert.deepStrictEqual(r, { month: "2026-09", count: 1, recent: ["s1"] });
+});
+test("countSearch: тот же searchId (пагинация fetchMore) не считается повторно", () => {
+  const r1 = LLPOLICY.countSearch(null, "s1", at(14, 0));
+  const r2 = LLPOLICY.countSearch(r1, "s1", at(14, 5));
+  assert.strictEqual(r2, r1); // та же ссылка → писать в storage нечего
+});
+test("countSearch: без searchId не считаем (не отличить пагинацию от нового поиска)", () => {
+  const r1 = LLPOLICY.countSearch(null, "s1", at(14, 0));
+  assert.strictEqual(LLPOLICY.countSearch(r1, null, at(14, 1)), r1);
+});
+test("countSearch: новый месяц обнуляет счётчик", () => {
+  const sept = { month: "2026-09", count: 420, recent: ["a", "b"] };
+  const r = LLPOLICY.countSearch(sept, "c", new Date(2026, 9, 1, 8, 0).getTime());
+  assert.deepStrictEqual(r, { month: "2026-10", count: 1, recent: ["c"] });
+});
+test("countSearch: хвост recent ограничен", () => {
+  let r = null;
+  for (let i = 0; i < LLPOLICY.RECENT_SEARCH_IDS + 5; i++) r = LLPOLICY.countSearch(r, "s" + i, at(14, 0));
+  assert.strictEqual(r.recent.length, LLPOLICY.RECENT_SEARCH_IDS);
+  assert.strictEqual(r.count, LLPOLICY.RECENT_SEARCH_IDS + 5);
+});
+
+test("searchesUsed: прошлый месяц = 0", () => {
+  assert.strictEqual(LLPOLICY.searchesUsed({ month: "2026-08", count: 499 }, at(14, 0)), 0);
+  assert.strictEqual(LLPOLICY.searchesUsed({ month: "2026-09", count: 12 }, at(14, 0)), 12);
+  assert.strictEqual(LLPOLICY.searchesUsed(null, at(14, 0)), 0);
+});
+
+// at() = 15 сентября (30 дней) → темп к концу дня: ceil(300·15/30) = 150
+test("allowSearch: в пределах темпа — можно", () => {
+  const r = LLPOLICY.allowSearch({ used: 100, budget: { limit: 300 }, now: at(14, 0) });
+  assert.strictEqual(r.allow, true);
+  assert.strictEqual(r.pace, 150);
+});
+test("allowSearch: обогнали равномерный темп месяца — ждём", () => {
+  const r = LLPOLICY.allowSearch({ used: 150, budget: { limit: 300 }, now: at(14, 0) });
+  assert.deepStrictEqual([r.allow, r.reason], [false, "pace"]);
+});
+test("allowSearch: месячный лимит выбран — стоп до следующего месяца", () => {
+  const r = LLPOLICY.allowSearch({ used: 300, budget: { limit: 300 }, now: new Date(2026, 8, 30, 12).getTime() });
+  assert.deepStrictEqual([r.allow, r.reason], [false, "limit"]);
+});
+test("allowSearch: ignore пропускает даже сверх лимита", () => {
+  const r = LLPOLICY.allowSearch({ used: 5000, budget: { limit: 300, ignore: true }, now: at(14, 0) });
+  assert.deepStrictEqual([r.allow, r.reason], [true, "ignored"]);
+});
+test("allowSearch: первый день месяца даёт хотя бы долю лимита", () => {
+  const r = LLPOLICY.allowSearch({ used: 0, budget: undefined, now: new Date(2026, 8, 1, 6).getTime() });
+  assert.strictEqual(r.allow, true);
+  assert.strictEqual(r.pace, Math.ceil(LLPOLICY.DEFAULT_SEARCH_LIMIT / 30));
+});

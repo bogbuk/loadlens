@@ -166,6 +166,12 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   **Признак «SSE жив» — `dat-sse-open`/`dat-sse-close` из `inject.js`** (набор `sseStreams`), а НЕ факт
   недавнего события: в тихие минуты матчей нет, а поток жив (недавнее событие оставлено фолбэком на
   случай, если поток открылся до подписки `content.js`). Этим же признаком горит индикатор «● live».
+  (5) **Бюджет поисков DAT** (с 2026-09-26) — DAT One считает >500 поисков/мес на пользователя нарушением
+  договора и мониторит это (Product and Delivery Schedule; ресерч `docs/research/2026-09-26-dat-tos-on-extensions.md`).
+  Поиск = новый `searchId` в FindLoads (пагинация — тот же id), считаем ВСЕ поиски устройства, ручные тоже,
+  в `ll_search_count` (общий на вкладки, дедуп по `recent`). `LLPOLICY.allowSearch` гейтит и клик SEARCH, и
+  reload: месячный потолок `ll_search_budget.limit` (дефолт 450) + равномерный темп `limit·день/дней_в_месяце`.
+  `ignore:true` — осознанный выбор пользователя в Settings; ручные поиски не блокируются никогда.
 - **Авто-скролл + накопление выдачи по `searchId`.** Выдача DAT пагинируется (`cursors.next`, `limit:150`):
   за экран приходит не всё. `DAT_GQL.parseFindLoadsResult` отдаёт `{loads, searchId, hasNext}`; чистый
   `LLACC.accumulate` (`extension/loads-accumulator.js`) копит страницы — тот же `searchId` доливает по

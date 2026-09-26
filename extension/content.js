@@ -47,6 +47,9 @@
   let lastDataAt = 0;            // ts последнего ответа DAT FindLoads — «выдача ещё свежая?»
   let lastReloadAt = 0;          // ts нашего последнего location.reload() (переживает reload в sessionStorage)
   let scrolledSearchId;          // выдача, которую уже доскроллили полностью (undefined = ещё ни разу)
+  let searchBudget = LLPOLICY.normalizeBudget(); // ll_search_budget: месячный лимит поисков DAT или ignore
+  let searchCount = null;        // ll_search_count: { month, count, recent } — общий на все вкладки устройства
+  let searchWrite = Promise.resolve(); // сериализует read-modify-write счётчика внутри вкладки
   const HEARTBEAT_TICK_MS = 60000; // проверка «пора ли heartbeat» (сам период — LLCLOUD.HEARTBEAT_MS)
   let panelPort = null;          // порт боковой панели (runtime.onConnect "ll-panel"), null — панель не смотрит на эту вкладку
   let lastSnapJson = "";         // последний отправленный снапшот — не слать одинаковые (MutationObserver DAT шумит)
@@ -623,6 +626,13 @@
       // Окно тишины: таймер тикает, но страницу не трогаем — свежесть в это время несёт только
       // пассивный SSE-поток (своих запросов не шлём).
       if (plan.skip || LLPOLICY.inQuiet(Date.now(), autoRefresh.quiet)) { scheduleAuto(); return; }
+      // И клик SEARCH, и reload — новый поиск в счёт лимита DAT (500/мес на пользователя). Бюджет
+      // выбран или обогнали темп месяца → не трогаем страницу; ручные поиски пользователя не блокируем.
+      const gate = LLPOLICY.allowSearch({ used: LLPOLICY.searchesUsed(searchCount, Date.now()), budget: searchBudget, now: Date.now() });
+      if (!gate.allow) {
+        log("auto-refresh: search budget", gate.reason === "limit" ? "spent for the month" : "ahead of monthly pace", "→ skip");
+        scheduleAuto(); return;
+      }
       let clicked = false;
       try { clicked = !!(adapter.clickRefresh && adapter.clickRefresh()); }
       catch (e) { log("auto-refresh error", e); }
@@ -647,6 +657,17 @@
       } catch (_) {}
       try { location.reload(); } catch (_) { scheduleAuto(); } // boot после reload сам перезапустит таймер
     }, plan.delayMs);
+  }
+  // Новый searchId в FindLoads = один поиск в счёт лимита DAT. Читаем свежий счётчик из storage,
+  // а не из памяти: его же пишут другие вкладки DAT (дедуп по recent — одна выдача не считается дважды).
+  function recordSearch(searchId) {
+    if (!searchId) return;
+    searchWrite = searchWrite.then(async () => {
+      const { ll_search_count } = await chrome.storage.local.get("ll_search_count");
+      const next = LLPOLICY.countSearch(ll_search_count || null, searchId, Date.now());
+      searchCount = next;
+      if (next !== ll_search_count) await chrome.storage.local.set({ ll_search_count: next });
+    }).catch((e) => log("search count error", e));
   }
   // ---- авто-скролл: доскроллить выдачу до конца, чтобы DAT lazy-load'нул все страницы ----
   // Данные копятся событийно (inject → message → LLACC.accumulate); скролл лишь провоцирует fetchMore
@@ -714,6 +735,9 @@
     try {
       const { ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_badges, ll_mail_template, ll_alert_rules, ll_sse_alerts } = await chrome.storage.local.get(["ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_badges", "ll_mail_template", "ll_alert_rules", "ll_sse_alerts"]);
       sseAlerts = !!ll_sse_alerts;
+      const { ll_search_budget, ll_search_count } = await chrome.storage.local.get(["ll_search_budget", "ll_search_count"]);
+      searchBudget = LLPOLICY.normalizeBudget(ll_search_budget);
+      searchCount = ll_search_count || null;
       if (Array.isArray(ll_targets) && ll_targets.length) targets = ll_targets;
       equipFilter = LLEQUIP.normalize(ll_equip_filter);
       if (typeof LLRULES !== "undefined") alertRules = LLRULES.normalize(ll_alert_rules);
@@ -760,6 +784,8 @@
         if (ch.ll_equip_filter) equipFilter = LLEQUIP.normalize(ch.ll_equip_filter.newValue);
         if (ch.ll_alert_rules && typeof LLRULES !== "undefined") alertRules = LLRULES.normalize(ch.ll_alert_rules.newValue);
         if (ch.ll_sse_alerts) sseAlerts = !!ch.ll_sse_alerts.newValue;
+        if (ch.ll_search_budget) searchBudget = LLPOLICY.normalizeBudget(ch.ll_search_budget.newValue);
+        if (ch.ll_search_count) searchCount = ch.ll_search_count.newValue || null;
         if (ch.ll_mail_template) {
           const v = ch.ll_mail_template.newValue;
           mailTemplate = (typeof v === "string" && v.trim()) ? v : LLMAIL.DEFAULT_TEMPLATE;
@@ -814,6 +840,7 @@
         const res = DAT_GQL.parseFindLoadsResult(d.payload);
         log("received dat-findloads → parse:", res.loads.length, "loads, searchId", res.searchId || "—", res.loads.length ? "" : "(empty — the DAT schema may have changed)");
         lastDataAt = Date.now(); // выдача обновилась — reload точно не нужен (см. LLPOLICY.allowReload)
+        recordSearch(res.searchId); // пагинация приходит с тем же searchId и повторно не считается
         if (cloudCfg) LLCLOUD.markFindLoads(sessionStorage, Date.now());
         if (res.loads.length) {
           // накапливаем по searchId: та же выдача (пагинация) доливает, новый поиск сбрасывает
