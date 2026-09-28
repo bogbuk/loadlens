@@ -202,6 +202,27 @@ with sync_playwright() as p:
           "Connect Telegram" in body and "password reset code" in body)
     page.screenshot(path=str(OUT / "06-free-unlinked.png"), full_page=True)
 
+    # ---- Save пишет только правленное здесь: сортировку/авто-пилот с вкладки Loads не откатывает ----
+    page.reload()
+    page.wait_for_load_state("networkidle")
+    open_settings(page)
+    page.wait_for_selector("#s-save", state="attached", timeout=10000)
+    # «вкладка Loads» меняет storage, пока форма Settings уже нарисована
+    page.evaluate("() => chrome.storage.local.set({ ll_sort: { field: 'age', dir: 'asc' }, ll_autorefresh: { on: true, intervalMs: 180000 } })")
+    page.click("details.settings-wrap summary")
+    page.fill("#s-ar-int", "300")
+    page.click("#s-save")
+    page.wait_for_function("chrome.storage.local.get('ll_autorefresh').then(r => r.ll_autorefresh.intervalMs === 300000)")
+    st = page.evaluate("() => chrome.storage.local.get(['ll_sort', 'll_autorefresh'])")
+    check("save: сортировка с Loads не откачена", st["ll_sort"] == {"field": "age", "dir": "asc"}, str(st["ll_sort"]))
+    check("save: авто-пилот ВКЛ с Loads сохранён, интервал применён",
+          st["ll_autorefresh"]["on"] is True and st["ll_autorefresh"]["intervalMs"] == 300000, str(st["ll_autorefresh"]))
+    page.evaluate("() => chrome.storage.local.set({ ll_sort: { field: 'trip', dir: 'desc' } })")
+    page.click('[data-tab="loads"]')
+    open_settings(page)
+    page.wait_for_function("document.getElementById('s-sort-f').value === 'trip'", timeout=5000)
+    check("вход в Settings без правок перечитывает форму из storage", page.input_value("#s-sort-f") == "trip")
+
     check("нет JS-ошибок страницы", not errors, "; ".join(errors))
     bad = [c for c in console if c.startswith("[error]")]
     check("нет console.error", not bad, "; ".join(bad)[:500])

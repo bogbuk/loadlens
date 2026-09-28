@@ -58,7 +58,7 @@ async function renderSettings() {
     `<div class="row"><span class="k">Quiet hours</span><span><input id="s-ar-quiet" type="checkbox"${quiet ? " checked" : ""} style="width:auto"> ` +
     `from <input id="s-ar-quiet-from" type="number" min="0" max="23" value="${quiet ? quiet.from : 22}" style="width:48px"> ` +
     `to <input id="s-ar-quiet-to" type="number" min="0" max="23" value="${quiet ? quiet.to : 5}" style="width:48px"></span></div>` +
-    `<div class="note">Auto-pilot pauses overnight — brokers barely post then, and a flat round-the-clock pattern is what stands out most. Hours follow this machine's clock, which now reads <b>${escA(machineClock())}</b> (in the cloud browser that is the server's time, not yours).</div>` +
+    `<div class="note">Auto-pilot pauses overnight — brokers barely post then, and a flat round-the-clock pattern is what stands out most. Hours follow this machine's clock, which now reads <b id="s-clock">${escA(machineClock())}</b> (in the cloud browser that is the server's time, not yours).</div>` +
     `<div class="row"><span class="k">DAT searches this month</span><span id="s-sb-used"><b>${used}</b> / ${budget.limit}${budget.ignore ? " (limit ignored)" : ""}</span></div>` +
     `<div class="row"><span class="k">Monthly search limit</span><input id="s-sb-limit" type="number" min="1" step="10" value="${budget.limit}"></div>` +
     `<div class="row"><span class="k">Ignore the limit</span><input id="s-sb-ignore" type="checkbox"${budget.ignore ? " checked" : ""} style="width:auto"></div>` +
@@ -94,6 +94,7 @@ async function renderSettings() {
   // ll_hide_panel — ключ с 0.8.x (прятал панель на странице); теперь прячет FAB, чтобы у тех, кто его включал, на странице ничего не появилось
   document.getElementById("s-hide-fab").onchange = (e) => chrome.storage.local.set({ ll_hide_panel: e.target.checked });
   document.getElementById("s-sse").onchange = (e) => chrome.storage.local.set({ ll_sse_alerts: e.target.checked });
+  formBase = readForm();
 }
 // чипы-тумблеры фильтра прицепа: клик переключает .on, ссылки Все/Сброс, живая сводка
 function wireEquipChips() {
@@ -113,6 +114,8 @@ function wireEquipChips() {
 }
 // Текущее время ЭТОЙ машины: окно тишины считается по её часам, а в облачном браузере это время
 // сервера, а не водителя — без подсказки пользователь выставит часы вслепую.
+// Панель живёт часами — время в подсказке тикает, а не застывает на моменте отрисовки.
+setInterval(() => { const el = document.getElementById("s-clock"); if (el) el.textContent = machineClock(); }, 30000);
 function machineClock() {
   const d = new Date();
   return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
@@ -131,40 +134,62 @@ function targetRow(t, i, arr) {
   return `<div class="row">${label}` +
     `<span>$<input id="t-rpm-${i}" type="number" step="0.05" min="0" value="${t.rpm}" style="width:56px">/mi</span></div>`;
 }
+// Снимок формы Settings. Форма рисуется один раз, а панель живёт часами: сортировку, авто-пилот и
+// cost/mi тем временем меняют с вкладки Loads. Save пишет только то, что правили здесь, поверх
+// свежего storage — иначе он откатывал бы выбор, сделанный на Loads (или в панели другого окна).
+let formBase = null;
+function readForm() {
+  const v = (id) => document.getElementById(id).value;
+  const on = (id) => document.getElementById(id).checked;
+  const quietOn = on("s-ar-quiet");
+  return {
+    cpm: parseFloat(v("s-cpm")),
+    hos: [v("s-drive"), v("s-duty"), v("s-cycle")],
+    targets: readTargets(),
+    equip: [...document.querySelectorAll("#s-equip .chip.on")].map((c) => c.dataset.code),
+    tpl: v("s-mail-tpl"),
+    // авто-пилот: интервал не реже 120с (ToS-футпринт)
+    ar_on: on("s-ar-on"),
+    ar_intervalMs: Math.max(120, parseInt(v("s-ar-int"), 10) || 180) * 1000,
+    ar_autoscroll: on("s-ar-scroll"),
+    // выключенное окно тишины храним как null — LLPOLICY отличает его от «ключа ещё нет» (дефолт)
+    ar_quiet: quietOn ? LLPOLICY.normalizeQuiet({ from: v("s-ar-quiet-from"), to: v("s-ar-quiet-to") }) : null,
+    // бюджет поисков DAT: пустое/мусорное поле → дефолтный лимит (LLPOLICY.normalizeBudget)
+    budget: LLPOLICY.normalizeBudget({ limit: v("s-sb-limit"), ignore: on("s-sb-ignore") }),
+    sortField: v("s-sort-f") || null,
+    sortDir: v("s-sort-d") === "asc" ? "asc" : "desc",
+  };
+}
+const formDirty = () => !!formBase && !!document.getElementById("s-save") && JSON.stringify(readForm()) !== JSON.stringify(formBase);
+// вход во вкладку Settings: без несохранённых правок — перерисовать из storage (подтянуть изменения с Loads)
+function refreshSettings() { if (formBase && !formDirty()) renderSettings(); }
+
 async function save() {
-  const cpm = parseFloat(document.getElementById("s-cpm").value);
-  const driveH = parseFloat(document.getElementById("s-drive").value);
-  const dutyH = parseFloat(document.getElementById("s-duty").value);
-  const cycleH = parseFloat(document.getElementById("s-cycle").value);
-  if (cpm > 0) await chrome.storage.local.set({ ll_cpm: cpm });
-  const equipCodes = [...document.querySelectorAll("#s-equip .chip.on")].map((c) => c.dataset.code);
-  await chrome.storage.local.set({ ll_targets: readTargets(), ll_equip_filter: LLEQUIP.normalize(equipCodes) });
+  const f = readForm();
+  const changed = (k) => JSON.stringify(f[k]) !== JSON.stringify(formBase && formBase[k]);
+  const patch = {};
+  if (changed("cpm") && f.cpm > 0) patch.ll_cpm = f.cpm;
+  if (changed("targets")) patch.ll_targets = f.targets;
+  if (changed("equip")) patch.ll_equip_filter = LLEQUIP.normalize(f.equip);
   // пустой шаблон = «вернуть дефолт» (content.js подставит DEFAULT_TEMPLATE)
-  const tpl = document.getElementById("s-mail-tpl").value;
-  await chrome.storage.local.set({ ll_mail_template: tpl.trim() ? tpl : null });
-  // авто-пилот: интервал не реже 120с (ToS-футпринт); сорт = поле+направление (пусто → не удерживать)
-  const intSec = Math.max(120, parseInt(document.getElementById("s-ar-int").value, 10) || 180);
-  const autoscroll = document.getElementById("s-ar-scroll").checked;
-  // выключенное окно тишины храним как null — LLPOLICY отличает его от «ключа ещё нет» (дефолт)
-  const quietOn = document.getElementById("s-ar-quiet").checked;
-  const quietVal = quietOn ? LLPOLICY.normalizeQuiet({
-    from: document.getElementById("s-ar-quiet-from").value,
-    to: document.getElementById("s-ar-quiet-to").value,
-  }) : null;
-  const sortField = document.getElementById("s-sort-f").value || null;
-  const arOn = document.getElementById("s-ar-on").checked;
-  // бюджет поисков DAT: пустое/мусорное поле → дефолтный лимит (LLPOLICY.normalizeBudget)
-  const searchBudget = LLPOLICY.normalizeBudget({
-    limit: document.getElementById("s-sb-limit").value,
-    ignore: document.getElementById("s-sb-ignore").checked,
-  });
-  await chrome.storage.local.set({
+  if (changed("tpl")) patch.ll_mail_template = f.tpl.trim() ? f.tpl : null;
+  if (changed("budget")) patch.ll_search_budget = f.budget;
+  // сорт = поле+направление (пусто → не удерживать)
+  if (changed("sortField") || changed("sortDir")) patch.ll_sort = f.sortField ? { field: f.sortField, dir: f.sortDir } : { field: null };
+  const arKeys = ["on", "intervalMs", "autoscroll", "quiet"].filter((k) => changed("ar_" + k));
+  if (arKeys.length) {
     // on — глобальный тумблер (per-tab override живёт в sessionStorage вкладки, см. content.js)
-    ll_autorefresh: { on: arOn, intervalMs: intSec * 1000, autoscroll, quiet: quietVal },
-    ll_search_budget: searchBudget,
-    ll_sort: sortField ? { field: sortField, dir: document.getElementById("s-sort-d").value === "asc" ? "asc" : "desc" } : { field: null },
-  });
-  await LLHOS.save(LLHOS.fromHours({ driveH, dutyH, cycleH }));
+    const { ll_autorefresh } = await chrome.storage.local.get("ll_autorefresh");
+    const ar = (ll_autorefresh && typeof ll_autorefresh === "object") ? { ...ll_autorefresh } : {};
+    for (const k of arKeys) ar[k] = f["ar_" + k];
+    patch.ll_autorefresh = ar;
+  }
+  if (Object.keys(patch).length) await chrome.storage.local.set(patch);
+  if (changed("hos")) {
+    const [driveH, dutyH, cycleH] = f.hos.map(parseFloat);
+    await LLHOS.save(LLHOS.fromHours({ driveH, dutyH, cycleH }));
+  }
+  formBase = f;
   const btn = document.getElementById("s-save");
   btn.textContent = "Saved ✓";
   setTimeout(() => { btn.textContent = "Save"; }, 1200);
@@ -565,7 +590,7 @@ function agoMin(iso) { return iso ? Math.max(0, Math.round((Date.now() - new Dat
 async function renderCloud(me) {
   if (me === undefined) me = await LLAPI.getMe().catch(() => null);
   // План и cloudEnabled кэшируются на 24ч — без принудительного обновления админский
-  // флип cloud_enabled увидели бы только через сутки. Один запрос на открытие попапа.
+  // флип cloud_enabled увидели бы только через сутки. Один запрос на отрисовку блока (открытие панели, вход в Settings).
   if (me) me = await LLAPI.getMe(true).catch(() => me);
   if (!me || !me.cloudEnabled) { cloudEl.innerHTML = ""; return; }
   const st = await LLAPI.cloudStatus();

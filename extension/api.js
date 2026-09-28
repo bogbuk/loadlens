@@ -255,11 +255,14 @@ const LLAPI = (() => {
     try { const res = await authedFetch("/drivers"); return res && res.ok ? await res.json() : []; }
     catch { return []; }
   }
+  // Метка правки парка: вкладки борда перечитывают водителей по storage.onChanged (свитчер на Loads).
+  async function touchDrivers() { try { await chrome.storage.local.set({ ll_drivers_rev: Date.now() }); } catch (_) { /* нет storage */ } }
   async function createDriver(d) {
     const res = await authedFetch("/drivers", { method: "POST", body: JSON.stringify(d) });
     if (!res) throw new Error("sign in required");
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.message || `error ${res.status}`);
+    await touchDrivers();
     return data;
   }
   async function updateDriver(id, patch) {
@@ -267,12 +270,14 @@ const LLAPI = (() => {
     if (!res) throw new Error("sign in required");
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.message || `error ${res.status}`);
+    await touchDrivers();
     return data;
   }
   async function deleteDriver(id) {
     const res = await authedFetch(`/drivers/${encodeURIComponent(id)}`, { method: "DELETE" });
     if (!res) throw new Error("sign in required");
     if (!res.ok) throw new Error(`error ${res.status}`);
+    await touchDrivers();
     return { ok: true };
   }
 

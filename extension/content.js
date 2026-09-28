@@ -366,6 +366,8 @@
     openSidePanel();                 // первым — пока жест клика жив
     detailLoadId = String(load.loadId);
     render();
+    // та же карточка уже открыта → снапшот не изменился, а панель может стоять на Settings
+    panelSend({ type: "showDetail" });
   }
 
   // Бейдж выгодности с текущими настройками (cost/mile, дизель, медиана lane, целевой $/mi по бакету).
@@ -486,8 +488,10 @@
         activeDriver = (typeof LLDRV !== "undefined") ? LLDRV.pickActive(drivers, m.id) : null;
         if (typeof LLDRV !== "undefined") await LLDRV.setActive(m.id);
         break;
-      case "setCpm": { const v = parseFloat(m.value); if (v > 0) baseCostPerMile = v; break; }
-      case "setStart": currentMarket = String(m.market || "").trim().toUpperCase() || null; break;
+      // Значение может не примениться (у активного водителя свой cost/mi или рынок, ноль) — тогда снапшот
+      // тот же, и дедуп не отправил бы его: в поле панели осталось бы непринятое значение.
+      case "setCpm": { const v = parseFloat(m.value); if (v > 0) baseCostPerMile = v; lastSnapJson = ""; break; }
+      case "setStart": currentMarket = String(m.market || "").trim().toUpperCase() || null; lastSnapJson = ""; break;
       case "setAutorefresh":
         if (cloudCfg) break; // в облаке авто-пилот всегда ВКЛ — снапшот вернёт галку назад
         autoRefresh.on = !!m.on;
@@ -524,6 +528,15 @@
       default: return;
     }
     render();
+  }
+
+  // парк водителей диспетчера (если залогинен); активный — per-device выбор
+  async function loadDrivers() {
+    if (typeof LLAPI === "undefined" || typeof LLDRV === "undefined") return;
+    try {
+      drivers = await LLAPI.getDrivers();
+      activeDriver = drivers.length ? LLDRV.pickActive(drivers, await LLDRV.getActiveId()) : null;
+    } catch { drivers = []; activeDriver = null; }
   }
 
   function render() {
@@ -572,20 +585,6 @@
     }));
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   function uniqueMarkets(loads) {
     const s = new Set();
     loads.forEach((l) => { s.add(l.originMarket); s.add(l.destMarket); });
@@ -618,6 +617,8 @@
     clearAuto();
     if (/^login\./i.test(location.hostname)) return; // страница логина: reload убил бы форму входа
     if (!autoRefresh.on) return;
+    // Только DAT: у Truckstop нет clickRefresh и перехвата (lastDataAt=0) — остался бы голый reload раз в 15 мин
+    if (!adapter || adapter.board !== "dat") return;
     const plan = LLPOLICY.nextTick({
       now: Date.now(), sseLive: sseLive(), quiet: autoRefresh.quiet, intervalMs: autoRefresh.intervalMs,
     });
@@ -676,7 +677,7 @@
   const SCROLL_STEP_BASE = 700, SCROLL_STEP_JITTER = 500, SCROLL_DRY = 2;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   async function scrollToLoadAll() {
-    if (scrolling || !autoRefresh.on || !autoRefresh.scroll) return;
+    if (scrolling || !autoRefresh.on || !autoRefresh.scroll || !adapter || adapter.board !== "dat") return;
     // Каждый шаг скролла провоцирует fetchMore приложения DAT (limit:150) — это основной объём
     // нашего футпринта. Полный доскролл оправдан один раз на новую выдачу; дальше хватает пары
     // страниц, а при живом SSE новые грузы приходят сами и скроллить незачем.
@@ -770,13 +771,7 @@
       if (Number.isFinite(at) && at > 0) lastReloadAt = at;
     } catch { /* нет sessionStorage */ }
     try { if (typeof LLTAB !== "undefined") hintsOff = LLTAB.getHintsOff(sessionStorage); } catch (_) { /* нет sessionStorage */ }
-    // парк водителей диспетчера (если залогинен); активный — per-device выбор
-    if (typeof LLAPI !== "undefined" && typeof LLDRV !== "undefined") {
-      try {
-        drivers = await LLAPI.getDrivers();
-        if (drivers.length) activeDriver = LLDRV.pickActive(drivers, await LLDRV.getActiveId());
-      } catch { drivers = []; activeDriver = null; }
-    }
+    await loadDrivers();
     // живое применение настроек из попапа без перезагрузки страницы
     try {
       chrome.storage.onChanged.addListener((ch) => {
@@ -794,6 +789,10 @@
         }
         if (ch.ll_hide_badges) hideBadges = !!ch.ll_hide_badges.newValue;
         if (ch.ll_hide_panel) hideFab = !!ch.ll_hide_panel.newValue;
+        // парк правили во вкладке Settings или сменился аккаунт — перечитать свитчер водителей
+        // (ll_auth переписывается и при обновлении плана по TTL — реагируем только на смену email/плана)
+        const acct = (v) => (v ? `${v.email}|${v.plan}` : "");
+        if (ch.ll_drivers_rev || (ch.ll_auth && acct(ch.ll_auth.oldValue) !== acct(ch.ll_auth.newValue))) loadDrivers().then(schedule);
         if (ch.ll_autorefresh) {
           const v = ch.ll_autorefresh.newValue, prev = ch.ll_autorefresh.oldValue;
           autoRefresh.intervalMs = (v && v.intervalMs) || 180000;

@@ -45,6 +45,16 @@ const LLVIEW = (() => {
     if (d.toDateString() === new Date(now).toDateString()) return "today";
     return d.toLocaleDateString("en-US", { day: "numeric", month: "short" });
   }
+  // окно доступности: ISO из GraphQL → «Sep 28 – Sep 29» (как дата пикапа); непарсибельное — как есть
+  function fmtWindow(av) {
+    const one = (v) => {
+      if (!v) return "?";
+      const d = new Date(v);
+      return isNaN(d.getTime()) ? String(v) : d.toLocaleDateString("en-US", { day: "numeric", month: "short" });
+    };
+    const a = one(av.earliest), b = one(av.latest);
+    return a === b ? a : `${a} – ${b}`;
+  }
   function freshnessText(lastSeen, now) {
     if (!lastSeen) return "forecast";
     const d = new Date(lastSeen);
@@ -151,7 +161,7 @@ const LLVIEW = (() => {
     ].filter(Boolean).join(" · ") || "—");
     add("Miles", `${load.loadedMiles ?? "—"} loaded · ${load.deadheadMiles ?? 0} DH`);
     if (load.weight) add("Weight", `${load.weight.toLocaleString("en-US")} lbs`);
-    if (load.availability) add("Available", `${load.availability.earliest || "?"} – ${load.availability.latest || "?"}`);
+    if (load.availability) add("Available", fmtWindow(load.availability));
     const flagTag = f.flags.length ? " · 🚩 " + (f.flagLevel === "high" ? "risk" : "verify") : "";
     add("Score", `${profitText(f.profit)} · HOS ${hosIcon(f.hos)}${flagTag}`);
     if (f.offer && f.offer.ask != null) add("Ask", f.offer.script);
@@ -200,7 +210,8 @@ const LLVIEW = (() => {
         start: i.start || null,
         diesel: Number(i.dieselPrice).toFixed(2),
         cpm: i.costPerMile,
-        autoRefresh: { on: !!i.autoRefreshOn, cloud: !!i.cloud },
+        // авто-пилот и удержание сортировки — только DAT (у Truckstop нет ни кнопки Search, ни сорт-селекторов)
+        autoRefresh: i.board === "dat" ? { on: !!i.autoRefreshOn, cloud: !!i.cloud } : null,
         sseLive: !!i.sseLive,
         sort: { field: (i.sortPref && i.sortPref.field) || "", dir: i.sortPref && i.sortPref.dir === "asc" ? "asc" : "desc" },
         sortFields: i.sortFields.map((s) => ({ field: s.field, label: s.label })),

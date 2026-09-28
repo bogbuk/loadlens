@@ -141,3 +141,19 @@ test("форматтеры бейджей", () => {
   assert.strictEqual(LLVIEW.crowdText(null), "👥 +review");
   assert.strictEqual(LLVIEW.safeHttpUrl("data:text/html,x"), null);
 });
+
+test("header.autoRefresh: DAT — объект, Truckstop — null (авто-пилот только на DAT)", () => {
+  assert.deepStrictEqual(LLVIEW.build(input({ autoRefreshOn: true })).header.autoRefresh, { on: true, cloud: false });
+  assert.strictEqual(LLVIEW.build(input({ board: "truckstop", autoRefreshOn: true })).header.autoRefresh, null);
+});
+test("detail «Available»: даты вместо сырого ISO, одинаковые схлопываются", () => {
+  const facts = (l) => ({ profit: null, flags: [], hos: null, broker: {}, laneMedian: null });
+  const row = (av) => {
+    const l = load({ availability: av });
+    const s = LLVIEW.build(input({ loads: [l], pool: [l], detailLoad: l, detailFacts: facts(l) }));
+    return (s.detail.rows.find((r) => r.k === "Available") || {}).v;
+  };
+  assert.strictEqual(row({ earliest: "2026-09-28T12:00:00Z", latest: "2026-09-29T12:00:00Z" }), "Sep 28 – Sep 29");
+  assert.strictEqual(row({ earliest: "2026-09-28T12:00:00Z", latest: "2026-09-28T13:00:00Z" }), "Sep 28");
+  assert.strictEqual(row({ earliest: "ASAP" }), "ASAP – ?");
+});

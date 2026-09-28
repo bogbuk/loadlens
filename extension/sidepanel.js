@@ -21,7 +21,7 @@
     document.querySelectorAll("[data-tab]").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
     document.getElementById("tab-loads").hidden = name !== "loads";
     document.getElementById("tab-settings").hidden = name !== "settings";
-    if (name === "settings" && typeof refreshAccount === "function") refreshAccount(true); // popup.js
+    if (name === "settings" && typeof refreshAccount === "function") { refreshAccount(true); refreshSettings(); } // popup.js
   }
   document.querySelectorAll("[data-tab]").forEach((b) => { b.onclick = () => showTab(b.dataset.tab); });
 
@@ -68,6 +68,8 @@
       if (did != null && did !== lastDetailId) showTab("loads"); // клик ⓘ на странице — показать карточку
       lastDetailId = did;
       paint();
+    } else if (m.type === "showDetail") {
+      showTab("loads");
     } else if (m.type === "scrollResult") {
       if (!m.ok) flash("Load is not in the visible results");
     } else if (m.type === "csv") {
@@ -101,7 +103,9 @@
       void chrome.runtime.lastError; // «Could not establish connection» — ожидаемо, не шумим в консоль
       if (port !== p) return;       // уже переподключились к другой вкладке
       port = null; portTabId = null;
-      if (gotAny) return;           // вкладка перезагружается — переподключимся на onUpdated(complete)
+      // вкладка перезагружается — переподключимся на onUpdated(complete); старую выдачу не показываем,
+      // клики по ней ушли бы в никуда
+      if (gotAny) { showEmpty("connecting"); return; }
       if (retry.tabId !== tab.id) retry = { tabId: tab.id, n: 0 };
       if (retry.n < RETRY_MS.length) { setTimeout(connectActive, RETRY_MS[retry.n++]); return; }
       showEmpty("no-script");
@@ -133,11 +137,17 @@
     if (c === "reportBroker") return send("reportBroker", { mc: el.dataset.mc, outcome: el.dataset.outcome });
     if (c === "closeDetail" || c === "exportCsv") return send(c);
   });
+  // кликабельные div (role=button) — с клавиатуры тем же кликом
+  $loads.addEventListener("keydown", (e) => {
+    if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches('[role="button"][data-cmd]')) { e.preventDefault(); e.target.click(); }
+  });
   $loads.addEventListener("change", (e) => {
     const t = e.target;
     if (t.id === "ll-driver") send("setDriver", { id: t.value });
-    else if (t.id === "ll-cpm") send("setCpm", { value: t.value });
-    else if (t.id === "ll-start") send("setStart", { market: t.value });
+    // вкладка всегда ответит снапшотом; если значение не принято, он совпадёт с прежним — рисуем его
+    // заново, чтобы поле вернулось к действующему значению (дедуп по JSON его бы пропустил)
+    else if (t.id === "ll-cpm") { lastJson = ""; lastHtml = ""; send("setCpm", { value: t.value }); }
+    else if (t.id === "ll-start") { lastJson = ""; lastHtml = ""; send("setStart", { market: t.value }); }
     else if (t.id === "ll-ar") send("setAutorefresh", { on: t.checked });
     else if (t.id === "ll-sort-f") send("setSort", { field: t.value || null });
     else return;

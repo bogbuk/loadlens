@@ -45,7 +45,7 @@ test("цепочка: плечи только у раскрытой, live-пле
   const closed = LLPANEL.loadsView(snap({ chains }), UI);
   assert.doesNotMatch(closed, /leg-live/);
   const open = LLPANEL.loadsView(snap({ chains }), { ...UI, expandedSig: "A>B|2|10" });
-  assert.match(open, /class="leg leg-live" data-cmd="scrollToRow" data-result="x\+r1"/);
+  assert.match(open, /class="leg leg-live" role="button" tabindex="0" data-cmd="scrollToRow" data-result="x\+r1"/);
   assert.match(open, /↪ \+40mi nearby/);
   assert.match(open, /<span class="lchip book">Book Now<\/span>/);
 });
@@ -72,7 +72,7 @@ test("деталь вместо списка: Back, строки, ссылки, 
   const html = LLPANEL.loadsView(snap({ detail }), UI);
   assert.match(html, /data-cmd="closeDetail"/);
   assert.doesNotMatch(html, /Get-out chains|Chains appear/);
-  assert.match(html, /<a href="tel:555-1">555-1<\/a>/);
+  assert.match(html, /<a href="tel:555-1" target="_blank" rel="noopener noreferrer">555-1<\/a>/);
   assert.match(html, /href="https:\/\/mail\.google\.com\/x\?a=1&amp;b=2" target="_blank" rel="noopener noreferrer">✉️ Email broker/);
   assert.doesNotMatch(html, /Book Now ↗|Open ↗/);
   assert.match(html, /60ft &lt;long&gt;/);
@@ -96,4 +96,15 @@ test("ссылки: только http(s)/mailto/tel — javascript:/data: пре
   assert.doesNotMatch(html, /javascript:|data:text/i);
   assert.strictEqual((html.match(/href="#"/g) || []).length, 3);
   assert.match(html, /href="tel:555"/);
+});
+
+test("header: без autoRefresh (Truckstop) — нет тумблера авто-пилота и сортировки", () => {
+  const html = LLPANEL.loadsView(snap({ board: "truckstop", header: header({ autoRefresh: null }) }), UI);
+  assert.doesNotMatch(html, /id="ll-ar"/);
+  assert.doesNotMatch(html, /id="ll-sort-f"/);
+  assert.match(html, /id="ll-cpm"/);
+});
+test("кликабельные div доступны с клавиатуры (role=button, tabindex)", () => {
+  const html = LLPANEL.loadsView(snap({ deals: [{ loadId: "L1", lane: "A → B", rpm: "3.00", age: null }] }), UI);
+  assert.match(html, /class="deal" role="button" tabindex="0"/);
 });
