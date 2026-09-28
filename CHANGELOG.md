@@ -4,6 +4,19 @@ All notable user-facing changes to the LoadLens browser extension.
 
 ## [Unreleased]
 
+### Fixed
+- **Saving Settings no longer undoes the Loads tab.** Save now writes only what you changed on the Settings tab, so a sort order or auto-refresh switch you picked on the Loads tab stays put. The Settings tab also picks up changes made elsewhere when you open it.
+- **Account, plan and Telegram status stay current.** The Settings tab refreshes them when you open it and when you sign in or out in another window; after Connect Telegram it shows "linked ✓" as soon as you press Start in the bot.
+- **New drivers show up on the Loads tab right away**, without reloading the DAT tab.
+- **Cost/mi and Start fields show the value in use.** When the active driver has their own cost or market, the field goes back to it instead of keeping what you typed.
+- **Clicking a badge always shows its load card**, even if the same card was already open and the panel was on Settings.
+- **Email and Call links no longer replace the side panel** when Chrome sends mailto or tel links to a website such as Gmail.
+- **No auto-refresh on Truckstop.** The auto-pilot works on DAT One only; on Truckstop it could reload the page every 15 minutes. Its controls are now hidden there.
+- Pickup windows show dates instead of raw timestamps, the clock next to quiet hours keeps time, and the panel says "Connecting…" instead of showing stale results while the DAT tab reloads. Chains, legs and hot loads can be opened with the keyboard.
+
+### Changed
+- **"Hide the LoadLens button" on the Settings tab.** Hides the button in the corner of the DAT page. If you had hidden the on-page panel before 0.9.0, the button stays hidden for you too.
+
 ## 0.9.1 — 2026-09-26
 
 ### New
