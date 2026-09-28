@@ -20,8 +20,8 @@ const SORT_FIELDS = [
 ];
 
 async function renderSettings() {
-  const { ll_cpm, ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_badges, ll_mail_template, ll_sse_alerts } =
-    await chrome.storage.local.get(["ll_cpm", "ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_badges", "ll_mail_template", "ll_sse_alerts"]);
+  const { ll_cpm, ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_badges, ll_hide_panel, ll_mail_template, ll_sse_alerts } =
+    await chrome.storage.local.get(["ll_cpm", "ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_badges", "ll_hide_panel", "ll_mail_template", "ll_sse_alerts"]);
   const mailTpl = (typeof ll_mail_template === "string" && ll_mail_template.trim()) ? ll_mail_template : LLMAIL.DEFAULT_TEMPLATE;
   const cpm = ll_cpm != null ? ll_cpm : 1.80;
   const targets = Array.isArray(ll_targets) && ll_targets.length ? ll_targets : DEFAULT_TARGETS;
@@ -75,6 +75,8 @@ async function renderSettings() {
     '<div class="note">DAT already streams new matching loads to every open search tab. With this on, LoadLens reads that stream, adds new loads to the panel and runs your Telegram alert rules on them the moment they appear — no refresh needed, no extra requests to DAT. Needs a DAT plan with live matches (Pro and up); on lower plans nothing arrives and the auto-pilot remains the way to get alerts. Applies instantly.</div>' +
     '<h4>On-page display</h4>' +
     `<div class="row"><span class="k">Hide badges in table</span><input id="s-hide-badges" type="checkbox"${ll_hide_badges ? " checked" : ""} style="width:auto"></div>` +
+    `<div class="row"><span class="k">Hide the LoadLens button</span><input id="s-hide-fab" type="checkbox"${ll_hide_panel ? " checked" : ""} style="width:auto"></div>` +
+    '<div class="note">With the button hidden, open LoadLens from its icon in the Chrome toolbar.</div>' +
     '<h4>Broker email template</h4>' +
     `<textarea id="s-mail-tpl" rows="9" style="width:100%;box-sizing:border-box;font:11px/1.4 ui-monospace,monospace">${escA(mailTpl)}</textarea>` +
     '<div class="chips-bar"><span class="note">Used by "✉️ Email broker" on a load card.</span>' +
@@ -89,6 +91,8 @@ async function renderSettings() {
   wireEquipChips();
   // «Отображение на странице» — instant-apply (без кнопки «Сохранить»); content.js слушает storage.onChanged
   document.getElementById("s-hide-badges").onchange = (e) => chrome.storage.local.set({ ll_hide_badges: e.target.checked });
+  // ll_hide_panel — ключ с 0.8.x (прятал панель на странице); теперь прячет FAB, чтобы у тех, кто его включал, на странице ничего не появилось
+  document.getElementById("s-hide-fab").onchange = (e) => chrome.storage.local.set({ ll_hide_panel: e.target.checked });
   document.getElementById("s-sse").onchange = (e) => chrome.storage.local.set({ ll_sse_alerts: e.target.checked });
 }
 // чипы-тумблеры фильтра прицепа: клик переключает .on, ссылки Все/Сброс, живая сводка
@@ -190,10 +194,10 @@ function accRow(user) {
     '<button id="acc-out">Sign out</button>' +
     '<button id="acc-del" class="danger">Delete account</button></div>';
   document.getElementById("acc-pwd-btn").onclick = () => pwdForm(document.getElementById("acc-pwd"));
-  document.getElementById("acc-out").onclick = async () => { await LLAPI.logout(); accForm(); renderFleet(null); renderTelegram(null); renderCloud(null); };
+  document.getElementById("acc-out").onclick = async () => { shownAcct = ""; await LLAPI.logout(); accForm(); renderFleet(null); renderTelegram(null); renderCloud(null); };
   document.getElementById("acc-del").onclick = async () => {
     if (!confirm("Delete your account permanently? Your profile and all drivers will be removed. This does not cancel your DAT/Truckstop subscription.")) return;
-    try { await LLAPI.deleteAccount(); accForm("Account deleted."); renderFleet(null); renderTelegram(null); renderCloud(null); }
+    try { shownAcct = ""; await LLAPI.deleteAccount(); accForm("Account deleted."); renderFleet(null); renderTelegram(null); renderCloud(null); }
     catch (e) { accForm(e.message); }
   };
 }
@@ -208,7 +212,7 @@ function accForm(err) {
   const go = (fn) => async () => {
     const email = document.getElementById("acc-email").value.trim();
     const pass = document.getElementById("acc-pass").value;
-    try { const u = await fn(email, pass); accRow(u); renderFleet(u); renderTelegram(u); renderCloud(u); }
+    try { const u = await fn(email, pass); shownAcct = acctKey(u); accRow(u); renderFleet(u); renderTelegram(u); renderCloud(u); }
     catch (e) { accForm(e.message); }
   };
   document.getElementById("acc-in").onclick = go(LLAPI.login);
@@ -273,6 +277,7 @@ function pwdForm(box) {
     try {
       await LLAPI.changePassword(cur, neu);
       // Смена пароля инвалидирует все сессии (включая текущую) — выходим и просим войти заново.
+      shownAcct = "";
       await LLAPI.logout();
       accForm("Password changed — please sign in again.");
       renderFleet(null); renderTelegram(null); renderCloud(null);
@@ -482,6 +487,17 @@ function renderRules() {
 // Секция Telegram. Привязка/отвязка — для ЛЮБОГО плана: код сброса пароля приходит только в бота,
 // без привязки забытый пароль = потерянный аккаунт (бэкенд на link/status/unlink Pro и не требует).
 // Pro-гейт стоит там, где он и есть на бэкенде: тумблер алертов (PATCH /telegram/alerts) и правила.
+// Привязка завершается в Telegram (/start), а панель остаётся открытой рядом — опрашиваем статус,
+// пока чат не привяжется (до 3 минут), иначе кнопка «Connect» висела бы до переоткрытия панели.
+let tgPoll = null;
+function waitTelegramLinked(me) {
+  clearInterval(tgPoll);
+  const until = Date.now() + 180000;
+  tgPoll = setInterval(async () => {
+    const st = await LLAPI.telegramStatus().catch(() => null);
+    if ((st && st.linked) || Date.now() > until) { clearInterval(tgPoll); tgPoll = null; if (st && st.linked) renderTelegram(me); }
+  }, 3000);
+}
 async function renderTelegram(me) {
   if (me === undefined) me = await LLAPI.getMe().catch(() => null);
   if (!me) { tgEl.innerHTML = ""; return; }
@@ -501,7 +517,7 @@ async function renderTelegram(me) {
     document.getElementById("tg-link").onclick = async () => {
       try {
         const r = await LLAPI.telegramLink();
-        if (r.url) { chrome.tabs.create({ url: r.url }); }
+        if (r.url) { chrome.tabs.create({ url: r.url }); waitTelegramLinked(me); }
         else alert("The bot is not configured on the server.");
       } catch (e) { alert(e.message); }
     };
@@ -615,10 +631,25 @@ chrome.storage.onChanged.addListener(async (ch) => {
   const b = LLPOLICY.normalizeBudget(ll_search_budget);
   el.innerHTML = `<b>${LLPOLICY.searchesUsed(ll_search_count, Date.now())}</b> / ${b.limit}${b.ignore ? " (limit ignored)" : ""}`;
 });
-LLAPI.getMe().then(
-  async (u) => {
-    if (u) accRow(u); else accForm(await LLAPI.takeSignoutMessage());
-    renderFleet(u || null); renderTelegram(u || null); renderCloud(u || null);
-  },
-  async () => { accForm(await LLAPI.takeSignoutMessage()); renderFleet(null); renderTelegram(null); renderCloud(null); },
-);
+// Попап перечитывал аккаунт на каждом открытии; боковая панель живёт часами — план/облако/выход из
+// аккаунта в другом окне иначе не доходили до Settings. Перерисовываем блоки аккаунта, только когда
+// сменился сам аккаунт (email/план/облако): полная перерисовка стёрла бы недописанное правило или водителя.
+let shownAcct;                    // undefined — ещё не рисовали; null — аноним
+const acctKey = (u) => (u ? [u.email, u.plan, !!u.cloudEnabled].join("|") : "");
+async function renderAccount(u) {
+  shownAcct = acctKey(u);
+  if (u) accRow(u); else accForm(await LLAPI.takeSignoutMessage());
+  renderFleet(u || null); renderTelegram(u || null); renderCloud(u || null);
+}
+let lastRefresh = 0;
+// force — сходить на сервер за планом (вход во вкладку Settings, не чаще раза в 30 с)
+async function refreshAccount(force) {
+  if (force && Date.now() - lastRefresh < 30000) return;
+  if (force) lastRefresh = Date.now();
+  const u = await LLAPI.getMe(!!force).catch(() => null);
+  if (acctKey(u) !== shownAcct) renderAccount(u);
+  else if (u && u.cloudEnabled && force) renderCloud(u); // статус облака меняется сам (starting → ok)
+}
+LLAPI.getMe().then((u) => renderAccount(u), () => renderAccount(null));
+// вход/выход/смена плана в другом окне (у каждого окна своя панель) приходят через ll_auth
+chrome.storage.onChanged.addListener((ch) => { if (ch.ll_auth && shownAcct !== undefined) refreshAccount(false); });

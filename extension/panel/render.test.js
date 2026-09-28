@@ -83,7 +83,7 @@ test("деталь вместо списка: Back, строки, ссылки, 
 test("notice и пустые состояния", () => {
   assert.match(LLPANEL.loadsView(snap(), { ...UI, notice: "No loads to export." }), /class="notice">No loads to export\./);
   assert.match(LLPANEL.empty("not-board"), /Open a DAT One or Truckstop search tab/);
-  assert.match(LLPANEL.empty("no-script"), /Reload the DAT tab/);
+  assert.match(LLPANEL.empty("no-script"), /Reload the load board tab/);
   assert.match(LLPANEL.empty("connecting"), /Connecting/);
 });
 

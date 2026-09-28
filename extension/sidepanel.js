@@ -21,6 +21,7 @@
     document.querySelectorAll("[data-tab]").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
     document.getElementById("tab-loads").hidden = name !== "loads";
     document.getElementById("tab-settings").hidden = name !== "settings";
+    if (name === "settings" && typeof refreshAccount === "function") refreshAccount(true); // popup.js
   }
   document.querySelectorAll("[data-tab]").forEach((b) => { b.onclick = () => showTab(b.dataset.tab); });
 

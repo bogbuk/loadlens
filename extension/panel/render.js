@@ -29,7 +29,7 @@ const LLPANEL = (() => {
       row("Diesel", "$" + esc(h.diesel) + "/gal") +
       `<div class="ll-cfg">Cost/mi: <input id="ll-cpm" type="number" step="0.05" value="${esc(h.cpm)}"> ` +
       `Start: <input id="ll-start" type="text" value="${esc(h.start || "")}" placeholder="CHICAGO_IL"></div>` +
-      `<div class="ll-cfg" title="Auto-pilot: the DAT tab clicks Search itself and holds the sort order. This checkbox overrides the global switch (Settings) for this tab only">` +
+      `<div class="ll-cfg" title="Auto-pilot: this tab clicks Search itself and holds the sort order. This checkbox overrides the global switch (Settings) for this tab only">` +
         `<label${ar.cloud ? ' title="Cloud mode: auto-pilot is always on in the cloud browser"' : ""}><input type="checkbox" id="ll-ar"${ar.on ? " checked" : ""}${ar.cloud ? " disabled" : ""}> Auto-refresh${ar.cloud ? " (Cloud)" : ""}</label> ` +
         (h.sseLive ? `<span class="ll-live" title="Listening to DAT's live match stream for this search — new loads arrive without a refresh">● live</span> ` : "") +
         `Sort: <select id="ll-sort-f"><option value="">—</option>` +
@@ -91,15 +91,15 @@ const LLPANEL = (() => {
         : "<div class='note'>Chains appear once enough loads from the start market are visible.</div>") +
       (snap.deals.length ? "<h4>Hot loads</h4>" + snap.deals.map(dealHtml).join("") : "") +
       `<div class="ll-ft"><button type="button" data-cmd="exportCsv" title="Export visible loads to CSV">⬇ CSV</button><span class="pro-tag">Pro</span>` +
-      `<button type="button" data-cmd="setHintsOff" data-on="${snap.hintsOff ? "0" : "1"}" title="LoadLens badges and button on this DAT tab">${snap.hintsOff ? "👁 Show on page" : "🙈 Hide on page"}</button></div>` +
+      `<button type="button" data-cmd="setHintsOff" data-on="${snap.hintsOff ? "0" : "1"}" title="LoadLens badges and button on this load board tab">${snap.hintsOff ? "👁 Show on page" : "🙈 Hide on page"}</button></div>` +
       notice +
       "<div class='note'>Scoring accounts for deadhead, fuel and the lane market median. The board rate is the broker's asking price. The HOS badge shows whether the driver can legally run it.</div>";
   }
 
   const EMPTY = {
     "not-board": "Open a DAT One or Truckstop search tab — LoadLens shows its loads here.",
-    "connecting": "Connecting to the DAT tab…",
-    "no-script": "Reload the DAT tab to connect LoadLens (it was opened before the extension was installed or updated).",
+    "connecting": "Connecting to the load board tab…",
+    "no-script": "Reload the load board tab to connect LoadLens (it was opened before the extension was installed or updated).",
   };
   const empty = (kind) => `<div class="empty-state">${esc(EMPTY[kind] || EMPTY["not-board"])}</div>`;
 

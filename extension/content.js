@@ -15,6 +15,7 @@
 
   let hintsOff = false; // per-tab: скрыть наши подсказки (бейджи + панель) на этой вкладке
   let hideBadges = false; // глобальная настройка попапа (ll_hide_badges): скрыть построчные бейджи
+  let hideFab = false;    // глобальная настройка (ll_hide_panel): скрыть кнопку-вход в боковую панель
   let dieselPrice = 3.95;
   let baseCostPerMile = 1.80; // «базовая» (диспетчерская) настройка; не мутируется водителем
   let costPerMile = 1.80;     // текущий (resolveDriverContext → applyDriverContext)
@@ -546,7 +547,7 @@
     if (typeof LLALERT !== "undefined") LLALERT.push(selectAlertHits(loads)).catch(() => {});
 
     clearBadges();
-    const vis = { hintsOff, hideBadges, panelOpen: !!panelPort };
+    const vis = { hintsOff, hideBadges, hideFab, panelOpen: !!panelPort };
     // построчные бейджи: матчим видимые DOM-строки с грузами (DAT — по resultId, TS — parseRow).
     if (LLVIS.badgesVisible(vis)) {
       (adapter.anchor ? adapter.anchor(loads) : []).forEach((p) => badgeRow(p.anchor || p.row, p.load));
@@ -733,7 +734,7 @@
     // try со storage, чтобы сбой chrome.storage.local не отключал форс молча.
     cloudCfg = (typeof LLCLOUD !== "undefined") ? LLCLOUD.config(globalThis) : null;
     try {
-      const { ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_badges, ll_mail_template, ll_alert_rules, ll_sse_alerts } = await chrome.storage.local.get(["ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_badges", "ll_mail_template", "ll_alert_rules", "ll_sse_alerts"]);
+      const { ll_targets, ll_equip_filter, ll_autorefresh, ll_sort, ll_hide_badges, ll_hide_panel, ll_mail_template, ll_alert_rules, ll_sse_alerts } = await chrome.storage.local.get(["ll_targets", "ll_equip_filter", "ll_autorefresh", "ll_sort", "ll_hide_badges", "ll_hide_panel", "ll_mail_template", "ll_alert_rules", "ll_sse_alerts"]);
       sseAlerts = !!ll_sse_alerts;
       const { ll_search_budget, ll_search_count } = await chrome.storage.local.get(["ll_search_budget", "ll_search_count"]);
       searchBudget = LLPOLICY.normalizeBudget(ll_search_budget);
@@ -743,6 +744,7 @@
       if (typeof LLRULES !== "undefined") alertRules = LLRULES.normalize(ll_alert_rules);
       if (typeof ll_mail_template === "string" && ll_mail_template.trim()) mailTemplate = ll_mail_template;
       hideBadges = !!ll_hide_badges;
+      hideFab = !!ll_hide_panel;
       // on = глобальный тумблер попапа (ll_autorefresh.on) с per-tab override из панели (sessionStorage).
       const globalOn = !!(ll_autorefresh && ll_autorefresh.on);
       autoRefresh = {
@@ -791,6 +793,7 @@
           mailTemplate = (typeof v === "string" && v.trim()) ? v : LLMAIL.DEFAULT_TEMPLATE;
         }
         if (ch.ll_hide_badges) hideBadges = !!ch.ll_hide_badges.newValue;
+        if (ch.ll_hide_panel) hideFab = !!ch.ll_hide_panel.newValue;
         if (ch.ll_autorefresh) {
           const v = ch.ll_autorefresh.newValue, prev = ch.ll_autorefresh.oldValue;
           autoRefresh.intervalMs = (v && v.intervalMs) || 180000;

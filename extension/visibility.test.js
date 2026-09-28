@@ -2,8 +2,8 @@ const test = require("node:test");
 const assert = require("node:assert");
 const LLVIS = require("./visibility.js");
 
-// state: { hintsOff, hideBadges, panelOpen } — все флаги по умолчанию false
-const S = (over) => ({ hintsOff: false, hideBadges: false, panelOpen: false, ...over });
+// state: { hintsOff, hideBadges, hideFab, panelOpen } — все флаги по умолчанию false
+const S = (over) => ({ hintsOff: false, hideBadges: false, hideFab: false, panelOpen: false, ...over });
 
 test("badgesVisible: по умолчанию видны", () => { assert.strictEqual(LLVIS.badgesVisible(S()), true); });
 test("badgesVisible: hintsOff (per-tab) скрывает", () => { assert.strictEqual(LLVIS.badgesVisible(S({ hintsOff: true })), false); });
@@ -14,3 +14,5 @@ test("fabVisible: панель закрыта → FAB как вход в неё"
 test("fabVisible: панель подключена к вкладке → FAB не нужен", () => { assert.strictEqual(LLVIS.fabVisible(S({ panelOpen: true })), false); });
 test("fabVisible: hintsOff per-tab → без FAB (вернуть — из панели)", () => { assert.strictEqual(LLVIS.fabVisible(S({ hintsOff: true })), false); });
 test("fabVisible: hideBadges не прячет FAB", () => { assert.strictEqual(LLVIS.fabVisible(S({ hideBadges: true })), true); });
+test("fabVisible: hideFab (ll_hide_panel, глобально) прячет FAB", () => { assert.strictEqual(LLVIS.fabVisible(S({ hideFab: true })), false); });
+test("badgesVisible: hideFab бейджи не прячет", () => { assert.strictEqual(LLVIS.badgesVisible(S({ hideFab: true })), true); });
