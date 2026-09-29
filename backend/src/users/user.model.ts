@@ -51,4 +51,15 @@ export class User extends Model {
   // Cloud browser (Pro Cloud): включает админ. Без флага /cloud/* отвечает 403.
   @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false, field: 'cloud_enabled' })
   cloudEnabled: boolean;
+
+  // Pro trial (спека 2026-09-29): до какого момента аккаунт — Pro независимо от plan; метка выдачи
+  // (не NULL → повторно не выдаём); стадия сообщений бота 0/1/2. BIGINT epoch ms — pg отдаёт строкой.
+  @Column({ type: DataType.BIGINT, allowNull: true, field: 'pro_until' })
+  proUntil: number | null;
+
+  @Column({ type: DataType.BIGINT, allowNull: true, field: 'trial_started_at' })
+  trialStartedAt: number | null;
+
+  @Column({ type: DataType.SMALLINT, allowNull: false, defaultValue: 0, field: 'trial_notice' })
+  trialNotice: number;
 }

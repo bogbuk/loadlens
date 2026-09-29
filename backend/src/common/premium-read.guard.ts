@@ -3,8 +3,9 @@ import { InjectModel } from '@nestjs/sequelize';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../users/user.model';
 import { isValidApiKey } from './api-keys';
+import { isPro } from '../users/plan';
 
-// Гейт чтения крауд-данных: пропуск при валидном X-API-Key (ENV API_KEYS) ИЛИ Pro-JWT (plan==='pro').
+// Гейт чтения крауд-данных: пропуск при валидном X-API-Key (ENV API_KEYS) ИЛИ Pro-JWT (эффективный Pro: plan или активный триал).
 @Injectable()
 export class PremiumReadGuard implements CanActivate {
   constructor(
@@ -28,7 +29,7 @@ export class PremiumReadGuard implements CanActivate {
           const user = await this.users.findByPk(payload.sub);
           if (
             user &&
-            user.plan === 'pro' &&
+            isPro(user, Date.now()) &&
             !user.blocked &&
             (payload.tv ?? 0) === user.tokenVersion
           ) {

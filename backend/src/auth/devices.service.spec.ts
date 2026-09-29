@@ -4,6 +4,7 @@ import { DevicesService } from './devices.service';
 const proUser = () => ({ id: 'u1', plan: 'pro', role: 'user', deviceEvictions: 0 }) as any;
 const freeUser = () => ({ id: 'u1', plan: 'free', role: 'user', deviceEvictions: 0 }) as any;
 const adminUser = () => ({ id: 'u1', plan: 'pro', role: 'admin', deviceEvictions: 0 }) as any;
+const trialUser = () => ({ id: 'u1', plan: 'free', proUntil: String(Date.now() + 86_400_000), trialStartedAt: String(Date.now()), role: 'user', deviceEvictions: 0 }) as any;
 
 function makeService(rows: any[]) {
   const model = {
@@ -88,6 +89,15 @@ describe('DevicesService.registerOnAuth', () => {
   it('переполнение у pro — самое давнее удаляется, счётчик растёт на число вытесненных', async () => {
     const { svc, model, users } = makeService([row('old', 500), row('mid', 100), row('new', 10)]);
     await svc.registerOnAuth(proUser(), 'fresh');
+    expect(model.destroy).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ userId: 'u1', clientId: ['old'] }) }),
+    );
+    expect(users.increment).toHaveBeenCalledWith('deviceEvictions', { by: 1, where: { id: 'u1' } });
+  });
+
+  it('переполнение у Free на триале — лимит как у pro: самое давнее удаляется', async () => {
+    const { svc, model, users } = makeService([row('old', 500), row('mid', 100), row('new', 10)]);
+    await svc.registerOnAuth(trialUser(), 'fresh');
     expect(model.destroy).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.objectContaining({ userId: 'u1', clientId: ['old'] }) }),
     );

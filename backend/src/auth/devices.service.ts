@@ -1,4 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { effectivePlan, isPro } from '../users/plan';
 import { InjectModel } from '@nestjs/sequelize';
 import { User } from '../users/user.model';
 import { UserDevice } from './user-device.model';
@@ -54,7 +55,7 @@ export class DevicesService {
   // на free, включил pro — и больше никогда не проходит через registerOnAuth). Удаляет и просроченные
   // (expire, молча), и живые сверх лимита (evict, со счётчиком) — единственное место с этой логикой.
   private async trimDevices(user: User, clientId: string, rows: DeviceRow[]): Promise<void> {
-    const { evict, expire } = decideDevices(rows, clientId, user.plan, new Date(), DEVICE_LIMIT);
+    const { evict, expire } = decideDevices(rows, clientId, effectivePlan(user, Date.now()), new Date(), DEVICE_LIMIT);
 
     // Просроченные удаляем молча, отдельным вызовом — они никогда не идут в счётчик,
     // независимо от результата destroy().
@@ -83,7 +84,7 @@ export class DevicesService {
     if (user.role === 'admin') return;
     if (await this.isCloudClient(user.id, clientId)) return;
     if (!clientId) {
-      if (user.plan === 'pro' && headerRequired()) deny('client_id_required');
+      if (isPro(user, Date.now()) && headerRequired()) deny('client_id_required');
       return; // free без заголовка (старая сборка расширения) — работает как раньше
     }
     const rows = await this.devices.findAll({ where: { userId: user.id } });
@@ -104,17 +105,17 @@ export class DevicesService {
     if (user.role === 'admin') return; // см. комментарий в registerOnAuth
     if (await this.isCloudClient(user.id, clientId)) return;
     if (!clientId) {
-      if (user.plan === 'pro' && headerRequired()) deny('client_id_required');
+      if (isPro(user, Date.now()) && headerRequired()) deny('client_id_required');
       return;
     }
-    if (user.plan === 'pro') {
+    if (isPro(user, Date.now())) {
       const rows = await this.devices.findAll({ where: { userId: user.id } });
       const current: DeviceRow[] = rows.map((r) => ({ clientId: r.clientId, lastSeenAt: r.lastSeenAt }));
       const known = rows.some((r) => r.clientId === clientId);
       if (!known) {
         // Есть ли место с учётом просроченных строк (они слот освобождают) — та же чистая функция,
         // что и при вытеснении: evict непустой = живых устройств уже лимит.
-        const { evict } = decideDevices(current, clientId, user.plan, new Date(), DEVICE_LIMIT);
+        const { evict } = decideDevices(current, clientId, effectivePlan(user, Date.now()), new Date(), DEVICE_LIMIT);
         if (evict.length) deny('device_limit');
       }
       await this.touch(user.id, clientId);

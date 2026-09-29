@@ -31,6 +31,22 @@ describe('PremiumReadGuard', () => {
     expect(req.user).toEqual({ userId: 'u1' });
   });
 
+  it('Free на активном триале (pro_until строкой, как из pg) → пропуск', async () => {
+    const g = new PremiumReadGuard(
+      usersWith({ plan: 'free', proUntil: String(Date.now() + 86_400_000), tokenVersion: 0, blocked: false }),
+      jwtVerifying({ sub: 'u1', type: 'access' }),
+    );
+    await expect(g.canActivate(ctx({ authorization: 'Bearer t' }))).resolves.toBe(true);
+  });
+
+  it('Free с истёкшим триалом → 403', async () => {
+    const g = new PremiumReadGuard(
+      usersWith({ plan: 'free', proUntil: Date.now() - 1000, tokenVersion: 0, blocked: false }),
+      jwtVerifying({ sub: 'u1', type: 'access' }),
+    );
+    await expect(g.canActivate(ctx({ authorization: 'Bearer t' }))).rejects.toThrow(ForbiddenException);
+  });
+
   // --- tv + blocked (инвалидация сессий на read-эндпоинтах) ---
 
   it('Pro-JWT: tv в токене не совпадает с tokenVersion в БД → 403', async () => {

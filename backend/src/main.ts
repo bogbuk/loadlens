@@ -58,6 +58,9 @@ async function bootstrap() {
   await sequelize.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0');
   await sequelize.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS device_evictions INTEGER NOT NULL DEFAULT 0');
   await sequelize.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS cloud_enabled BOOLEAN NOT NULL DEFAULT false');
+  await sequelize.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS pro_until BIGINT');
+  await sequelize.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_started_at BIGINT');
+  await sequelize.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_notice SMALLINT NOT NULL DEFAULT 0');
   // Bootstrap админов из ADMIN_EMAIL (идемпотентно): уже существующие юзеры получают role=admin.
   const adminEmails = parseAdminEmails(process.env.ADMIN_EMAIL);
   if (adminEmails.length)
