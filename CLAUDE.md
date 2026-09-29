@@ -64,6 +64,8 @@ backend/src/                NestJS, synchronize:true (миграций нет)
                             admin/* (JwtAuthGuard+AdminRoleGuard, role из ADMIN_EMAIL): GET users/stats, PATCH users/:email/plan|block|cloud. Страница /admin.html
   cloud/                    Coolify-оркестрация облачного браузера: cloud_instances (модель), CoolifyService (API-клиент+compose), CloudService (enable/disable/status/screen/heartbeat), watchdog-cron
   shared/markets.seed.json  ★ копия seed для Docker-контекста backend/ (генерит sync:shared)
+backend/public/             статика (ServeStatic): index.html — лендинг EN/RU/RO (EN в разметке, RU/RO в словаре I18N,
+                            синхрон ключей — scripts/landing-i18n.test.js), stats.html — дашборд lane'ов, privacy.html, admin.html
 shared/                     КАНОН: load.model.js, scoring.js, planner.js, email-template.js, markets.seed.json, hos-calculator.js
 ```
 

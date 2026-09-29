@@ -1,138 +1,535 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LoadLens — живая статистика по lane'ам</title>
+  <title>LoadLens: know what a load pays before you call</title>
+  <meta name="description" content="Free Chrome extension for DAT One and Truckstop. True $/mile after deadhead and fuel, Hours-of-Service check and broker trust on every load." />
+  <meta property="og:title" content="LoadLens: know what a load pays before you call" />
+  <meta property="og:description" content="Free Chrome extension for DAT One and Truckstop. True $/mile after deadhead and fuel, Hours-of-Service check and broker trust on every load." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://loadlens.krait.studio/" />
+  <link rel="icon" href="/icon.png" />
+  <!-- Язык выбираем до первой отрисовки: ?lang= → сохранённый выбор → язык браузера → en.
+       Сам перевод применяется в конце body; здесь только прячем EN-текст, чтобы не мигал. -->
+  <script>
+    (function () {
+      var L = ["en", "ru", "ro"], q = new URLSearchParams(location.search).get("lang"), s = null;
+      try { s = localStorage.getItem("ll_lang"); } catch (e) {}
+      var n = (navigator.language || "").slice(0, 2).toLowerCase();
+      var lang = L.indexOf(q) >= 0 ? q : L.indexOf(s) >= 0 ? s : L.indexOf(n) >= 0 ? n : "en";
+      document.documentElement.lang = lang;
+      if (lang !== "en") document.documentElement.className = "i18n-pending";
+    })();
+  </script>
   <style>
-    :root { --blue:#1d4ed8; --ink:#0f1720; --mut:#64748b; --line:#e2e8f0; --bg:#f8fafc; }
+    :root {
+      --bg: #ffffff; --bg2: #f5f7fb; --ink: #0f1720; --mut: #5b6776; --line: #e2e8f0;
+      --blue: #1d4ed8; --blue-ink: #ffffff; --blue-soft: #eef2ff;
+      --green: #15803d; --green-bg: #dcfce7; --amber: #a16207; --amber-bg: #fef3c7;
+      --red: #b91c1c; --red-bg: #fee2e2; --card: #ffffff; --shadow: 0 10px 30px rgba(15, 23, 32, .08);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0b1017; --bg2: #111823; --ink: #e6edf5; --mut: #9aa6b2; --line: #243041;
+        --blue: #6d9bff; --blue-ink: #0b1017; --blue-soft: #16223a;
+        --green: #4ade80; --green-bg: #11301d; --amber: #fbbf24; --amber-bg: #33280c;
+        --red: #f87171; --red-bg: #3a1414; --card: #121a26; --shadow: 0 10px 30px rgba(0, 0, 0, .35);
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0b1017; --bg2: #111823; --ink: #e6edf5; --mut: #9aa6b2; --line: #243041;
+      --blue: #6d9bff; --blue-ink: #0b1017; --blue-soft: #16223a;
+      --green: #4ade80; --green-bg: #11301d; --amber: #fbbf24; --amber-bg: #33280c;
+      --red: #f87171; --red-bg: #3a1414; --card: #121a26; --shadow: 0 10px 30px rgba(0, 0, 0, .35);
+    }
+    .i18n-pending body { visibility: hidden; }
     * { box-sizing: border-box; }
-    body { font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink);
-           max-width: 960px; margin: 0 auto; padding: 32px 16px 64px; background: #fff; }
-    header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-    h1 { margin: 0; font-size: 24px; } h1 b { color: var(--blue); }
-    .sub { color: var(--mut); font-size: 13px; }
-    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 20px 0; }
-    .card { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; background: var(--bg); }
-    .card b { display: block; font-size: 26px; line-height: 1.1; }
-    .card span { color: var(--mut); font-size: 12px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
-    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-    th { color: var(--mut); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .3px; }
-    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-    .lane { font-weight: 600; }
-    .eq { display: inline-block; min-width: 22px; padding: 1px 6px; border-radius: 6px; background: #eef2ff; color: var(--blue); font-size: 12px; font-weight: 700; }
-    .rpm { font-weight: 700; }
-    .rpm.lo { color: #991b1b; } .rpm.mid { color: #854d0e; } .rpm.hi { color: #166534; }
-    .muted { color: var(--mut); }
-    .empty { margin-top: 28px; padding: 24px; border: 1px dashed var(--line); border-radius: 12px; color: var(--mut); text-align: center; }
-    .foot { margin-top: 24px; color: var(--mut); font-size: 12px; }
-    a { color: var(--blue); text-decoration: none; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--ink);
+           font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    a { color: var(--blue); }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+    section { padding: 64px 0; }
+    section.alt { background: var(--bg2); }
+    h1, h2, h3 { line-height: 1.2; margin: 0; }
+    h1 { font-size: clamp(30px, 5vw, 46px); letter-spacing: -.02em; }
+    h2 { font-size: clamp(24px, 3.4vw, 32px); letter-spacing: -.01em; margin-bottom: 12px; }
+    h3 { font-size: 18px; margin-bottom: 6px; }
+    p { margin: 0 0 12px; }
+    .lead { font-size: 18px; color: var(--mut); max-width: 60ch; }
+    .mut { color: var(--mut); }
+    .small { font-size: 14px; }
+
+    /* шапка */
+    header.top { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+    header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 60px; }
+    .logo { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 20px; color: var(--ink); text-decoration: none; }
+    .logo img { width: 28px; height: 28px; }
+    .logo b { color: var(--blue); }
+    .langs { display: flex; gap: 2px; border: 1px solid var(--line); border-radius: 999px; padding: 2px; }
+    .langs button { border: 0; background: none; color: var(--mut); font: 600 13px/1 inherit; padding: 7px 10px;
+                    border-radius: 999px; cursor: pointer; min-width: 40px; }
+    .langs button[aria-pressed="true"] { background: var(--blue); color: var(--blue-ink); }
+
+    /* кнопки */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px;
+           padding: 12px 22px; border-radius: 12px; font-weight: 700; font-size: 16px; text-decoration: none;
+           border: 1px solid transparent; }
+    .btn.primary { background: var(--blue); color: var(--blue-ink); }
+    .btn.primary:hover { filter: brightness(1.08); }
+    .btn.ghost { border-color: var(--line); color: var(--ink); background: var(--card); }
+    .ctas { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0 10px; }
+
+    /* первый экран */
+    .hero { padding: 56px 0 64px; }
+    .hero .wrap { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; }
+    .hero h1 { margin-bottom: 16px; }
+    @media (max-width: 860px) { .hero .wrap { grid-template-columns: 1fr; gap: 32px; } }
+
+    /* макет карточки груза */
+    .mock { background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 18px; }
+    .mock .bar { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--mut);
+                 text-transform: uppercase; letter-spacing: .04em; margin-bottom: 12px; }
+    .mock .lane { font-weight: 800; font-size: 18px; margin-bottom: 4px; }
+    .mock .meta { color: var(--mut); font-size: 14px; margin-bottom: 14px; }
+    .mock .rate { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .mock .rate b { font-size: 28px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+    .chip.g { background: var(--green-bg); color: var(--green); }
+    .chip.a { background: var(--amber-bg); color: var(--amber); }
+    .chip.r { background: var(--red-bg); color: var(--red); }
+    .chip.b { background: var(--blue-soft); color: var(--blue); }
+    .mock .acts { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+    .mock .acts span { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 13px; font-weight: 600; }
+    .mock .note { margin-top: 12px; font-size: 12px; color: var(--mut); }
+
+    /* сетки карточек */
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-top: 28px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+    .card p { color: var(--mut); margin: 0; font-size: 15px; }
+    .card .ico { font-size: 22px; line-height: 1; margin-bottom: 12px; }
+    .pro { display: inline-block; vertical-align: middle; font-size: 11px; font-weight: 800; letter-spacing: .05em;
+           background: var(--blue); color: var(--blue-ink); padding: 3px 7px; border-radius: 6px; margin-left: 6px; }
+
+    /* цепочка get-out */
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+    @media (max-width: 860px) { .split { grid-template-columns: 1fr; gap: 24px; } }
+    .chain { list-style: none; margin: 0; padding: 0; }
+    .chain li { display: grid; grid-template-columns: 14px 1fr auto; gap: 12px; align-items: start; padding-bottom: 18px; position: relative; }
+    .chain li::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--blue); margin-top: 6px; }
+    .chain li:not(:last-child)::after { content: ""; position: absolute; left: 5px; top: 22px; bottom: 0; width: 2px; background: var(--line); }
+    .chain .city { font-weight: 700; }
+    .chain .sub { font-size: 14px; color: var(--mut); }
+
+    /* тарифы */
+    .plans { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 28px; }
+    @media (max-width: 760px) { .plans { grid-template-columns: 1fr; } }
+    .plan { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; }
+    .plan.hl { border: 2px solid var(--blue); }
+    .plan h3 { font-size: 22px; }
+    .plan ul { list-style: none; padding: 0; margin: 16px 0 24px; flex: 1; }
+    .plan li { padding: 7px 0 7px 26px; position: relative; border-bottom: 1px solid var(--line); font-size: 15px; }
+    .plan li:last-child { border-bottom: 0; }
+    .plan li::before { content: "✓"; position: absolute; left: 2px; color: var(--green); font-weight: 800; }
+    .plan .btn { width: 100%; }
+
+    /* шаги */
+    .steps { counter-reset: s; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-top: 28px; }
+    .steps .card { position: relative; padding-top: 52px; }
+    .steps .card::before { counter-increment: s; content: counter(s); position: absolute; top: 18px; left: 20px;
+                           width: 26px; height: 26px; border-radius: 50%; background: var(--blue-soft); color: var(--blue);
+                           font-weight: 800; font-size: 14px; display: grid; place-items: center; }
+    .privacy { margin-top: 28px; padding: 20px; border-radius: 14px; border: 1px dashed var(--line); }
+
+    .final { text-align: center; }
+    .final .ctas { justify-content: center; }
+
+    footer { border-top: 1px solid var(--line); padding: 28px 0 40px; font-size: 14px; color: var(--mut); }
+    footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: space-between; }
+    footer nav { display: flex; flex-wrap: wrap; gap: 8px 16px; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Load<b>Lens</b> · lane stats</h1>
-    <span class="sub" id="updated">загрузка…</span>
+  <header class="top">
+    <div class="wrap">
+      <a class="logo" href="/"><img src="/icon.png" alt="" /><span>Load<b>Lens</b></span></a>
+      <div class="langs" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+        <button type="button" data-lang="ru" aria-pressed="false">RU</button>
+        <button type="button" data-lang="ro" aria-pressed="false">RO</button>
+      </div>
+    </div>
   </header>
-  <p class="sub">Живая статистика рынка по lane'ам. Данные копятся через Chrome-расширение (DAT One / Truckstop).
-    Окно — 7 дней. Ставка = запрос брокера, не цена сделки.</p>
 
-  <div class="cards" id="cards"></div>
-  <div id="content"></div>
+  <main>
+    <section class="hero">
+      <div class="wrap">
+        <div>
+          <h1 data-i18n="hero.title">Know what a load really pays before you call the broker</h1>
+          <p class="lead" data-i18n="hero.lead">LoadLens works inside DAT One and Truckstop. Every load gets a profit badge after deadhead and fuel, an Hours-of-Service check and a broker trust score, right on the board you already use.</p>
+          <div class="ctas">
+            <a class="btn primary" data-cws href="https://chromewebstore.google.com/detail/chemnjopdclcmcckgfbmabielhobmknk?utm_source=landing" target="_blank" rel="noopener" data-i18n="cta.install">Add to Chrome, free</a>
+            <a class="btn ghost" href="#how" data-i18n="cta.how">See how it works</a>
+          </div>
+          <p class="mut small" data-i18n="hero.note">Free plan, no card. Works with the DAT One or Truckstop account you already pay for.</p>
+        </div>
 
-  <div class="foot">API: <a href="/api/v1/lanes">/api/v1/lanes</a> · health: <a href="/healthz">/healthz</a> · обновляется каждые 30с</div>
+        <div class="mock" aria-label="Example load card">
+          <div class="bar"><span data-i18n="mock.head">Load card, example</span><span>DAT One</span></div>
+          <div class="lane">Dallas, TX → Houston, TX</div>
+          <div class="meta"><span data-i18n="mock.meta">Van · 239 loaded mi · 18 mi deadhead · pickup tomorrow</span></div>
+          <div class="rate"><b>$1,900</b><span class="mut" data-i18n="mock.posted">posted $7.95/mi</span></div>
+          <div class="chips">
+            <span class="chip g" data-i18n="mock.profit">$7.39/mi true · profit</span>
+            <span class="chip g" data-i18n="mock.hos">HOS ok · 6h 40m left</span>
+            <span class="chip b" data-i18n="mock.broker">Credit 96 · pays in 28 days</span>
+            <span class="chip g" data-i18n="mock.crowd">Carriers: paid ×14</span>
+          </div>
+          <div class="acts">
+            <span data-i18n="mock.email">✉ Email broker</span>
+            <span data-i18n="mock.call">☎ Call</span>
+            <span data-i18n="mock.counter">Counter-offer $2,100</span>
+          </div>
+          <div class="note" data-i18n="mock.note">Illustration with made-up numbers.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt" id="features">
+      <div class="wrap">
+        <h2 data-i18n="f.title">What you see on every load</h2>
+        <p class="lead" data-i18n="f.lead">No spreadsheet, no calculator, no second screen. The numbers sit next to each posting.</p>
+        <div class="grid">
+          <div class="card"><div class="ico">$</div>
+            <h3 data-i18n="f1.t">True $/mile, not posted $/mile</h3>
+            <p data-i18n="f1.p">Rate divided by loaded miles plus empty miles to pickup, with fuel cost counted in. Green, amber or red against your own cost per mile.</p></div>
+          <div class="card"><div class="ico">⏱</div>
+            <h3 data-i18n="f2.t">Can the driver run it legally?</h3>
+            <p data-i18n="f2.p">An HOS badge checks the 11-hour, 14-hour, 30-minute break and 70-hour/8-day rules before you dial.</p></div>
+          <div class="card"><div class="ico">✔</div>
+            <h3 data-i18n="f3.t">Know the broker before you haul</h3>
+            <p data-i18n="f3.p">DAT credit score and days to pay on one chip. Pro adds what other carriers report: paid, slow, flaked, double-brokered.</p></div>
+          <div class="card"><div class="ico">✉</div>
+            <h3 data-i18n="f4.t">Email the broker in one click</h3>
+            <p data-i18n="f4.p">A Gmail draft with lane, miles, pickup date and a counter-offer above your break-even. You read it and press Send.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="getout">
+      <div class="wrap split">
+        <div>
+          <h2><span data-i18n="g.title">Stuck in a dead market?</span> <span class="pro">PRO</span></h2>
+          <p class="lead" data-i18n="g.p1">LoadLens looks two or three loads ahead and ranks routes by how strong the destination market is.</p>
+          <p class="mut" data-i18n="g.p2">Sometimes the best move is a fair load that puts the truck where the freight is. Better than sitting a day or deadheading 300 miles on your own dime.</p>
+        </div>
+        <div class="mock">
+          <div class="bar"><span data-i18n="g.head">Get-out plan, example</span></div>
+          <ol class="chain">
+            <li><div><div class="city">Laredo, TX</div><div class="sub" data-i18n="g.l0">Weak market, few outbound loads</div></div><span class="chip r" data-i18n="g.s0">weak</span></li>
+            <li><div><div class="city">San Antonio, TX → Dallas, TX</div><div class="sub" data-i18n="g.l1">$4.10/mi · short hop out</div></div><span class="chip a" data-i18n="g.s1">fair</span></li>
+            <li><div><div class="city">Dallas, TX → Chicago, IL</div><div class="sub" data-i18n="g.l2">$5.60/mi · strong market at delivery</div></div><span class="chip g" data-i18n="g.s2">strong</span></li>
+          </ol>
+          <div class="note" data-i18n="mock.note">Illustration with made-up numbers.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt" id="pro">
+      <div class="wrap">
+        <h2 data-i18n="p.title">For dispatchers with more than one truck</h2>
+        <div class="grid">
+          <div class="card"><div class="ico">👥</div>
+            <h3><span data-i18n="p1.t">Match loads to your drivers</span> <span class="pro">PRO</span></h3>
+            <p data-i18n="p1.p">Add drivers with location, trailer and hours left. Each load shows which driver it fits best and how many can run it.</p></div>
+          <div class="card"><div class="ico">🔔</div>
+            <h3><span data-i18n="p2.t">Telegram alerts with your rules</span> <span class="pro">PRO</span></h3>
+            <p data-i18n="p2.p">Set a minimum rate, max deadhead, states, trailer, broker MC or keywords like "in-bond". Matching loads arrive in Telegram with the broker's phone and email.</p></div>
+          <div class="card"><div class="ico">☁</div>
+            <h3><span data-i18n="p3.t">Cloud browser</span> <span class="pro">PRO CLOUD</span></h3>
+            <p data-i18n="p3.p">Your DAT search keeps running on our server, so alerts come in while your laptop is closed.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pricing">
+      <div class="wrap">
+        <h2 data-i18n="pr.title">Free to start. Pro when you run a fleet.</h2>
+        <div class="plans">
+          <div class="plan">
+            <h3>Free</h3>
+            <p class="mut" data-i18n="pr.free.sub">For owner-operators and solo dispatchers.</p>
+            <ul>
+              <li data-i18n="pr.f1">Profit, HOS and broker badges on every load</li>
+              <li data-i18n="pr.f2">Load card with contacts, one-click email and counter-offer</li>
+              <li data-i18n="pr.f3">Hot loads list, trailer filter and sorting</li>
+              <li data-i18n="pr.f4">Rate the brokers you worked with</li>
+            </ul>
+            <a class="btn ghost" data-cws href="https://chromewebstore.google.com/detail/chemnjopdclcmcckgfbmabielhobmknk?utm_source=landing" target="_blank" rel="noopener" data-i18n="cta.install">Add to Chrome, free</a>
+          </div>
+          <div class="plan hl">
+            <h3>Pro</h3>
+            <p class="mut" data-i18n="pr.pro.sub">Everything in Free, plus:</p>
+            <ul>
+              <li data-i18n="pr.p1">Market rate per lane and market strength from the LoadLens database</li>
+              <li data-i18n="pr.p2">Get-out plans two or three loads ahead</li>
+              <li data-i18n="pr.p6">Broker reports from other carriers and current diesel price</li>
+              <li data-i18n="pr.p3">Fleet and driver matching</li>
+              <li data-i18n="pr.p4">Telegram alerts with your own rules</li>
+              <li data-i18n="pr.p5">CSV export and up to 3 devices</li>
+            </ul>
+            <a class="btn primary" data-mail="pro" href="mailto:hello@krait.studio?subject=LoadLens%20Pro" data-i18n="cta.pro">Contact us for Pro</a>
+            <p class="mut small" style="margin:10px 0 0" data-i18n="pr.pro.note">We switch accounts to Pro by hand for now. Write to us and we'll set it up.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt" id="how">
+      <div class="wrap">
+        <h2 data-i18n="h.title">How it works</h2>
+        <div class="steps">
+          <div class="card"><h3 data-i18n="h1.t">Add it to Chrome</h3><p data-i18n="h1.p">Chrome 116 or newer, on Windows, Mac or Chromebook.</p></div>
+          <div class="card"><h3 data-i18n="h2.t">Search on DAT One or Truckstop</h3><p data-i18n="h2.p">Same account, same search. Nothing changes in how you work.</p></div>
+          <div class="card"><h3 data-i18n="h3.t">Open the LoadLens panel</h3><p data-i18n="h3.p">Click the LoadLens icon. Badges and the panel appear next to your results.</p></div>
+        </div>
+        <div class="privacy">
+          <h3 data-i18n="pv.t">Your DAT account stays yours</h3>
+          <p class="mut" style="margin:0"><span data-i18n="pv.p">LoadLens reads only the loads your own DAT session already shows. It sends no requests to DAT, never logs in for you and never stores your DAT password.</span>
+            <a href="/privacy.html" data-i18n="pv.link">Privacy policy</a></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <h2 data-i18n="fin.title">Your next good load is already on the board</h2>
+        <p class="lead" style="margin:0 auto" data-i18n="fin.lead">Install in a minute and see the real numbers on your next search.</p>
+        <div class="ctas">
+          <a class="btn primary" data-cws href="https://chromewebstore.google.com/detail/chemnjopdclcmcckgfbmabielhobmknk?utm_source=landing" target="_blank" rel="noopener" data-i18n="cta.install">Add to Chrome, free</a>
+        </div>
+        <p class="mut small"><span data-i18n="fin.q">Questions?</span> <a data-mail="question" href="mailto:hello@krait.studio?subject=LoadLens%20question">hello@krait.studio</a></p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span data-i18n="ft.legal">© 2026 LoadLens. Not affiliated with DAT Solutions or Truckstop.</span>
+      <nav>
+        <a href="mailto:hello@krait.studio" data-mail="question">hello@krait.studio</a>
+        <a href="/privacy.html" data-i18n="pv.link">Privacy policy</a>
+        <a href="/stats.html" data-i18n="ft.stats">Lane stats</a>
+      </nav>
+    </div>
+  </footer>
 
   <script>
-    const API = '/api/v1';
-    const $ = (id) => document.getElementById(id);
-
-    const money = (n) => n == null ? '—' : '$' + Number(n).toFixed(2);
-    const num = (n) => n == null ? '—' : Number(n).toLocaleString('en-US');
-    function ago(iso) {
-      if (!iso) return '—';
-      const ms = Date.now() - new Date(iso).getTime();
-      const m = Math.round(ms / 60000);
-      if (m < 1) return 'только что';
-      if (m < 60) return m + ' мин назад';
-      const h = Math.round(m / 60);
-      if (h < 24) return h + ' ч назад';
-      return Math.round(h / 24) + ' дн назад';
+  /* Переводы RU/RO. EN живёт в разметке (его видят поисковики и браузер без JS) и снимается
+     с DOM при загрузке. Ключи должны совпадать с data-i18n — это проверяет scripts/landing-i18n.test.js.
+     Значения — наш собственный текст, поэтому вставляются как HTML. */
+  const I18N = /*I18N-START*/{
+    ru: {
+      "meta.title": "LoadLens: узнайте, сколько платит груз, до звонка брокеру",
+      "meta.desc": "Бесплатное расширение Chrome для DAT One и Truckstop. Реальный $/миля с учётом пустого пробега и топлива, проверка HOS и надёжность брокера на каждом грузе.",
+      "hero.title": "Узнайте, сколько реально платит груз, ещё до звонка брокеру",
+      "hero.lead": "LoadLens работает прямо в DAT One и Truckstop. У каждого груза появляется бейдж выгодности с учётом пустого пробега (deadhead) и топлива, проверка HOS и оценка брокера. На том же борде, где вы и так ищете грузы.",
+      "cta.install": "Установить в Chrome бесплатно",
+      "cta.how": "Как это работает",
+      "hero.note": "Бесплатный тариф, без карты. Работает с вашим аккаунтом DAT One или Truckstop.",
+      "mock.head": "Карточка груза, пример",
+      "mock.meta": "Van · 239 миль с грузом · 18 миль пустым · погрузка завтра",
+      "mock.posted": "в объявлении $7.95/миля",
+      "mock.profit": "$7.39/миля реально · выгодно",
+      "mock.hos": "HOS ок · осталось 6ч 40м",
+      "mock.broker": "Кредит 96 · платит за 28 дней",
+      "mock.crowd": "Перевозчики: оплатил ×14",
+      "mock.email": "✉ Письмо брокеру",
+      "mock.call": "☎ Позвонить",
+      "mock.counter": "Контр-оффер $2,100",
+      "mock.note": "Иллюстрация, цифры выдуманы.",
+      "f.title": "Что вы видите на каждом грузе",
+      "f.lead": "Без таблиц, калькулятора и второго экрана. Цифры стоят рядом с каждым объявлением.",
+      "f1.t": "Реальный $/миля, а не из объявления",
+      "f1.p": "Ставка делится на мили с грузом плюс пустые мили до погрузки, с учётом расхода на топливо. Зелёный, жёлтый или красный относительно вашей себестоимости мили.",
+      "f2.t": "Успеет ли водитель легально?",
+      "f2.p": "Бейдж HOS проверяет правила 11 часов, 14 часов, 30-минутного перерыва и 70 часов за 8 дней ещё до звонка.",
+      "f3.t": "Проверьте брокера до рейса",
+      "f3.p": "Кредитный рейтинг DAT и срок оплаты в одном бейдже. В Pro ещё и отзывы других перевозчиков: оплатил, тянул с оплатой, сорвал груз, двойной брокеридж.",
+      "f4.t": "Письмо брокеру в один клик",
+      "f4.p": "Черновик в Gmail с направлением, милями, датой погрузки и контр-оффером выше вашей точки безубыточности. Вы читаете и сами нажимаете «Отправить».",
+      "g.title": "Застряли в мёртвом рынке?",
+      "g.p1": "LoadLens смотрит на два-три груза вперёд и ранжирует маршруты по силе рынка в точке доставки.",
+      "g.p2": "Иногда лучший ход: груз со средней ставкой, который привезёт трак туда, где есть грузы. Это лучше, чем простоять сутки или гнать 300 миль пустым за свой счёт.",
+      "g.head": "План выезда, пример",
+      "g.l0": "Слабый рынок, мало грузов на выезд",
+      "g.s0": "слабый",
+      "g.l1": "$4.10/миля · короткий выезд",
+      "g.s1": "средний",
+      "g.l2": "$5.60/миля · сильный рынок в точке доставки",
+      "g.s2": "сильный",
+      "p.title": "Для диспетчеров, у которых больше одного трака",
+      "p1.t": "Подбор грузов под водителей",
+      "p1.p": "Добавьте водителей с их локацией, прицепом и остатком часов. На каждом грузе видно, какому водителю он подходит лучше и скольким вообще.",
+      "p2.t": "Алерты в Telegram по вашим правилам",
+      "p2.p": "Минимальная ставка, максимум пустого пробега, штаты, прицеп, MC брокера или ключевые слова вроде «in-bond». Подходящие грузы приходят в Telegram с телефоном и email брокера.",
+      "p3.t": "Облачный браузер",
+      "p3.p": "Ваш поиск в DAT продолжает работать на нашем сервере, поэтому алерты приходят, даже когда ноутбук закрыт.",
+      "pr.title": "Начать бесплатно. Pro, когда у вас парк.",
+      "pr.free.sub": "Для owner-operator'ов и диспетчеров-одиночек.",
+      "pr.f1": "Бейджи выгодности, HOS и брокера на каждом грузе",
+      "pr.f2": "Карточка груза с контактами, письмо в один клик и контр-оффер",
+      "pr.f3": "Список выгодных грузов, фильтр прицепа и сортировка",
+      "pr.f4": "Оценки брокеров, с которыми вы работали",
+      "pr.pro.sub": "Всё из Free, плюс:",
+      "pr.p1": "Рыночная ставка по направлению и сила рынка из базы LoadLens",
+      "pr.p2": "Планы выезда на два-три груза вперёд",
+      "pr.p6": "Отзывы других перевозчиков о брокерах и актуальная цена дизеля",
+      "pr.p3": "Парк и подбор водителей",
+      "pr.p4": "Алерты в Telegram по вашим правилам",
+      "pr.p5": "Экспорт в CSV и до 3 устройств",
+      "cta.pro": "Написать нам про Pro",
+      "pr.pro.note": "Пока мы переводим аккаунты на Pro вручную. Напишите, и мы всё настроим.",
+      "h.title": "Как это работает",
+      "h1.t": "Установите в Chrome",
+      "h1.p": "Chrome 116 или новее, на Windows, Mac или Chromebook.",
+      "h2.t": "Ищите в DAT One или Truckstop",
+      "h2.p": "Тот же аккаунт, тот же поиск. В вашей работе ничего не меняется.",
+      "h3.t": "Откройте панель LoadLens",
+      "h3.p": "Нажмите на иконку LoadLens. Бейджи и панель появятся рядом с результатами поиска.",
+      "pv.t": "Ваш аккаунт DAT остаётся вашим",
+      "pv.p": "LoadLens читает только те грузы, которые уже показала ваша сессия DAT. Он не отправляет запросов в DAT, не входит в аккаунт за вас и не хранит ваш пароль от DAT.",
+      "pv.link": "Политика конфиденциальности (English)",
+      "fin.title": "Ваш следующий выгодный груз уже на борде",
+      "fin.lead": "Установка занимает минуту, реальные цифры появятся при следующем поиске.",
+      "fin.q": "Вопросы?",
+      "ft.legal": "© 2026 LoadLens. Не связан с DAT Solutions и Truckstop.",
+      "ft.stats": "Статистика по направлениям",
+      "mail.pro": "LoadLens Pro",
+      "mail.question": "Вопрос по LoadLens"
+    },
+    ro: {
+      "meta.title": "LoadLens: află cât plătește o cursă înainte să suni brokerul",
+      "meta.desc": "Extensie Chrome gratuită pentru DAT One și Truckstop. $/milă real după deadhead și combustibil, verificare HOS și încrederea în broker la fiecare cursă.",
+      "hero.title": "Află cât plătește de fapt o cursă înainte să suni brokerul",
+      "hero.lead": "LoadLens lucrează direct în DAT One și Truckstop. Fiecare cursă primește un badge de profit după deadhead și combustibil, o verificare HOS și un scor de încredere pentru broker. Chiar pe load board-ul pe care îl folosești deja.",
+      "cta.install": "Adaugă în Chrome, gratuit",
+      "cta.how": "Vezi cum funcționează",
+      "hero.note": "Plan gratuit, fără card. Funcționează cu contul tău DAT One sau Truckstop.",
+      "mock.head": "Fișa cursei, exemplu",
+      "mock.meta": "Van · 239 mile încărcat · 18 mile deadhead · încărcare mâine",
+      "mock.posted": "în anunț $7.95/milă",
+      "mock.profit": "$7.39/milă real · profitabil",
+      "mock.hos": "HOS ok · mai sunt 6h 40m",
+      "mock.broker": "Credit 96 · plătește în 28 de zile",
+      "mock.crowd": "Transportatori: a plătit ×14",
+      "mock.email": "✉ Email brokerului",
+      "mock.call": "☎ Sună",
+      "mock.counter": "Contraofertă $2,100",
+      "mock.note": "Ilustrație cu cifre inventate.",
+      "f.title": "Ce vezi la fiecare cursă",
+      "f.lead": "Fără tabele, fără calculator, fără al doilea ecran. Cifrele stau lângă fiecare anunț.",
+      "f1.t": "$/milă real, nu cel din anunț",
+      "f1.p": "Tariful împărțit la milele încărcate plus milele goale până la încărcare, cu tot cu costul combustibilului. Verde, galben sau roșu față de costul tău pe milă.",
+      "f2.t": "Poate șoferul s-o facă legal?",
+      "f2.p": "Badge-ul HOS verifică regulile de 11 ore, 14 ore, pauza de 30 de minute și 70 de ore în 8 zile înainte să suni.",
+      "f3.t": "Cunoaște brokerul înainte de cursă",
+      "f3.p": "Scorul de credit DAT și termenul de plată într-un singur badge. Cu Pro vezi și ce raportează alți transportatori: a plătit, plătește greu, a anulat, double-brokering.",
+      "f4.t": "Email brokerului dintr-un clic",
+      "f4.p": "O ciornă în Gmail cu ruta, milele, data încărcării și o contraofertă peste pragul tău de rentabilitate. Tu o citești și apeși Send.",
+      "g.title": "Blocat într-o piață moartă?",
+      "g.p1": "LoadLens se uită la două-trei curse înainte și ordonează rutele după cât de puternică e piața de la destinație.",
+      "g.p2": "Uneori cea mai bună mișcare e o cursă cu tarif mediu care duce camionul acolo unde e marfă. E mai bine decât să stai o zi sau să mergi 300 de mile gol pe banii tăi.",
+      "g.head": "Plan de ieșire, exemplu",
+      "g.l0": "Piață slabă, puține curse de plecare",
+      "g.s0": "slabă",
+      "g.l1": "$4.10/milă · ieșire scurtă",
+      "g.s1": "medie",
+      "g.l2": "$5.60/milă · piață puternică la destinație",
+      "g.s2": "puternică",
+      "p.title": "Pentru dispeceri cu mai mult de un camion",
+      "p1.t": "Potrivește cursele cu șoferii tăi",
+      "p1.p": "Adaugă șoferii cu locația, remorca și orele rămase. La fiecare cursă vezi cărui șofer i se potrivește cel mai bine și câți o pot face.",
+      "p2.t": "Alerte în Telegram după regulile tale",
+      "p2.p": "Tarif minim, deadhead maxim, state, remorcă, MC-ul brokerului sau cuvinte cheie ca „in-bond”. Cursele potrivite vin în Telegram cu telefonul și emailul brokerului.",
+      "p3.t": "Browser în cloud",
+      "p3.p": "Căutarea ta în DAT rulează în continuare pe serverul nostru, așa că alertele vin și când laptopul e închis.",
+      "pr.title": "Începi gratuit. Pro când ai o flotă.",
+      "pr.free.sub": "Pentru owner-operatori și dispeceri care lucrează singuri.",
+      "pr.f1": "Badge-uri de profit, HOS și broker la fiecare cursă",
+      "pr.f2": "Fișa cursei cu contacte, email dintr-un clic și contraofertă",
+      "pr.f3": "Lista curselor bune, filtru de remorcă și sortare",
+      "pr.f4": "Evaluezi brokerii cu care ai lucrat",
+      "pr.pro.sub": "Tot ce e în Free, plus:",
+      "pr.p1": "Tariful pieței pe rută și puterea pieței din baza LoadLens",
+      "pr.p2": "Planuri de ieșire cu două-trei curse înainte",
+      "pr.p6": "Rapoarte despre brokeri de la alți transportatori și prețul actual al motorinei",
+      "pr.p3": "Flotă și potrivire pe șoferi",
+      "pr.p4": "Alerte în Telegram după regulile tale",
+      "pr.p5": "Export CSV și până la 3 dispozitive",
+      "cta.pro": "Scrie-ne pentru Pro",
+      "pr.pro.note": "Deocamdată trecem conturile pe Pro manual. Scrie-ne și le configurăm noi.",
+      "h.title": "Cum funcționează",
+      "h1.t": "Adaug-o în Chrome",
+      "h1.p": "Chrome 116 sau mai nou, pe Windows, Mac sau Chromebook.",
+      "h2.t": "Caută în DAT One sau Truckstop",
+      "h2.p": "Același cont, aceeași căutare. Nu se schimbă nimic în felul în care lucrezi.",
+      "h3.t": "Deschide panoul LoadLens",
+      "h3.p": "Apasă pe iconița LoadLens. Badge-urile și panoul apar lângă rezultate.",
+      "pv.t": "Contul tău DAT rămâne al tău",
+      "pv.p": "LoadLens citește doar cursele pe care sesiunea ta DAT le arată deja. Nu trimite cereri către DAT, nu se loghează în locul tău și nu îți păstrează parola DAT.",
+      "pv.link": "Politica de confidențialitate (English)",
+      "fin.title": "Următoarea ta cursă bună e deja pe board",
+      "fin.lead": "Instalezi într-un minut și vezi cifrele reale la următoarea căutare.",
+      "fin.q": "Întrebări?",
+      "ft.legal": "© 2026 LoadLens. Nu este afiliat cu DAT Solutions sau Truckstop.",
+      "ft.stats": "Statistici pe rute",
+      "mail.pro": "LoadLens Pro",
+      "mail.question": "Întrebare despre LoadLens"
     }
-    function rpmClass(v) { return v == null ? '' : v < 1.8 ? 'lo' : v < 2.25 ? 'mid' : 'hi'; }
+  }/*I18N-END*/;
 
-    function card(value, label) {
-      const d = document.createElement('div'); d.className = 'card';
-      const b = document.createElement('b'); b.textContent = value;
-      const s = document.createElement('span'); s.textContent = label;
-      d.append(b, s); return d;
-    }
+  (function () {
+    const LANGS = ["en", "ru", "ro"];
+    const MAIL = "hello@krait.studio";
+    const els = [...document.querySelectorAll("[data-i18n]")];
+    const en = new Map(els.map((el) => [el, el.innerHTML]));
+    const metaDesc = document.querySelector('meta[name="description"]');
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    const EN_META = { title: document.title, desc: metaDesc.content };
+    const EN_MAIL = { pro: "LoadLens Pro", question: "LoadLens question" };
 
-    function renderCards(s) {
-      const c = $('cards'); c.textContent = '';
-      c.append(
-        card(num(s.loads), 'грузов за неделю'),
-        card(num(s.lanes), 'уникальных lane'),
-        card(num(s.markets), 'рынков отправления'),
-        card(money(s.medianRpm) + (s.medianRpm != null ? '/mi' : ''), 'медиана RPM (рынок)')
-      );
-    }
-
-    function renderLanes(lanes) {
-      const wrap = $('content'); wrap.textContent = '';
-      if (!lanes || !lanes.length) {
-        const e = document.createElement('div'); e.className = 'empty';
-        e.textContent = 'Пока нет данных. Открой DAT One / Truckstop с установленным расширением и полистай выдачу — lane’ы появятся здесь.';
-        wrap.appendChild(e); return;
+    function apply(lang) {
+      const d = I18N[lang] || {};
+      document.documentElement.lang = lang;
+      for (const el of els) el.innerHTML = d[el.dataset.i18n] || en.get(el);
+      document.title = d["meta.title"] || EN_META.title;
+      metaDesc.content = ogDesc.content = d["meta.desc"] || EN_META.desc;
+      ogTitle.content = document.title;
+      for (const a of document.querySelectorAll("[data-mail]")) {
+        const t = a.dataset.mail;
+        a.href = "mailto:" + MAIL + "?subject=" + encodeURIComponent(d["mail." + t] || EN_MAIL[t]);
       }
-      const table = document.createElement('table');
-      const thead = document.createElement('thead');
-      const hr = document.createElement('tr');
-      [['Lane', ''], ['Eq', ''], ['Грузов', 'num'], ['Медиана', 'num'], ['Коридор p25–p75', 'num'], ['Свежесть', 'num']]
-        .forEach(([t, cls]) => { const th = document.createElement('th'); th.textContent = t; if (cls) th.className = cls; hr.appendChild(th); });
-      thead.appendChild(hr); table.appendChild(thead);
+      for (const b of document.querySelectorAll("[data-lang]")) b.setAttribute("aria-pressed", String(b.dataset.lang === lang));
+      document.documentElement.classList.remove("i18n-pending");
+    }
 
-      const tb = document.createElement('tbody');
-      lanes.forEach((l) => {
-        const tr = document.createElement('tr');
-        const lane = document.createElement('td'); lane.className = 'lane';
-        lane.textContent = l.originMarket + ' → ' + l.destMarket; tr.appendChild(lane);
-
-        const eq = document.createElement('td');
-        const chip = document.createElement('span'); chip.className = 'eq'; chip.textContent = l.equipment;
-        eq.appendChild(chip); tr.appendChild(eq);
-
-        const n = document.createElement('td'); n.className = 'num'; n.textContent = num(l.n); tr.appendChild(n);
-
-        const med = document.createElement('td'); med.className = 'num';
-        const sp = document.createElement('span'); sp.className = 'rpm ' + rpmClass(l.medianRpm);
-        sp.textContent = l.medianRpm != null ? money(l.medianRpm) + '/mi' : '—';
-        med.appendChild(sp); tr.appendChild(med);
-
-        const range = document.createElement('td'); range.className = 'num muted';
-        range.textContent = (l.p25 != null && l.p75 != null) ? money(l.p25) + '–' + money(l.p75) : '—';
-        tr.appendChild(range);
-
-        const fresh = document.createElement('td'); fresh.className = 'num muted'; fresh.textContent = ago(l.lastSeen);
-        tr.appendChild(fresh);
-
-        tb.appendChild(tr);
+    for (const b of document.querySelectorAll("[data-lang]")) {
+      b.addEventListener("click", () => {
+        const lang = b.dataset.lang;
+        try { localStorage.setItem("ll_lang", lang); } catch (e) {}
+        const u = new URL(location.href);
+        if (lang === "en") u.searchParams.delete("lang"); else u.searchParams.set("lang", lang);
+        history.replaceState(null, "", u);
+        apply(lang);
       });
-      table.appendChild(tb); wrap.appendChild(table);
     }
-
-    async function refresh() {
-      try {
-        const data = await fetch(`${API}/lanes`).then((r) => r.json());
-        renderCards(data.summary || { loads: 0, lanes: 0, markets: 0, medianRpm: null });
-        renderLanes(data.lanes || []);
-        $('updated').textContent = 'обновлено ' + new Date().toLocaleTimeString('ru-RU');
-      } catch (e) {
-        $('updated').textContent = 'ошибка загрузки';
-      }
-    }
-    refresh();
-    setInterval(refresh, 30000);
+    const initial = document.documentElement.lang;
+    apply(LANGS.includes(initial) ? initial : "en");
+  })();
   </script>
 </body>
 </html>
