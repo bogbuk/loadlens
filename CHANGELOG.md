@@ -4,12 +4,10 @@ All notable user-facing changes to the LoadLens browser extension.
 
 ## [Unreleased]
 
-### Added
-- **14 days of Pro, free.** Every account gets a one-time Pro trial: new accounts when they sign up, existing free accounts the next time they open Settings. Settings shows "PRO TRIAL" and how many days are left, and the Telegram bot reminds you two days before the trial ends.
-
 ## 0.9.3 — 2026-09-29
 
 ### Added
+- **14 days of Pro, free.** Every account gets a one-time Pro trial: new accounts when they sign up, existing free accounts the next time they open Settings. Settings shows "PRO TRIAL" and how many days are left, and the Telegram bot reminds you two days before the trial ends.
 - **Get Pro and contact links.** Free accounts see an "Email us" link next to the plan on the Settings tab, and every Pro-only section (fleet, Telegram alerts) has a "Get Pro" link. The email opens prefilled with your LoadLens account. A "Questions or feedback?" email is at the bottom of Settings, and the extension now links to the LoadLens website from Chrome's extensions page.
 
 ## 0.9.2 — 2026-09-29
