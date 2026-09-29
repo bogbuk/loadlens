@@ -87,6 +87,9 @@ export class AdminService {
     user.plan = plan;
     // → free обрывает активный триал; trial_started_at остаётся, так что повторно он не выдастся.
     if (plan === 'free') user.proUntil = null;
+    // Ручная смена плана = решение админа: триал считаем использованным, иначе снятый Pro
+    // (никогда не бывший на триале) при следующем /auth/me получил бы 14 дней Pro заново.
+    if (user.trialStartedAt == null) user.trialStartedAt = Date.now();
     await user.save();
     return { email: user.email, plan: user.plan };
   }

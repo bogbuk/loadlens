@@ -170,4 +170,16 @@ describe('AdminService', () => {
     expect(users['a@b.md'].proUntil).toBeNull();
     expect(users['a@b.md'].trialStartedAt).toBe(123);
   });
+
+  it('setPlan помечает триал использованным: снятый Pro не получает 14 дней Pro заново', async () => {
+    users['pro@b.md'].trialStartedAt = null;
+    await service.setPlan('pro@b.md', 'free');
+    expect(users['pro@b.md'].trialStartedAt).toEqual(expect.any(Number));
+  });
+
+  it('setPlan не перезаписывает метку уже выданного триала', async () => {
+    users['a@b.md'].trialStartedAt = 123;
+    await service.setPlan('a@b.md', 'pro');
+    expect(users['a@b.md'].trialStartedAt).toBe(123);
+  });
 });
