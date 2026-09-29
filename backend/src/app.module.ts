@@ -24,6 +24,7 @@ import { TelegramModule } from './telegram/telegram.module';
 import { HealthController } from './health/health.controller';
 import { CloudInstance } from './cloud/cloud-instance.model';
 import { CloudModule } from './cloud/cloud.module';
+import { TrialModule } from './trial/trial.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { CloudModule } from './cloud/cloud.module';
     DriversModule,
     TelegramModule,
     CloudModule,
+    TrialModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
