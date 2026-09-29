@@ -13,6 +13,7 @@ package-lock.json
 !docs/store-listing.md
 !docs/research/
 !docs/chrome-web-store-publishing.md
+!docs/user-guide.md
 backend/node_modules/
 backend/dist/
 backend/.env
