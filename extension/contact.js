@@ -2,7 +2,7 @@
    Один адрес на всё расширение: сменить почту = поправить EMAIL здесь.
    Pro выдаётся вручную (Stripe нет), поэтому просьба о Pro — это письмо с email аккаунта в теме. */
 const LLCONTACT = (() => {
-  const EMAIL = "bogbuk@gmail.com";
+  const EMAIL = "hello@krait.studio";
 
   // topic: "pro" | "cloud" | "question"; account — email аккаунта LoadLens (если вошёл)
   function mailto(topic, account) {
