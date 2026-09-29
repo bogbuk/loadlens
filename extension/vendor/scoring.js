@@ -12,6 +12,10 @@ const LLSCORE = (() => {
     // Целевая (gross true $/mi) ставка по бакетам trip-миль: короткие плечи требуют выше $/милю.
     // Упорядочены по возрастанию maxMi; последняя строка maxMi:null = «и больше».
     targets: [{ maxMi: 500, rpm: 7.0 }, { maxMi: 1000, rpm: 6.0 }, { maxMi: null, rpm: 5.0 }],
+    // Пол знаменателя $/mi. На 30 милях $/mi бессмыслен: подача, погрузка и время не бесплатны, а при
+    // поиске по зонам/штатам DAT не отдаёт deadhead — и $500 за 30 миль светился green как $16.7/mi.
+    // Топливо считаем по реальным милям, делим не меньше чем на minMiles.
+    minMiles: 100,
   };
 
   // Целевой $/милю для груза по его trip-милям (loadedMiles). table — массив {maxMi, rpm},
@@ -36,20 +40,21 @@ const LLSCORE = (() => {
     return (miles || 0) * perMile;
   }
 
-  // true RPM = ставка / (груженые мили + deadhead до пикапа). Главная метрика (= metric в lane-базе).
-  function trueRpm(rate, loadedMiles, deadheadMiles) {
-    const denom = (loadedMiles || 0) + (deadheadMiles || 0);
-    if (!rate || denom <= 0) return null;
-    return rate / denom;
+  // true RPM = ставка / (груженые мили + deadhead до пикапа), не меньше чем на minMiles. Крауд-медиана
+  // lane считается на бэкенде своей формулой (rpmCents) — пол её не трогает.
+  function trueRpm(rate, loadedMiles, deadheadMiles, minMiles = DEFAULTS.minMiles) {
+    const miles = (loadedMiles || 0) + (deadheadMiles || 0);
+    if (!rate || miles <= 0) return null;
+    return rate / Math.max(miles, minMiles || 0);
   }
 
-  // net RPM = (ставка - топливо - tolls) / общие мили. Учитывает затраты.
+  // net RPM = (ставка - топливо - tolls) / общие мили (не меньше minMiles). Учитывает затраты.
   function netRpm(load, opts = {}) {
     const o = { ...DEFAULTS, ...opts };
     const total = (load.loadedMiles || 0) + (load.deadheadMiles || 0);
     if (!load.rate || total <= 0) return null;
     const cost = fuelCost(total, o.dieselPrice, o.mpg) + tollsCost(total, o.tollsPerMile);
-    return (load.rate - cost) / total;
+    return (load.rate - cost) / Math.max(total, o.minMiles || 0);
   }
 
   // Бейдж выгодности груза. laneMedian — медиана trueRpm по lane из крауд-базы (или null).

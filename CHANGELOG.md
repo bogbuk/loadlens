@@ -7,6 +7,7 @@ All notable user-facing changes to the LoadLens browser extension.
 ## 0.9.2 — 2026-09-29
 
 ### Fixed
+- **Hot loads no longer show $16–36/mi on short runs.** When you search by zones or states, DAT doesn't send deadhead to pickup, and a $500 run of 30 miles scored as $16.7/mi and turned green. Runs under 100 miles are now scored as 100 miles (fuel is still counted on the real miles), and unknown deadhead shows as "DH ?" on the load card instead of "0 DH".
 - **Saving Settings no longer undoes the Loads tab.** Save now writes only what you changed on the Settings tab, so a sort order or auto-refresh switch you picked on the Loads tab stays put. The Settings tab also picks up changes made elsewhere when you open it.
 - **Account, plan and Telegram status stay current.** The Settings tab refreshes them when you open it and when you sign in or out in another window; after Connect Telegram it shows "linked ✓" as soon as you press Start in the bot.
 - **New drivers show up on the Loads tab right away**, without reloading the DAT tab.

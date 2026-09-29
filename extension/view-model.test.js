@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert");
 require("../shared/load.model.js");   // globalThis.LLMODEL
 require("../shared/planner.js");      // globalThis.LLPLAN
+require("../shared/scoring.js");      // globalThis.LLSCORE (пол minMiles для пометки короткого рейса)
 const LLVIEW = require("./view-model.js");
 
 const NOW = Date.parse("2026-09-24T15:00:00Z");
@@ -156,4 +157,22 @@ test("detail «Available»: даты вместо сырого ISO, одинак
   assert.strictEqual(row({ earliest: "2026-09-28T12:00:00Z", latest: "2026-09-29T12:00:00Z" }), "Sep 28 – Sep 29");
   assert.strictEqual(row({ earliest: "2026-09-28T12:00:00Z", latest: "2026-09-28T13:00:00Z" }), "Sep 28");
   assert.strictEqual(row({ earliest: "ASAP" }), "ASAP – ?");
+});
+
+test("detail: неизвестный deadhead — «DH ?», короткий рейс помечен полом", () => {
+  const facts = { profit: null, flags: [], hos: null, broker: {}, laneMedian: null, trueRpm: 5 };
+  const l = load({ rate: 500, loadedMiles: 30, deadheadMiles: null });
+  const s = LLVIEW.build(input({ loads: [l], pool: [l], detailLoad: l, detailFacts: facts }));
+  const row = (k) => (s.detail.rows.find((r) => r.k === k) || {}).v;
+  assert.strictEqual(row("Miles"), "30 loaded · ? DH");
+  assert.match(row("RPM"), /short run, scored as 100 mi/);
+  assert.match(s.detail.actions.copy, /30mi \+\?DH/);
+});
+test("detail: известный deadhead и длинный рейс — без пометок", () => {
+  const facts = { profit: null, flags: [], hos: null, broker: {}, laneMedian: null, trueRpm: 3 };
+  const l = load({ loadedMiles: 780, deadheadMiles: 0 });
+  const s = LLVIEW.build(input({ loads: [l], pool: [l], detailLoad: l, detailFacts: facts }));
+  const row = (k) => (s.detail.rows.find((r) => r.k === k) || {}).v;
+  assert.strictEqual(row("Miles"), "780 loaded · 0 DH");
+  assert.doesNotMatch(row("RPM"), /short run/);
 });

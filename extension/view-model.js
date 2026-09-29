@@ -151,6 +151,11 @@ const LLVIEW = (() => {
 
   function detail(load, f) {
     const rows = [];
+    // DAT не отдаёт deadhead при поиске по зонам/штатам — это «неизвестно», а не 0
+    const dhText = load.deadheadMiles != null ? String(load.deadheadMiles) : "?";
+    const minMi = (typeof LLSCORE !== "undefined" && LLSCORE.DEFAULTS.minMiles) || 0;
+    const miles = (load.loadedMiles || 0) + (load.deadheadMiles || 0);
+    const short = f.trueRpm != null && miles > 0 && miles < minMi;
     const add = (k, v, href) => rows.push(href ? { k, v, href } : { k, v });
     add("Rate", load.rate != null ? `$${load.rate.toLocaleString("en-US")}${load.rateBasis ? " (" + load.rateBasis + ")" : ""}` : "—");
     add("RPM", [
@@ -158,8 +163,9 @@ const LLVIEW = (() => {
       f.profit && f.profit.netRpm != null ? `net $${f.profit.netRpm.toFixed(2)}` : null,
       load.estimatedRatePerMile != null ? `DAT est $${Number(load.estimatedRatePerMile).toFixed(2)}` : null,
       f.laneMedian != null ? `market $${f.laneMedian.toFixed(2)}` : null,
+      short ? `short run, scored as ${minMi} mi` : null,
     ].filter(Boolean).join(" · ") || "—");
-    add("Miles", `${load.loadedMiles ?? "—"} loaded · ${load.deadheadMiles ?? 0} DH`);
+    add("Miles", `${load.loadedMiles ?? "—"} loaded · ${dhText} DH`);
     if (load.weight) add("Weight", `${load.weight.toLocaleString("en-US")} lbs`);
     if (load.availability) add("Available", fmtWindow(load.availability));
     const flagTag = f.flags.length ? " · 🚩 " + (f.flagLevel === "high" ? "risk" : "verify") : "";
@@ -178,7 +184,7 @@ const LLVIEW = (() => {
     const hasMail = !!(f.mail && load.contactEmail);
     const script = f.offer && f.offer.script;
     const copy = `${load.originMarket} → ${load.destMarket} ${load.equipment}\n` +
-      `Rate: $${load.rate ?? "?"} ${load.rateBasis || ""} | ${load.loadedMiles ?? "?"}mi +${load.deadheadMiles ?? 0}DH\n` +
+      `Rate: $${load.rate ?? "?"} ${load.rateBasis || ""} | ${load.loadedMiles ?? "?"}mi +${dhText}DH\n` +
       (f.trueRpm != null ? `RPM: true $${f.trueRpm.toFixed(2)}${f.laneMedian != null ? ` | market $${f.laneMedian.toFixed(2)}` : ""}\n` : "") +
       (script ? `Ask: ${script}\n` : "") +
       `Broker: ${load.brokerName || "?"} MC ${load.brokerMc || "?"} | ${load.creditScore ?? "?"} CS ${load.daysToPay ?? "?"} DTP\n` +

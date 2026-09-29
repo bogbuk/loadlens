@@ -177,3 +177,22 @@ test("counterOffer: без deadhead в скрипте нет хвоста про
   const c = LLSCORE.counterOffer({ rate: 1850, loadedMiles: 850, deadheadMiles: 0 }, { costPerMile: 1.8 });
   assert.ok(!/deadhead/.test(c.script));
 });
+
+// Короткие рейсы: $/mi на 30 милях бессмыслен (подача/погрузка/время не бесплатны), а при поиске
+// по зонам DAT не отдаёт deadhead → знаменатель = одни trip-мили. Скорим не меньше чем по 100 милям.
+test("trueRpm: короткий рейс скорится по полу 100 миль", () => {
+  assert.strictEqual(LLSCORE.trueRpm(800, 30, null), 8);        // было 26.67
+  assert.strictEqual(LLSCORE.trueRpm(800, 60, 20), 8);          // 80 < 100 → 100
+  assert.strictEqual(LLSCORE.trueRpm(2500, 1000, 0), 2.5);      // длинные не трогаем
+  assert.strictEqual(LLSCORE.trueRpm(800, 30, null, 0), 800 / 30); // пол отключаем явно
+});
+test("netRpm: топливо по реальным милям, делим на пол 100 миль", () => {
+  const nr = LLSCORE.netRpm({ rate: 800, loadedMiles: 30, deadheadMiles: null }, { dieselPrice: 4.0, mpg: 6.5, tollsPerMile: 0.04 });
+  // fuel = 30/6.5*4 = 18.46 ; tolls = 1.2 ; (800-19.66)/100 = 7.80
+  assert.ok(Math.abs(nr - 7.8034) < 0.001, String(nr));
+});
+test("profitBadge: $500 за 30 миль без DH — amber ($5/mi), а не green ($16.7/mi)", () => {
+  const b = LLSCORE.profitBadge({ rate: 500, loadedMiles: 30, deadheadMiles: null }, { dieselPrice: 3.95, costPerMile: 1.8, targetRpm: 7 });
+  assert.strictEqual(b.level, "amber");
+  assert.strictEqual(b.trueRpm, 5);
+});
