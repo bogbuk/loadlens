@@ -28,3 +28,12 @@ test("кнопки установки ведут на листинг CWS с utm_
   assert.ok(hrefs.length >= 3);
   for (const h of hrefs) assert.match(h, /^https:\/\/chromewebstore\.google\.com\/detail\/chemnjopdclcmcckgfbmabielhobmknk\?utm_source=landing$/);
 });
+
+test("триал упомянут на всех языках: hero.note и карточка Pro", () => {
+  assert.match(html, /data-i18n="hero.note">[^<]*14 days of Pro/);
+  assert.match(html, /data-i18n="pr.pro.sub">Try Pro free for 14 days/);
+  for (const lang of ["ru", "ro"]) {
+    assert.match(I18N[lang]["hero.note"], /14/);
+    assert.match(I18N[lang]["pr.pro.sub"], /14/);
+  }
+});
