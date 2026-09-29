@@ -1,5 +1,8 @@
 /* LoadLens — вкладка Settings боковой панели (бывший попап): настройки водителя, аккаунт, парк, Telegram, облако. */
 const escA = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+// mailto — в новой вкладке: с веб-обработчиком (Gmail) ссылка иначе откроется в самой панели
+const contactLink = (topic, account, label) =>
+  `<a href="${escA(LLCONTACT.mailto(topic, account))}" target="_blank" rel="noopener noreferrer">${escA(label)}</a>`;
 
 // ---- настройки ----
 const setEl = document.getElementById("settings");
@@ -214,6 +217,8 @@ function accRow(user) {
   accEl.innerHTML = '<div class="acc"><div class="who"><span>' + escA(user.email) +
     '</span><span class="plan ' + (user.plan === "pro" ? "pro" : "") + '">' +
     (user.plan === "pro" ? "PRO" : "FREE") + "</span></div>" +
+    (user.plan === "pro" ? "" : '<div class="note get-pro">Get Pro: fleet, Telegram alerts, full get-out chains, CSV. ' +
+      contactLink("pro", user.email, "Email us") + " and we'll upgrade this account.</div>") +
     '<button id="acc-pwd-btn">Change password</button>' +
     '<div id="acc-pwd"></div>' +
     '<button id="acc-out">Sign out</button>' +
@@ -233,7 +238,7 @@ function accForm(err) {
     '<div class="err">' + escA(err || "") + "</div>" +
     '<div class="btns"><button id="acc-in">Sign in</button><button id="acc-reg">Sign up</button></div>' +
     '<div class="note"><button id="acc-forgot" class="linkbtn">Forgot password?</button></div>' +
-    '<div class="note">Pro: full 3-leg get-out chains + CSV load export.</div></div>';
+    '<div class="note">Pro: fleet, Telegram alerts, full 3-leg get-out chains + CSV load export. ' + contactLink("pro", "", "Ask about Pro") + "</div></div>";
   const go = (fn) => async () => {
     const email = document.getElementById("acc-email").value.trim();
     const pass = document.getElementById("acc-pass").value;
@@ -316,7 +321,7 @@ const fleetEl = document.getElementById("fleet");
 async function renderFleet(me) {
   if (me === undefined) me = await LLAPI.getMe().catch(() => null);
   if (!me) { fleetEl.innerHTML = '<h4>Fleet</h4><div class="note">Sign in to manage your drivers.</div>'; return; }
-  if (me.plan !== "pro") { fleetEl.innerHTML = '<h4>Fleet <span class="plan pro">PRO</span></h4><div class="note">Fleet and match-all-drivers are Pro features.</div>'; return; }
+  if (me.plan !== "pro") { fleetEl.innerHTML = '<h4>Fleet <span class="plan pro">PRO</span></h4><div class="note">Fleet and match-all-drivers are Pro features. ' + contactLink("pro", me.email, "Get Pro") + "</div>"; return; }
   let list = [];
   try { list = await LLAPI.getDrivers(); } catch { list = []; }
   fleetEl.innerHTML = '<h4>Fleet</h4>' +
@@ -558,7 +563,7 @@ async function renderTelegram(me) {
     (isPro
       ? '<div class="note">One load = one message, duplicates filtered out. Works only while a DAT tab is open.</div>' +
         '<div id="tg-rules"></div>'
-      : '<div class="note">Password reset codes arrive in the bot. Pro adds load alerts with your own rules — keywords, rate, deadhead, brokers.</div>');
+      : '<div class="note">Password reset codes arrive in the bot. Pro adds load alerts with your own rules — keywords, rate, deadhead, brokers. ' + contactLink("pro", me.email, "Get Pro") + "</div>");
   const toggle = document.getElementById("tg-toggle");
   if (toggle) toggle.onchange = async (e) => {
     try { await LLAPI.telegramAlerts(e.target.checked); }
@@ -583,7 +588,7 @@ const CLOUD_LABELS = {
   logged_out: "signed out of DAT — open the screen and sign in",
   stale: "no loads from DAT — open the screen and check the search",
   stopped: "stopped",
-  error: "error — try Enable again or contact support",
+  error: "error — try Enable again or email " + LLCONTACT.EMAIL,
 };
 function agoMin(iso) { return iso ? Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000)) + " min ago" : "—"; }
 
@@ -664,6 +669,8 @@ const acctKey = (u) => (u ? [u.email, u.plan, !!u.cloudEnabled].join("|") : "");
 async function renderAccount(u) {
   shownAcct = acctKey(u);
   if (u) accRow(u); else accForm(await LLAPI.takeSignoutMessage());
+  document.getElementById("contact").innerHTML =
+    '<div class="note">Questions or feedback? ' + contactLink("question", u ? u.email : "", LLCONTACT.EMAIL) + "</div>";
   renderFleet(u || null); renderTelegram(u || null); renderCloud(u || null);
 }
 let lastRefresh = 0;

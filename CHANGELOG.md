@@ -4,6 +4,9 @@ All notable user-facing changes to the LoadLens browser extension.
 
 ## [Unreleased]
 
+### Added
+- **Get Pro and contact links.** Free accounts see an "Email us" link next to the plan on the Settings tab, and every Pro-only section (fleet, Telegram alerts) has a "Get Pro" link. The email opens prefilled with your LoadLens account. A "Questions or feedback?" email is at the bottom of Settings, and the extension now links to the LoadLens website from Chrome's extensions page.
+
 ## 0.9.2 — 2026-09-29
 
 ### Fixed

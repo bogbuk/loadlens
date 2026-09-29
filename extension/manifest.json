@@ -4,6 +4,7 @@
   "version": "0.9.2",
   "description": "Shows how profitable each load is ($/mile after deadhead, fuel and lane market rates).",
   "minimum_chrome_version": "116",
+  "homepage_url": "https://loadlens.krait.studio/",
   "permissions": [
     "storage",
     "sidePanel"
