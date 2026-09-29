@@ -95,13 +95,20 @@ describe('DevicesService.registerOnAuth', () => {
     expect(users.increment).toHaveBeenCalledWith('deviceEvictions', { by: 1, where: { id: 'u1' } });
   });
 
-  it('переполнение у Free на триале — лимит как у pro: самое давнее удаляется', async () => {
+  // Выдача триала не должна наказывать: лимит 3 устройств — только у постоянного Pro, иначе у Free
+  // с 4+ устройствами старые вылетали бы с «used on another device» и росли бы вытеснения в админке.
+  it('переполнение у Free на триале — как у free: не удаляем и не считаем', async () => {
     const { svc, model, users } = makeService([row('old', 500), row('mid', 100), row('new', 10)]);
     await svc.registerOnAuth(trialUser(), 'fresh');
-    expect(model.destroy).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.objectContaining({ userId: 'u1', clientId: ['old'] }) }),
+    expect(model.destroy).not.toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ clientId: ['old'] }) }),
     );
-    expect(users.increment).toHaveBeenCalledWith('deviceEvictions', { by: 1, where: { id: 'u1' } });
+    expect(users.increment).not.toHaveBeenCalled();
+  });
+
+  it('Free на триале без clientId — не отказываем даже в строгом режиме', async () => {
+    const { svc } = makeService([]);
+    await expect(svc.registerOnAuth(trialUser(), null)).resolves.toBeUndefined();
   });
 
   it('гонка: строку уже удалил параллельный запрос — destroy вернул 0, счётчик не растёт', async () => {
@@ -199,6 +206,12 @@ describe('DevicesService.verifyOnRefresh', () => {
       response: { statusCode: 401, reason: 'device_limit' },
     });
     expect(model.findAll).toHaveBeenCalledWith({ where: { userId: 'u1' } });
+  });
+
+  it('Free на триале, неизвестное устройство, слоты заняты — не отказываем (лимит только у постоянного Pro)', async () => {
+    const { svc, users } = makeService([row('a', 10), row('b', 20), row('c', 30)]);
+    await expect(svc.verifyOnRefresh(trialUser(), 'fresh')).resolves.toBeUndefined();
+    expect(users.increment).not.toHaveBeenCalled();
   });
 
   it('free с неизвестным устройством — не отказываем, просто пишем', async () => {

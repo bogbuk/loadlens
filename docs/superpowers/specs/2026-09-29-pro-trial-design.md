@@ -73,7 +73,9 @@ Pro админа неотличим от триального. Промокод�
 
 - `common/premium-read.guard.ts` (Pro-JWT ветка);
 - `drivers/pro.guard.ts` (парк, `PATCH telegram/alerts`, `POST telegram/notify`);
-- `auth/device-limit.ts` / `auth/devices.service.ts` — лимит 3 устройств для эффективного Pro;
+- `auth/device-limit.ts` / `auth/devices.service.ts` — **исключение (решение 2026-09-29 после ревью):** лимит 3
+  устройств и обязательный X-Client-Id — только у постоянного Pro (`limitsDevices`). Иначе выдача триала
+  вытесняла бы «лишние» устройства Free с «used on another device» и засчитывала это как шеринг;
 - `auth/admin.service.ts` — статистика и список пользователей (см. §7).
 
 После правки `grep "plan === 'pro'\|plan !== 'pro'" backend/src` (без spec) находит только `plan.ts`.

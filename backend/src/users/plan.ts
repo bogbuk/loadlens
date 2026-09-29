@@ -24,6 +24,13 @@ export function isPro(u: PlanFields, now: number): boolean {
   return until != null && until > now;
 }
 
+// Лимит устройств (3) и обязательный X-Client-Id — только у постоянного Pro, НЕ у триала: выдача
+// триала посреди сессии иначе вытесняла бы «лишние» устройства Free и засчитывала это как шеринг.
+// Единственное осознанное исключение из правила «все проверки Pro — через isPro».
+export function limitsDevices(u: PlanFields): boolean {
+  return u.plan === 'pro';
+}
+
 export function effectivePlan(u: PlanFields, now: number): 'free' | 'pro' {
   return isPro(u, now) ? 'pro' : 'free';
 }

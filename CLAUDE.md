@@ -218,8 +218,8 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   пополняется от всех). Расширение шлёт `Authorization: Bearer` на read-вызовах; Free/аноним → 403 →
   локальный скоринг без крауд-данных. Ключи только в ENV, реальные значения не коммитить.
 - **Pro trial (с 2026-09-29)** — `backend/src/users/plan.ts`: эффективный план = `plan==='pro'` ИЛИ
-  `pro_until > now`; **`isPro(user, now)` — единственная проверка Pro** на бэкенде (гарды, лимит
-  устройств). Триал (`TRIAL_DAYS`, дефолт 14, `0` = не выдавать) выдаёт `AuthService.ensureTrial` в
+  `pro_until > now`; **`isPro(user, now)` — единственная проверка Pro** на бэкенде (гарды); исключение — лимит
+  устройств: `limitsDevices` = только постоянный Pro, чтобы выдача триала не вытесняла устройства Free. Триал (`TRIAL_DAYS`, дефолт 14, `0` = не выдавать) выдаёт `AuthService.ensureTrial` в
   register/login/refresh/me один раз (`trial_started_at`); `→ free` в админке обрывает его (`pro_until=NULL`).
   `publicUser` отдаёт эффективный `plan` + `trialEndsAt`; кэш плана расширения не живёт дольше конца
   триала. `TrialModule` раз в час шлёт DM за 2 дня и в день окончания (`trial_notice` 0/1/2, только при

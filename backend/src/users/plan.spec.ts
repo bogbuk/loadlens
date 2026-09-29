@@ -1,5 +1,5 @@
 import {
-  DAY_MS, decideTrialNotices, effectivePlan, grantTrial, isPro, NoticeRow, trialDays, trialEndsAt,
+  DAY_MS, decideTrialNotices, effectivePlan, grantTrial, isPro, limitsDevices, NoticeRow, trialDays, trialEndsAt,
 } from './plan';
 
 const NOW = 1_790_000_000_000;
@@ -103,5 +103,13 @@ describe('decideTrialNotices', () => {
   });
   it('pro_until строкой работает', () => {
     expect(decideTrialNotices([row({ proUntil: String(NOW + DAY_MS) })], NOW)).toEqual([{ userId: 'u1', kind: 'reminder' }]);
+  });
+});
+
+describe('limitsDevices', () => {
+  it('только постоянный Pro; триал и Free — без лимита устройств', () => {
+    expect(limitsDevices({ plan: 'pro' })).toBe(true);
+    expect(limitsDevices({ plan: 'free', proUntil: NOW + DAY_MS, trialStartedAt: NOW })).toBe(false);
+    expect(limitsDevices({ plan: 'free' })).toBe(false);
   });
 });
