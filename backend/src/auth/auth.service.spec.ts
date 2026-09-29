@@ -11,6 +11,7 @@ describe('AuthService', () => {
   let telegram: { sendMessageTo: jest.Mock };
 
   beforeEach(() => {
+    process.env.TRIAL_DAYS = '0';
     users = {};
     telegram = { sendMessageTo: jest.fn(() => Promise.resolve(true)) };
     const userModel: any = {
@@ -43,9 +44,11 @@ describe('AuthService', () => {
     service = new AuthService(userModel, jwt, telegram as any, devicesStub);
   });
 
+  afterEach(() => { delete process.env.TRIAL_DAYS; });
+
   it('register: хеширует пароль и возвращает токены без hash', async () => {
     const res = await service.register('A@b.MD', 'password1', null);
-    expect(res.user).toEqual({ email: 'a@b.md', plan: 'free', cloudEnabled: false });
+    expect(res.user).toEqual({ email: 'a@b.md', plan: 'free', trialEndsAt: null, cloudEnabled: false });
     expect(res.accessToken).toBeTruthy();
     expect(res.refreshToken).toBeTruthy();
     expect(users['a@b.md'].passwordHash).not.toBe('password1');
@@ -182,6 +185,71 @@ describe('AuthService', () => {
   it('me: отдаёт cloudEnabled', async () => {
     await service.register('a@b.c', 'password123', null);
     users['a@b.c'].cloudEnabled = true;
-    await expect(service.me(users['a@b.c'].id)).resolves.toEqual({ email: 'a@b.c', plan: 'free', cloudEnabled: true });
+    await expect(service.me(users['a@b.c'].id)).resolves.toEqual({ email: 'a@b.c', plan: 'free', trialEndsAt: null, cloudEnabled: true });
+  });
+
+  describe('Pro trial', () => {
+    const DAY = 86_400_000;
+    beforeEach(() => { process.env.TRIAL_DAYS = '14'; });
+
+    it('register выдаёт 14 дней Pro и отдаёт trialEndsAt', async () => {
+      const before = Date.now();
+      const res = await service.register('t@b.md', 'password1', null);
+      expect(res.user.plan).toBe('pro');
+      expect(res.user.trialEndsAt).toBeGreaterThanOrEqual(before + 14 * DAY);
+      expect(users['t@b.md'].trialStartedAt).toBeGreaterThanOrEqual(before);
+    });
+
+    it('login существующего Free выдаёт триал ровно один раз', async () => {
+      process.env.TRIAL_DAYS = '0';
+      await service.register('old@b.md', 'password1', null);
+      process.env.TRIAL_DAYS = '14';
+      const first = await service.login('old@b.md', 'password1', null);
+      expect(first.user.plan).toBe('pro');
+      const startedAt = users['old@b.md'].trialStartedAt;
+      await service.login('old@b.md', 'password1', null);
+      expect(users['old@b.md'].trialStartedAt).toBe(startedAt);
+    });
+
+    it('me выдаёт триал существующему Free (так его получает открытие Settings)', async () => {
+      process.env.TRIAL_DAYS = '0';
+      await service.register('me@b.md', 'password1', null);
+      process.env.TRIAL_DAYS = '14';
+      const me = await service.me('u-me@b.md');
+      expect(me.plan).toBe('pro');
+      expect(me.trialEndsAt).toEqual(expect.any(Number));
+    });
+
+    it('после «→ free» в админке (pro_until сброшен) триал заново не выдаётся', async () => {
+      await service.register('cut@b.md', 'password1', null);
+      users['cut@b.md'].proUntil = null; // так делает AdminService.setPlan('free')
+      const me = await service.me('u-cut@b.md');
+      expect(me.plan).toBe('free');
+      expect(users['cut@b.md'].proUntil).toBeNull();
+    });
+
+    it('истёкший триал: plan free, trialEndsAt в прошлом (BIGINT строкой)', async () => {
+      await service.register('exp@b.md', 'password1', null);
+      users['exp@b.md'].proUntil = String(Date.now() - DAY);
+      const me = await service.me('u-exp@b.md');
+      expect(me).toMatchObject({ plan: 'free', trialEndsAt: expect.any(Number) });
+      expect(me.trialEndsAt).toBeLessThan(Date.now());
+    });
+
+    it('TRIAL_DAYS=0 — новым триал не выдаётся', async () => {
+      process.env.TRIAL_DAYS = '0';
+      const res = await service.register('z@b.md', 'password1', null);
+      expect(res.user).toMatchObject({ plan: 'free', trialEndsAt: null });
+    });
+
+    it('постоянный Pro не получает триал', async () => {
+      process.env.TRIAL_DAYS = '0';
+      await service.register('p@b.md', 'password1', null);
+      users['p@b.md'].plan = 'pro';
+      process.env.TRIAL_DAYS = '14';
+      const me = await service.me('u-p@b.md');
+      expect(me).toMatchObject({ plan: 'pro', trialEndsAt: null });
+      expect(users['p@b.md'].trialStartedAt).toBeUndefined();
+    });
   });
 });

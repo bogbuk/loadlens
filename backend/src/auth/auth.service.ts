@@ -7,6 +7,7 @@ import { parseAdminEmails } from './admin-emails';
 import { TelegramService } from '../telegram/telegram.service';
 import { genResetCode, sha256 } from './reset-code';
 import { DevicesService } from './devices.service';
+import { effectivePlan, grantTrial, trialDays, trialEndsAt } from '../users/plan';
 
 const ACCESS_TTL = '15m';
 const REFRESH_TTL = '7d';
@@ -30,7 +31,20 @@ export class AuthService {
     };
   }
 
-  private publicUser(u: User) { return { email: u.email, plan: u.plan, cloudEnabled: !!u.cloudEnabled }; }
+  // plan — эффективный (активный триал = 'pro'): старые сборки расширения видят Pro без правок.
+  private publicUser(u: User) {
+    return { email: u.email, plan: effectivePlan(u, Date.now()), trialEndsAt: trialEndsAt(u), cloudEnabled: !!u.cloudEnabled };
+  }
+
+  // Триал Pro — один раз на аккаунт: новым при регистрации, существующим Free — при следующем
+  // login/refresh/me (расширение зовёт me при открытии Settings). TRIAL_DAYS=0 — не выдаём.
+  private async ensureTrial(user: User): Promise<void> {
+    const patch = grantTrial(user, Date.now(), trialDays(process.env.TRIAL_DAYS));
+    if (!patch) return;
+    user.proUntil = patch.proUntil;
+    user.trialStartedAt = patch.trialStartedAt;
+    await user.save();
+  }
 
   async register(emailRaw: string, password: string, clientId: string | null) {
     const email = emailRaw.trim().toLowerCase();
@@ -38,6 +52,7 @@ export class AuthService {
       throw new ConflictException('email is already registered');
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await this.userModel.create({ email, passwordHash });
+    await this.ensureTrial(user);
     await this.devices.registerOnAuth(user, clientId);
     return { ...(await this.tokens(user)), user: this.publicUser(user) };
   }
@@ -53,6 +68,7 @@ export class AuthService {
       user.role = 'admin';
       await this.userModel.update({ role: 'admin' }, { where: { email } });
     }
+    await this.ensureTrial(user);
     await this.devices.registerOnAuth(user, clientId);
     return { ...(await this.tokens(user)), user: this.publicUser(user) };
   }
@@ -66,6 +82,7 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('user not found');
     if (user.blocked) throw new ForbiddenException('account is blocked');
     if ((payload.tv ?? 0) !== user.tokenVersion) throw new UnauthorizedException('session is no longer valid');
+    await this.ensureTrial(user);
     await this.devices.verifyOnRefresh(user, clientId);
     return { ...(await this.tokens(user)), user: this.publicUser(user) };
   }
@@ -73,6 +90,7 @@ export class AuthService {
   async me(userId: string) {
     const user = await this.userModel.findByPk(userId);
     if (!user) throw new UnauthorizedException('user not found');
+    await this.ensureTrial(user);
     return this.publicUser(user);
   }
 
