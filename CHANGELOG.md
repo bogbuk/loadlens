@@ -4,6 +4,8 @@ All notable user-facing changes to the LoadLens browser extension.
 
 ## [Unreleased]
 
+## 0.9.2 — 2026-09-29
+
 ### Fixed
 - **Saving Settings no longer undoes the Loads tab.** Save now writes only what you changed on the Settings tab, so a sort order or auto-refresh switch you picked on the Loads tab stays put. The Settings tab also picks up changes made elsewhere when you open it.
 - **Account, plan and Telegram status stay current.** The Settings tab refreshes them when you open it and when you sign in or out in another window; after Connect Telegram it shows "linked ✓" as soon as you press Start in the bot.
