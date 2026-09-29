@@ -9,6 +9,7 @@ Free-аккаунт (редактор скрыт). Скриншоты и про�
 """
 import hashlib
 import json
+import time
 import sys
 import tempfile
 from pathlib import Path
@@ -23,6 +24,7 @@ BACKEND = "https://loadlens.krait.studio"  # LL_BACKEND по умолчанию 
 
 errors, console, results = [], [], []
 tg_linked = True   # мок /telegram/status; сценарий Free-без-привязки переключает в False
+me_trial = None   # мок /auth/me: trialEndsAt
 me_plan = "pro"    # мок /auth/me: попап освежает кэш плана из сети, иначе сценарий Free «съезжает» в Pro
 
 
@@ -47,7 +49,7 @@ def mock(route, request):
     elif "/drivers" in url:
         body = []
     elif "/auth/me" in url:
-        body = {"email": "demo@loadlens.test", "plan": me_plan}
+        body = {"email": "demo@loadlens.test", "plan": me_plan, "trialEndsAt": me_trial}
     elif "/rates" in url:
         body = {"diesel": 3.95}
     route.fulfill(status=200, content_type="application/json", body=json.dumps(body))
@@ -57,13 +59,13 @@ def stored_rules(page):
     return page.evaluate("() => chrome.storage.local.get('ll_alert_rules').then(r => r.ll_alert_rules)")
 
 
-def set_auth(page, plan, email):
-    global me_plan
-    me_plan = plan
+def set_auth(page, plan, email, trial=None):
+    global me_plan, me_trial
+    me_plan, me_trial = plan, trial
     page.evaluate(
-        "([plan, email]) => chrome.storage.local.set({ ll_auth: { email, plan, planTs: Date.now(),"
+        "([plan, email, trial]) => chrome.storage.local.set({ ll_auth: { email, plan, trialEndsAt: trial, planTs: Date.now(),"
         " accessToken: 'test-access', refreshToken: 'test-refresh' }, ll_alert_rules: null })",
-        [plan, email],
+        [plan, email, trial],
     )
 
 
@@ -201,6 +203,26 @@ with sync_playwright() as p:
     check("free: Connect Telegram доступен и объясняет сброс пароля",
           "Connect Telegram" in body and "password reset code" in body)
     page.screenshot(path=str(OUT / "06-free-unlinked.png"), full_page=True)
+
+    # ---- Pro trial: активный — бейдж PRO TRIAL и остаток дней; закончился — FREE и «trial has ended» ----
+    tg_linked = True
+    day = 86400000
+    set_auth(page, "pro", "trial@loadlens.test", int(time.time() * 1000) + 9 * day - 60000)
+    page.reload()
+    page.wait_for_load_state("networkidle")
+    open_settings(page)
+    page.wait_for_selector("text=PRO TRIAL", timeout=10000)
+    body = page.inner_text("body")
+    check("trial: бейдж PRO TRIAL, 9 days left, Keep Pro", "9 days left" in body and "Keep Pro" in body)
+    page.screenshot(path=str(OUT / "07-trial-active.png"), full_page=True)
+
+    set_auth(page, "free", "trial@loadlens.test", int(time.time() * 1000) - day)
+    page.reload()
+    page.wait_for_load_state("networkidle")
+    open_settings(page)
+    page.wait_for_selector("text=Your Pro trial has ended", timeout=10000)
+    check("trial ended: FREE и ссылка на продление", "Email us to keep Pro" in page.inner_text("body"))
+    page.screenshot(path=str(OUT / "08-trial-ended.png"), full_page=True)
 
     # ---- Save пишет только правленное здесь: сортировку/авто-пилот с вкладки Loads не откатывает ----
     page.reload()

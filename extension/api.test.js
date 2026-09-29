@@ -89,7 +89,7 @@ test("clientId: в cloud mode — cloud:<instanceId>, ll_cid не создаёт
 test("getMe: кэш из ll_auth отдаёт cloudEnabled", async () => {
   const store = { ll_auth: { accessToken: "a", refreshToken: "r", email: "x@y.z", plan: "pro", cloudEnabled: true, planTs: Date.now() } };
   globalThis.chrome = fakeChrome(store);
-  assert.deepStrictEqual(await LLAPI.getMe(), { email: "x@y.z", plan: "pro", cloudEnabled: true });
+  assert.deepStrictEqual(await LLAPI.getMe(), { email: "x@y.z", plan: "pro", trialEndsAt: null, cloudEnabled: true });
 });
 
 test("login: cloudEnabled переживает вход и отдаётся из кэша getMe", async () => {
@@ -128,4 +128,42 @@ test("cloudHeartbeat: без логина и при сетевой ошибке 
   globalThis.fetch = async () => { throw new Error("offline"); };
   try { await assert.doesNotReject(LLAPI.cloudHeartbeat({ state: "ok", loadsSeen: 1, lastFindLoadsAt: 1 })); }
   finally { globalThis.fetch = origFetch; }
+});
+
+test("getMe: кэш свежий (<24ч), но триал уже истёк — идём на сервер", async () => {
+  const now = Date.now();
+  const store = { ll_auth: { accessToken: "a", refreshToken: "r", email: "x@y.z", plan: "pro",
+    trialEndsAt: now - 60000, planTs: now - 3600000 } };
+  globalThis.chrome = fakeChrome(store);
+  const origFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => { calls++; return { ok: true, status: 200,
+    json: async () => ({ email: "x@y.z", plan: "free", trialEndsAt: now - 60000, cloudEnabled: false }) }; };
+  try {
+    const me = await LLAPI.getMe();
+    assert.strictEqual(calls, 1);
+    assert.strictEqual(me.plan, "free");
+    assert.strictEqual(me.trialEndsAt, now - 60000);
+    assert.strictEqual(store.ll_auth.plan, "free");
+  } finally { globalThis.fetch = origFetch; }
+});
+
+test("getMe: триал ещё идёт — кэш используется, сеть не трогаем", async () => {
+  const now = Date.now();
+  globalThis.chrome = fakeChrome({ ll_auth: { accessToken: "a", refreshToken: "r", email: "x@y.z", plan: "pro",
+    trialEndsAt: now + 86400000, planTs: now - 3600000 } });
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () => { throw new Error("no network expected"); };
+  try { assert.strictEqual((await LLAPI.getMe()).trialEndsAt, now + 86400000); }
+  finally { globalThis.fetch = origFetch; }
+});
+
+test("login: trialEndsAt сохраняется в ll_auth", async () => {
+  const store = {};
+  globalThis.chrome = fakeChrome(store);
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({ ok: true, status: 200,
+    json: async () => ({ accessToken: "a", refreshToken: "r", user: { email: "x@y.z", plan: "pro", trialEndsAt: 123, cloudEnabled: false } }) });
+  try { await LLAPI.login("x@y.z", "pw"); } finally { globalThis.fetch = origFetch; }
+  assert.strictEqual(store.ll_auth.trialEndsAt, 123);
 });

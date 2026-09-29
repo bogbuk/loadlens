@@ -179,7 +179,8 @@ const LLAPI = (() => {
     // секция Cloud в попапе пропадала бы на сутки сразу после входа.
     await setAuth({ accessToken: data.accessToken, refreshToken: data.refreshToken,
                     email: data.user.email, plan: data.user.plan,
-                    cloudEnabled: !!data.user.cloudEnabled, planTs: Date.now() });
+                    cloudEnabled: !!data.user.cloudEnabled, trialEndsAt: data.user.trialEndsAt ?? null,
+                    planTs: Date.now() });
     return data.user;
   }
   const register = (email, password) => credsCall("register", email, password);
@@ -212,11 +213,19 @@ const LLAPI = (() => {
     return ll_signout || "";
   }
 
+  // Кэш плана свежий до PLAN_TTL, но не дольше конца триала: в момент окончания идём на сервер,
+  // иначе расширение сутки показывало бы Pro, а бэкенд уже отвечал бы 403.
+  function planFresh(auth, now) {
+    if (!auth.planTs || now - auth.planTs >= PLAN_TTL) return false;
+    const end = auth.trialEndsAt;
+    return !(end != null && auth.planTs < end && end <= now);
+  }
+  const meFrom = (a) => ({ email: a.email, plan: a.plan, trialEndsAt: a.trialEndsAt ?? null, cloudEnabled: !!a.cloudEnabled });
+
   async function getMe(force) {
     let auth = await getAuth();
     if (!auth) return null;
-    if (!force && auth.planTs && Date.now() - auth.planTs < PLAN_TTL)
-      return { email: auth.email, plan: auth.plan, cloudEnabled: !!auth.cloudEnabled };
+    if (!force && planFresh(auth, Date.now())) return meFrom(auth);
     try {
       let res = await fetch(`${BASE}/auth/me`, { headers: { Authorization: `Bearer ${auth.accessToken}` } });
       if (res.status === 401) {
@@ -224,12 +233,15 @@ const LLAPI = (() => {
         if (!auth) return null;
         res = await fetch(`${BASE}/auth/me`, { headers: { Authorization: `Bearer ${auth.accessToken}` } });
       }
-      if (!res.ok) return { email: auth.email, plan: auth.plan, cloudEnabled: !!auth.cloudEnabled };
+      if (!res.ok) return meFrom(auth);
       const user = await res.json();
-      await setAuth({ ...auth, email: user.email, plan: user.plan, cloudEnabled: !!user.cloudEnabled, planTs: Date.now() });
-      return { email: user.email, plan: user.plan, cloudEnabled: !!user.cloudEnabled };
-    } catch { return { email: auth.email, plan: auth.plan, cloudEnabled: !!auth.cloudEnabled }; }
+      const next = { ...auth, email: user.email, plan: user.plan, trialEndsAt: user.trialEndsAt ?? null,
+                     cloudEnabled: !!user.cloudEnabled, planTs: Date.now() };
+      await setAuth(next);
+      return meFrom(next);
+    } catch { return meFrom(auth); }
   }
+
 
   // ---- authed fetch с авто-refresh (как getMe). Возвращает Response или null (не залогинен). ----
   async function authedFetch(path, opts = {}) {

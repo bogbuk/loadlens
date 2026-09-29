@@ -212,13 +212,23 @@ function readTargets() {
 const round1 = (n) => Math.round(n * 10) / 10;
 
 // ---- аккаунт (копия паттерна PriceLens) ----
+function planNote(pv, email) {
+  if (pv.note === "trial")
+    return '<div class="note get-pro">Pro trial: ' + pv.daysLeft + (pv.daysLeft === 1 ? " day" : " days") + " left. " +
+      contactLink("pro", email, "Keep Pro") + "</div>";
+  if (pv.note === "ended")
+    return '<div class="note get-pro">Your Pro trial has ended. ' + contactLink("pro", email, "Email us to keep Pro") + "</div>";
+  if (pv.note === "upsell")
+    return '<div class="note get-pro">Get Pro: fleet, Telegram alerts, full get-out chains, CSV. ' +
+      contactLink("pro", email, "Email us") + " and we'll upgrade this account.</div>";
+  return "";
+}
 const accEl = document.getElementById("account");
 function accRow(user) {
+  const pv = LLPLANVIEW.view(user, Date.now());
   accEl.innerHTML = '<div class="acc"><div class="who"><span>' + escA(user.email) +
-    '</span><span class="plan ' + (user.plan === "pro" ? "pro" : "") + '">' +
-    (user.plan === "pro" ? "PRO" : "FREE") + "</span></div>" +
-    (user.plan === "pro" ? "" : '<div class="note get-pro">Get Pro: fleet, Telegram alerts, full get-out chains, CSV. ' +
-      contactLink("pro", user.email, "Email us") + " and we'll upgrade this account.</div>") +
+    '</span><span class="plan ' + (pv.pro ? "pro" : "") + '">' + pv.badge + "</span></div>" +
+        planNote(pv, user.email) +
     '<button id="acc-pwd-btn">Change password</button>' +
     '<div id="acc-pwd"></div>' +
     '<button id="acc-out">Sign out</button>' +
@@ -665,7 +675,7 @@ chrome.storage.onChanged.addListener(async (ch) => {
 // аккаунта в другом окне иначе не доходили до Settings. Перерисовываем блоки аккаунта, только когда
 // сменился сам аккаунт (email/план/облако): полная перерисовка стёрла бы недописанное правило или водителя.
 let shownAcct;                    // undefined — ещё не рисовали; null — аноним
-const acctKey = (u) => (u ? [u.email, u.plan, !!u.cloudEnabled].join("|") : "");
+const acctKey = (u) => (u ? [u.email, u.plan, !!u.cloudEnabled, u.trialEndsAt ?? ""].join("|") : "");
 async function renderAccount(u) {
   shownAcct = acctKey(u);
   if (u) accRow(u); else accForm(await LLAPI.takeSignoutMessage());
