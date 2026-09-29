@@ -33,6 +33,8 @@ describe('AdminService', () => {
         let list = Object.values(users) as any[];
         if (where?.plan) list = list.filter((u) => u.plan === where.plan);
         if (where?.blocked !== undefined) list = list.filter((u) => u.blocked === where.blocked);
+        const gt = where?.proUntil?.[Op.gt];
+        if (gt !== undefined) list = list.filter((u) => u.proUntil != null && Number(u.proUntil) > gt);
         return Promise.resolve(list.length);
       }),
       // sum по deviceEvictions для сводки вытеснений
@@ -144,5 +146,28 @@ describe('AdminService', () => {
     expect(v).toEqual(expect.objectContaining({ cloudEnabled: true, cloudStatus: 'ok', cloudHeartbeatAt: hb }));
     const free = (await service.listUsers()).find((u) => u.email === 'a@b.md')!;
     expect(free).toEqual(expect.objectContaining({ cloudEnabled: false, cloudStatus: null, cloudHeartbeatAt: null }));
+  });
+
+  it('listUsers: trialEndsAt для Free на триале, null для остальных', async () => {
+    const end = Date.now() + 86_400_000;
+    users['a@b.md'].trialStartedAt = String(Date.now());
+    users['a@b.md'].proUntil = String(end);
+    const list = await service.listUsers();
+    expect(list.find((u) => u.email === 'a@b.md')!.trialEndsAt).toBe(end);
+    expect(list.find((u) => u.email === 'pro@b.md')!.trialEndsAt).toBeNull();
+  });
+
+  it('stats: trialUsers — Free с активным pro_until', async () => {
+    users['a@b.md'].trialStartedAt = String(Date.now());
+    users['a@b.md'].proUntil = String(Date.now() + 86_400_000);
+    expect((await service.stats()).trialUsers).toBe(1);
+  });
+
+  it('setPlan(free) обрывает активный триал, метку выдачи оставляет', async () => {
+    users['a@b.md'].trialStartedAt = 123;
+    users['a@b.md'].proUntil = Date.now() + 86_400_000;
+    await service.setPlan('a@b.md', 'free');
+    expect(users['a@b.md'].proUntil).toBeNull();
+    expect(users['a@b.md'].trialStartedAt).toBe(123);
   });
 });

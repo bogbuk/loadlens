@@ -6,10 +6,12 @@ import { LanesService } from '../lanes/lanes.service';
 import { UserDevice } from './user-device.model';
 import { CloudInstance } from '../cloud/cloud-instance.model';
 import { CloudService } from '../cloud/cloud.service';
+import { trialEndsAt } from '../users/plan';
 
 export interface AdminUserView {
   email: string;
   plan: 'free' | 'pro';
+  trialEndsAt: number | null;
   role: 'user' | 'admin';
   blocked: boolean;
   telegramLinked: boolean;
@@ -36,6 +38,7 @@ export class AdminService {
     return {
       email: u.email,
       plan: u.plan,
+      trialEndsAt: trialEndsAt(u),
       role: u.role,
       blocked: u.blocked,
       telegramLinked: !!u.telegramChatId,
@@ -66,14 +69,15 @@ export class AdminService {
   }
 
   async stats() {
-    const [users, proUsers, blockedUsers, evictions, overview] = await Promise.all([
+    const [users, proUsers, trialUsers, blockedUsers, evictions, overview] = await Promise.all([
       this.userModel.count(),
       this.userModel.count({ where: { plan: 'pro' } }),
+      this.userModel.count({ where: { plan: 'free', proUntil: { [Op.gt]: Date.now() } } }),
       this.userModel.count({ where: { blocked: true } }),
       this.userModel.sum('deviceEvictions'),
       this.lanes.overview(),
     ]);
-    return { users, proUsers, blockedUsers, evictions: evictions ?? 0, ...overview };
+    return { users, proUsers, trialUsers, blockedUsers, evictions: evictions ?? 0, ...overview };
   }
 
   async setPlan(emailRaw: string, plan: 'free' | 'pro') {
@@ -81,6 +85,8 @@ export class AdminService {
     const user = await this.userModel.findOne({ where: { email } });
     if (!user) throw new NotFoundException('user not found');
     user.plan = plan;
+    // → free обрывает активный триал; trial_started_at остаётся, так что повторно он не выдастся.
+    if (plan === 'free') user.proUntil = null;
     await user.save();
     return { email: user.email, plan: user.plan };
   }

@@ -128,7 +128,7 @@
 
     function renderCards(s) {
       $('cards').innerHTML = [
-        ['Пользователей', s.users ?? '—'], ['Pro', s.proUsers ?? '—'], ['Заблокировано', s.blockedUsers ?? '—'],
+        ['Пользователей', s.users ?? '—'], ['Pro', s.proUsers ?? '—'], ['На триале', s.trialUsers ?? '—'], ['Заблокировано', s.blockedUsers ?? '—'],
         ['Вытеснений', s.evictions ?? '—'],
         ['Грузов (7д)', s.loads ?? '—'], ['Lane', s.lanes ?? '—'], ['Рынков', s.markets ?? '—'],
         ['Медиана RPM', s.medianRpm != null ? money(s.medianRpm) + '/mi' : '—'],
@@ -143,7 +143,10 @@
         tr.innerHTML = `
           <td>${esc(u.email)}</td>
           <td>${u.role === 'admin' ? '<span class="badge admin">admin</span>' : 'user'}</td>
-          <td>${u.plan === 'pro' ? '<span class="badge pro">pro</span>' : 'free'}</td>
+          <td>${u.plan === 'pro' ? '<span class="badge pro">pro</span>'
+            : u.trialEndsAt && u.trialEndsAt > Date.now()
+              ? '<span class="badge pro">trial → ' + new Date(u.trialEndsAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + '</span>'
+              : u.trialEndsAt ? 'free · trial ended' : 'free'}</td>
           <td>${u.devices ?? 0}</td>
           <td${u.deviceEvictions > 0 ? ' style="color:#c00;font-weight:600"' : ''}>${u.deviceEvictions ?? 0}</td>
           <td>${u.blocked ? '<span class="badge blocked">blocked</span>' : 'active'}</td>
