@@ -206,7 +206,7 @@ Things to know:
 
 ## 10. Broker reports
 
-Click the community chip on any load to report your experience with that broker: Paid, Slow pay, Flaked / canceled, Double-broker. Reports are tied to the MC number. Each user has one vote per broker and can change it later. Everyone on LoadLens sees the aggregate (good, mixed, bad, thin) next to DAT's own credit score.
+Click the community chip on any load to report your experience with that broker: Paid, Slow pay, Flaked / canceled, Double-broker. Reports are tied to the MC number. Each user has one vote per broker and can change it later. Pro users see the aggregate (good, mixed, bad, thin) next to DAT's own credit score; anyone can report.
 
 ---
 
@@ -221,6 +221,8 @@ Settings tab, at the top.
 ---
 
 ## 12. Free vs Pro
+
+Every account gets 14 days of Pro once, starting when you sign up (existing free accounts: the next time you open Settings). The Settings tab shows "PRO TRIAL" and the days left; the Telegram bot reminds you two days before it ends. To keep Pro, email hello@krait.studio.
 
 | Feature | Free | Pro |
 |---|---|---|

@@ -217,6 +217,13 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   (`plan==='pro'`); иначе 403. POST-инжест (`POST /loads`, `POST /brokers/reports`) — открыт (крауд
   пополняется от всех). Расширение шлёт `Authorization: Bearer` на read-вызовах; Free/аноним → 403 →
   локальный скоринг без крауд-данных. Ключи только в ENV, реальные значения не коммитить.
+- **Pro trial (с 2026-09-29)** — `backend/src/users/plan.ts`: эффективный план = `plan==='pro'` ИЛИ
+  `pro_until > now`; **`isPro(user, now)` — единственная проверка Pro** на бэкенде (гарды, лимит
+  устройств). Триал (`TRIAL_DAYS`, дефолт 14, `0` = не выдавать) выдаёт `AuthService.ensureTrial` в
+  register/login/refresh/me один раз (`trial_started_at`); `→ free` в админке обрывает его (`pro_until=NULL`).
+  `publicUser` отдаёт эффективный `plan` + `trialEndsAt`; кэш плана расширения не живёт дольше конца
+  триала. `TrialModule` раз в час шлёт DM за 2 дня и в день окончания (`trial_notice` 0/1/2, только при
+  успешной отправке). BIGINT из pg — строка, всегда `Number()`. Спека — `docs/superpowers/specs/2026-09-29-pro-trial-design.md`.
 - **Парк водителей** (`backend/drivers` + `extension/drivers.js`): диспетчер ведёт несколько
   водителей (имя/рынок/HOS/equipment/costPerMile/homeBase/status), профили на бэкенде под JWT
   (скоуп `userId`, каскад от users). **Гейт Pro** (`drivers/pro.guard.ts` — `JwtAuthGuard, ProGuard`):
@@ -301,7 +308,7 @@ coolify --context yoolip999 app deployments list hiooby9kgzj8i79ycl33drec
 
 Env в Coolify: `DATABASE_URL`, `JWT_SECRET`, `ADMIN_EMAIL` (список email админов через запятую), `PORT`. Опц. `EIA_API_KEY` (без него дизель =
 фолбэк $3.95), `OSRM_URL` (дефолт публичный OSRM), `API_KEYS` (список валидных X-API-Key через запятую
-для Premium-чтения; пусто → читает только Pro-JWT). Для Telegram-алертов: `TELEGRAM_BOT_TOKEN` +
+для Premium-чтения; пусто → читает только Pro-JWT), `TRIAL_DAYS` (дней Pro-триала на аккаунт; пусто → 14, `0` → новые не выдаются). Для Telegram-алертов: `TELEGRAM_BOT_TOKEN` +
 `TELEGRAM_BOT_USERNAME` (deep-link) + `TELEGRAM_WEBHOOK_SECRET` (без них фича выключена). После деплоя
 один раз зарегистрировать вебхук: `setWebhook` на `https://loadlens.krait.studio/api/v1/telegram/webhook/<secret>`.
 

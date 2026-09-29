@@ -4,6 +4,9 @@ All notable user-facing changes to the LoadLens browser extension.
 
 ## [Unreleased]
 
+### Added
+- **14 days of Pro, free.** Every account gets a one-time Pro trial: new accounts when they sign up, existing free accounts the next time they open Settings. Settings shows "PRO TRIAL" and how many days are left, and the Telegram bot reminds you two days before the trial ends.
+
 ## 0.9.3 — 2026-09-29
 
 ### Added
