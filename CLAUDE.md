@@ -64,8 +64,10 @@ backend/src/                NestJS, synchronize:true (миграций нет)
                             admin/* (JwtAuthGuard+AdminRoleGuard, role из ADMIN_EMAIL): GET users/stats, PATCH users/:email/plan|block|cloud. Страница /admin.html
   cloud/                    Coolify-оркестрация облачного браузера: cloud_instances (модель), CoolifyService (API-клиент+compose), CloudService (enable/disable/status/screen/heartbeat), watchdog-cron
   shared/markets.seed.json  ★ копия seed для Docker-контекста backend/ (генерит sync:shared)
-backend/public/             статика (ServeStatic): index.html — лендинг EN/RU/RO (EN в разметке, RU/RO в словаре I18N,
-                            синхрон ключей — scripts/landing-i18n.test.js), stats.html — дашборд lane'ов, privacy.html, admin.html
+backend/public/             статика (ServeStatic): index.html — лендинг EN (правится руками); ru/ ro/index.html + sitemap.xml
+                            + SEO-блок <head> (canonical/hreflang/og/JSON-LD) ГЕНЕРИТ `npm run build:landing` из index.html +
+                            landing/i18n.json (руками не править; устаревание ловит scripts/landing-i18n.test.js).
+                            robots.txt, og.png; stats.html — дашборд lane'ов, privacy.html, admin.html (noindex)
 shared/                     КАНОН: load.model.js, scoring.js, planner.js, email-template.js, markets.seed.json, hos-calculator.js
 ```
 
@@ -75,6 +77,7 @@ shared/                     КАНОН: load.model.js, scoring.js, planner.js, e
 
 ```bash
 npm test                 # sync:shared + тесты shared (17) + extension (10)
+npm run build:landing    # пересобрать /ru/ /ro/, sitemap и SEO-блок лендинга — ПОСЛЕ правки index.html или landing/i18n.json
 npm run sync:shared      # пересобрать extension/vendor/* и backend/shared/* из shared/ — ПОСЛЕ любой правки shared/*.js
 npm run e2e:popup        # Playwright-прогон редактора правил алертов на вкладке Settings боковой панели (popup.js без юнит-тестов); нужен playwright + chromium
 npm run package:ext      # dist/loadlens-extension-<версия>.zip (список файлов выводится из manifest)

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://loadlens.krait.studio/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://loadlens.krait.studio/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://loadlens.krait.studio/ru/"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://loadlens.krait.studio/ro/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://loadlens.krait.studio/"/>
+  </url>
+  <url>
+    <loc>https://loadlens.krait.studio/ru/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://loadlens.krait.studio/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://loadlens.krait.studio/ru/"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://loadlens.krait.studio/ro/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://loadlens.krait.studio/"/>
+  </url>
+  <url>
+    <loc>https://loadlens.krait.studio/ro/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://loadlens.krait.studio/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://loadlens.krait.studio/ru/"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://loadlens.krait.studio/ro/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://loadlens.krait.studio/"/>
+  </url>
+  <url>
+    <loc>https://loadlens.krait.studio/stats.html</loc>
+  </url>
+  <url>
+    <loc>https://loadlens.krait.studio/privacy.html</loc>
+  </url>
+</urlset>

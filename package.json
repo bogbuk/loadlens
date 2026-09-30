@@ -5,11 +5,12 @@
   "description": "SaaS Chrome-расширение поверх DAT One / Truckstop: скоринг выгодности грузов, HOS-бейдж и multi-leg «get out» планировщик цепочек. Бэкенд — общая крауд-база ставок по lane.",
   "scripts": {
     "sync:shared": "node scripts/sync-shared.js",
+    "build:landing": "node scripts/build-landing.js",
     "test:shared": "node --test shared/*.test.js",
     "test:ext": "node --test extension/*.test.js extension/adapters/*.test.js extension/panel/*.test.js",
     "check:lang": "node scripts/check-lang.js",
     "test:scripts": "node --test scripts/*.test.js",
-    "test": "npm run sync:shared && npm run check:lang && npm run test:scripts && npm run test:shared && npm run test:ext",
+    "test": "npm run sync:shared && npm run build:landing && npm run check:lang && npm run test:scripts && npm run test:shared && npm run test:ext",
     "package:ext": "node scripts/package-ext.js",
     "publish:ext": "node scripts/publish-ext.js",
     "e2e:popup": "python3 scripts/popup-rules.e2e.py"

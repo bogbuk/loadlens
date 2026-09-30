@@ -1,13 +1,15 @@
-/* Лендинг backend/public/index.html: EN живёт в разметке (data-i18n), RU/RO — в словаре I18N.
-   Тест держит их в синхроне: каждый ключ разметки переведён, в словаре нет мусорных ключей. */
+/* Лендинг backend/public/index.html: EN живёт в разметке (data-i18n), RU/RO — в landing/i18n.json,
+   страницы /ru/ /ro/ собирает scripts/build-landing.js. Тест держит их в синхроне: каждый ключ
+   разметки переведён, в словаре нет мусорных ключей, сгенерированные файлы не устарели. */
 const test = require("node:test");
 const assert = require("node:assert");
 const fs = require("node:fs");
 const path = require("node:path");
 
 const html = fs.readFileSync(path.join(__dirname, "..", "backend", "public", "index.html"), "utf8");
-const src = html.split("/*I18N-START*/")[1].split("/*I18N-END*/")[0];
-const I18N = new Function("return " + src)();
+const I18N = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "landing", "i18n.json"), "utf8"));
+const { build, BASE, LANGS } = require("./build-landing");
+const built = build();
 // ключи, которые ставит скрипт, а не разметка: <title>/описание и темы писем
 const SCRIPT_KEYS = ["meta.title", "meta.desc", "mail.pro", "mail.question"];
 const markup = new Set([...html.matchAll(/data-i18n="([^"]+)"/g)].map((m) => m[1]));
@@ -54,4 +56,37 @@ test("цель install_click: у каждой кнопки установки с
   assert.deepStrictEqual(places.sort(), ["final", "hero", "pricing"]);
   assert.match(html, /reachGoal', 'install_click'/);
   assert.match(html, /typeof window\.ym === "function"/);
+});
+
+test("сгенерированные страницы и sitemap не устарели (иначе: npm run build:landing)", () => {
+  for (const [rel, content] of Object.entries(built)) {
+    const disk = fs.readFileSync(path.join(__dirname, "..", "backend", "public", rel), "utf8");
+    assert.ok(disk === content, `${rel} устарел`);
+  }
+});
+
+for (const [lang, { path: p }] of Object.entries(LANGS)) {
+  const page = built[path.join(p.slice(1), "index.html")];
+  test(`${lang}: lang, canonical на себя, hreflang на все версии, активный язык в шапке`, () => {
+    assert.match(page, new RegExp(`<html lang="${lang}">`));
+    assert.ok(page.includes(`<link rel="canonical" href="${BASE + p}" />`));
+    for (const [l, v] of Object.entries(LANGS)) assert.ok(page.includes(`hreflang="${l}" href="${BASE + v.path}"`));
+    assert.ok(page.includes(`hreflang="x-default" href="${BASE}/"`));
+    assert.match(page, new RegExp(`data-lang="${lang}" aria-current="page"`));
+    assert.strictEqual((page.match(/ aria-current="page">/g) || []).length, 1);
+  });
+  if (lang !== "en") test(`${lang}: текст переведён в разметке, а не скриптом`, () => {
+    assert.ok(page.includes(`>${I18N[lang]["hero.title"]}</h1>`));
+    assert.ok(!page.includes(">Know what a load really pays"));
+    assert.ok(page.includes(`<title>${I18N[lang]["meta.title"]}</title>`));
+  });
+}
+
+test("robots.txt указывает на sitemap и закрывает admin/api; admin.html — noindex", () => {
+  const pub = path.join(__dirname, "..", "backend", "public");
+  const robots = fs.readFileSync(path.join(pub, "robots.txt"), "utf8");
+  assert.ok(robots.includes(`Sitemap: ${BASE}/sitemap.xml`));
+  assert.match(robots, /Disallow: \/admin\.html/);
+  assert.match(robots, /Disallow: \/api\//);
+  assert.match(fs.readFileSync(path.join(pub, "admin.html"), "utf8"), /<meta name="robots" content="noindex/);
 });
