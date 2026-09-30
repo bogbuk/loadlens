@@ -7,6 +7,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const html = fs.readFileSync(path.join(__dirname, "..", "backend", "public", "index.html"), "utf8");
+const PUB = path.join(__dirname, "..", "backend", "public");
+const siteJs = fs.readFileSync(path.join(PUB, "js", "site.js"), "utf8");
 const I18N = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "landing", "i18n.json"), "utf8"));
 const { build, BASE, LANGS } = require("./build-landing");
 const built = build();
@@ -44,7 +46,8 @@ test("Метрика грузится только после согласия: 
   assert.doesNotMatch(html, /mc\.yandex\.ru\/watch\//, "пиксель noscript шлёт хит без согласия");
   const head = html.split("</head>")[0];
   assert.doesNotMatch(head, /ym\(113205805, 'init'/, "init в <head> срабатывает до согласия");
-  assert.match(html, /function loadMetrika\(\)/);
+  assert.match(siteJs, /function loadMetrika\(\)/);
+  assert.match(html, /<script src="\/js\/site\.js"><\/script>\s*<\/body>/);
   assert.match(html, /id="consent"[^>]*hidden/);
   assert.match(html, /id="ck-yes"/);
   assert.match(html, /id="ck-no"/);
@@ -54,8 +57,8 @@ test("Метрика грузится только после согласия: 
 test("цель install_click: у каждой кнопки установки своё место, reachGoal только при загруженной Метрике", () => {
   const places = [...html.matchAll(/<a [^>]*data-cws="([^"]*)"/g)].map((m) => m[1]);
   assert.deepStrictEqual(places.sort(), ["final", "hero", "pricing"]);
-  assert.match(html, /reachGoal', 'install_click'/);
-  assert.match(html, /typeof window\.ym === "function"/);
+  assert.match(siteJs, /reachGoal', 'install_click'/);
+  assert.match(siteJs, /typeof window\.ym === "function"/);
 });
 
 test("сгенерированные страницы и sitemap не устарели (иначе: npm run build:landing)", () => {
@@ -89,4 +92,11 @@ test("robots.txt указывает на sitemap и закрывает admin/api
   assert.match(robots, /Disallow: \/admin\.html/);
   assert.match(robots, /Disallow: \/api\//);
   assert.match(fs.readFileSync(path.join(pub, "admin.html"), "utf8"), /<meta name="robots" content="noindex/);
+});
+
+test("общие стили и редирект по языку: site.css в <head>, редирект сохраняет путь страницы", () => {
+  const head = html.split("</head>")[0];
+  assert.match(head, /<link rel="stylesheet" href="\/css\/site\.css" \/>/);
+  assert.ok(head.includes('location.replace("/" + lang + location.pathname + location.hash)'));
+  assert.ok(!/\.consent \{/.test(head), "стили баннера должны жить в site.css");
 });

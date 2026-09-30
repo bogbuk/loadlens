@@ -38,68 +38,11 @@
       var lang = q === "en" || L.indexOf(q) >= 0 ? q : s === "en" || L.indexOf(s) >= 0 ? s : n;
       if (L.indexOf(lang) < 0) return;
       document.documentElement.className = "i18n-pending";
-      location.replace("/" + lang + "/" + location.hash);
+      location.replace("/" + lang + location.pathname + location.hash);
     })();
   </script>
+  <link rel="stylesheet" href="/css/site.css" />
   <style>
-    :root {
-      --bg: #ffffff; --bg2: #f5f7fb; --ink: #0f1720; --mut: #5b6776; --line: #e2e8f0;
-      --blue: #1d4ed8; --blue-ink: #ffffff; --blue-soft: #eef2ff;
-      --green: #15803d; --green-bg: #dcfce7; --amber: #a16207; --amber-bg: #fef3c7;
-      --red: #b91c1c; --red-bg: #fee2e2; --card: #ffffff; --shadow: 0 10px 30px rgba(15, 23, 32, .08);
-    }
-    @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) {
-        --bg: #0b1017; --bg2: #111823; --ink: #e6edf5; --mut: #9aa6b2; --line: #243041;
-        --blue: #6d9bff; --blue-ink: #0b1017; --blue-soft: #16223a;
-        --green: #4ade80; --green-bg: #11301d; --amber: #fbbf24; --amber-bg: #33280c;
-        --red: #f87171; --red-bg: #3a1414; --card: #121a26; --shadow: 0 10px 30px rgba(0, 0, 0, .35);
-      }
-    }
-    :root[data-theme="dark"] {
-      --bg: #0b1017; --bg2: #111823; --ink: #e6edf5; --mut: #9aa6b2; --line: #243041;
-      --blue: #6d9bff; --blue-ink: #0b1017; --blue-soft: #16223a;
-      --green: #4ade80; --green-bg: #11301d; --amber: #fbbf24; --amber-bg: #33280c;
-      --red: #f87171; --red-bg: #3a1414; --card: #121a26; --shadow: 0 10px 30px rgba(0, 0, 0, .35);
-    }
-    .i18n-pending body { visibility: hidden; }
-    * { box-sizing: border-box; }
-    html { -webkit-text-size-adjust: 100%; }
-    body { margin: 0; background: var(--bg); color: var(--ink);
-           font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-    a { color: var(--blue); }
-    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
-    section { padding: 64px 0; }
-    section.alt { background: var(--bg2); }
-    h1, h2, h3 { line-height: 1.2; margin: 0; }
-    h1 { font-size: clamp(30px, 5vw, 46px); letter-spacing: -.02em; }
-    h2 { font-size: clamp(24px, 3.4vw, 32px); letter-spacing: -.01em; margin-bottom: 12px; }
-    h3 { font-size: 18px; margin-bottom: 6px; }
-    p { margin: 0 0 12px; }
-    .lead { font-size: 18px; color: var(--mut); max-width: 60ch; }
-    .mut { color: var(--mut); }
-    .small { font-size: 14px; }
-
-    /* шапка */
-    header.top { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
-    header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 60px; }
-    .logo { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 20px; color: var(--ink); text-decoration: none; }
-    .logo img { width: 28px; height: 28px; }
-    .logo b { color: var(--blue); }
-    .langs { display: flex; gap: 2px; border: 1px solid var(--line); border-radius: 999px; padding: 2px; }
-    .langs a { color: var(--mut); font: 600 13px/1 inherit; padding: 7px 10px; text-decoration: none;
-               border-radius: 999px; min-width: 40px; text-align: center; }
-    .langs a[aria-current="page"] { background: var(--blue); color: var(--blue-ink); }
-
-    /* кнопки */
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px;
-           padding: 12px 22px; border-radius: 12px; font-weight: 700; font-size: 16px; text-decoration: none;
-           border: 1px solid transparent; }
-    .btn.primary { background: var(--blue); color: var(--blue-ink); }
-    .btn.primary:hover { filter: brightness(1.08); }
-    .btn.ghost { border-color: var(--line); color: var(--ink); background: var(--card); }
-    .ctas { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0 10px; }
-
     /* первый экран */
     .hero { padding: 56px 0 64px; }
     .hero .wrap { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; }
@@ -165,18 +108,6 @@
     .final { text-align: center; }
     .final .ctas { justify-content: center; }
 
-    .consent { position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 20; max-width: 720px; margin: 0 auto;
-               background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
-               padding: 16px; display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; }
-    .consent[hidden] { display: none; }
-    .consent p { margin: 0; flex: 1 1 320px; font-size: 14px; color: var(--mut); }
-    .consent .btns { display: flex; gap: 8px; flex: 0 0 auto; }
-    .consent .btn { min-height: 40px; padding: 8px 16px; font-size: 15px; cursor: pointer; font-family: inherit; }
-    footer .linkbtn { color: var(--blue); }
-
-    footer { border-top: 1px solid var(--line); padding: 28px 0 40px; font-size: 14px; color: var(--mut); }
-    footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: space-between; }
-    footer nav { display: flex; flex-wrap: wrap; gap: 8px 16px; }
   </style>
 </head>
 <body>
@@ -364,50 +295,6 @@
     </div>
   </footer>
 
-  <script>
-  /* Выбор языка в шапке запоминаем: иначе EN-страница снова увела бы на язык браузера. */
-  for (const a of document.querySelectorAll("[data-lang]")) {
-    a.addEventListener("click", () => { try { localStorage.setItem("ll_lang", a.dataset.lang); } catch (e) {} });
-  }
-
-  /* Согласие на аналитику (GDPR): Яндекс Метрика грузится ТОЛЬКО после Accept. Выбор — localStorage
-     ll_consent = granted | denied; нет выбора → баннер. «Cookie settings» в футере открывает его снова. */
-  (function () {
-    const KEY = "ll_consent";
-    const banner = document.getElementById("consent");
-    const get = () => { try { return localStorage.getItem(KEY); } catch (e) { return null; } };
-    const set = (v) => { try { localStorage.setItem(KEY, v); } catch (e) {} };
-    let loaded = false;
-
-    function loadMetrika() {
-      if (loaded) return;
-      loaded = true;
-      (function(m,e,t,r,i,k,a){
-          m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-          m[i].l=1*new Date();
-          for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-          k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-      })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=113205805', 'ym');
-      ym(113205805, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
-    }
-
-    document.getElementById("ck-yes").addEventListener("click", () => { set("granted"); banner.hidden = true; loadMetrika(); });
-    document.getElementById("ck-no").addEventListener("click", () => { set("denied"); banner.hidden = true; });
-    document.getElementById("ck-open").addEventListener("click", (e) => { e.preventDefault(); banner.hidden = false; });
-
-    // Цель install_click (Метрика → Цели → JavaScript-событие) с местом кнопки и языком страницы.
-    // Без согласия ym не загружен — вызов пропускаем, ничего не отправляется.
-    for (const a of document.querySelectorAll("[data-cws]")) {
-      a.addEventListener("click", () => {
-        if (typeof window.ym === "function")
-          window.ym(113205805, 'reachGoal', 'install_click', { place: a.dataset.cws, lang: document.documentElement.lang });
-      });
-    }
-
-    const choice = get();
-    if (choice === "granted") loadMetrika();
-    else if (choice !== "denied") banner.hidden = false;
-  })();
-  </script>
+  <script src="/js/site.js"></script>
 </body>
 </html>
