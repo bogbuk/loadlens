@@ -37,3 +37,14 @@ test("триал упомянут на всех языках: hero.note и ка�
     assert.match(I18N[lang]["pr.pro.sub"], /14/);
   }
 });
+
+test("Метрика грузится только после согласия: нет безусловного init и пикселя noscript", () => {
+  assert.doesNotMatch(html, /mc\.yandex\.ru\/watch\//, "пиксель noscript шлёт хит без согласия");
+  const head = html.split("</head>")[0];
+  assert.doesNotMatch(head, /ym\(113205805, 'init'/, "init в <head> срабатывает до согласия");
+  assert.match(html, /function loadMetrika\(\)/);
+  assert.match(html, /id="consent"[^>]*hidden/);
+  assert.match(html, /id="ck-yes"/);
+  assert.match(html, /id="ck-no"/);
+  assert.match(html, /id="ck-open"/);
+});

@@ -10,18 +10,6 @@
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://loadlens.krait.studio/" />
   <link rel="icon" href="/icon.png" />
-  <!-- Yandex.Metrika counter (только лендинг; раскрыто в privacy.html §8) -->
-  <script type="text/javascript">
-      (function(m,e,t,r,i,k,a){
-          m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-          m[i].l=1*new Date();
-          for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-          k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-      })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=113205805', 'ym');
-
-      ym(113205805, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
-  </script>
-  <!-- /Yandex.Metrika counter -->
   <!-- Язык выбираем до первой отрисовки: ?lang= → сохранённый выбор → язык браузера → en.
        Сам перевод применяется в конце body; здесь только прячем EN-текст, чтобы не мигал. -->
   <script>
@@ -158,13 +146,21 @@
     .final { text-align: center; }
     .final .ctas { justify-content: center; }
 
+    .consent { position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 20; max-width: 720px; margin: 0 auto;
+               background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
+               padding: 16px; display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; }
+    .consent[hidden] { display: none; }
+    .consent p { margin: 0; flex: 1 1 320px; font-size: 14px; color: var(--mut); }
+    .consent .btns { display: flex; gap: 8px; flex: 0 0 auto; }
+    .consent .btn { min-height: 40px; padding: 8px 16px; font-size: 15px; cursor: pointer; font-family: inherit; }
+    footer .linkbtn { color: var(--blue); }
+
     footer { border-top: 1px solid var(--line); padding: 28px 0 40px; font-size: 14px; color: var(--mut); }
     footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: space-between; }
     footer nav { display: flex; flex-wrap: wrap; gap: 8px 16px; }
   </style>
 </head>
 <body>
-  <noscript><div><img src="https://mc.yandex.ru/watch/113205805" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
   <header class="top">
     <div class="wrap">
       <a class="logo" href="/"><img src="/icon.png" alt="" /><span>Load<b>Lens</b></span></a>
@@ -328,6 +324,15 @@
     </section>
   </main>
 
+  <div class="consent" id="consent" role="dialog" aria-label="Cookies" hidden>
+    <p><span data-i18n="ck.text">We use Yandex Metrica cookies to see how visitors use this page, including session replay. Nothing loads until you accept.</span>
+      <a href="/privacy.html#website" data-i18n="ck.more">Details</a></p>
+    <div class="btns">
+      <button type="button" class="btn ghost" id="ck-no" data-i18n="ck.no">Decline</button>
+      <button type="button" class="btn primary" id="ck-yes" data-i18n="ck.yes">Accept</button>
+    </div>
+  </div>
+
   <footer>
     <div class="wrap">
       <span data-i18n="ft.legal">© 2026 LoadLens. Not affiliated with DAT Solutions or Truckstop.</span>
@@ -335,6 +340,7 @@
         <a href="mailto:hello@krait.studio" data-mail="question">hello@krait.studio</a>
         <a href="/privacy.html" data-i18n="pv.link">Privacy policy</a>
         <a href="/stats.html" data-i18n="ft.stats">Lane stats</a>
+        <a href="#" class="linkbtn" id="ck-open" data-i18n="ck.settings">Cookie settings</a>
       </nav>
     </div>
   </footer>
@@ -421,7 +427,12 @@
       "ft.legal": "© 2026 LoadLens. Не связан с DAT Solutions и Truckstop.",
       "ft.stats": "Статистика по направлениям",
       "mail.pro": "LoadLens Pro",
-      "mail.question": "Вопрос по LoadLens"
+      "mail.question": "Вопрос по LoadLens",
+      "ck.text": "Мы используем куки Яндекс Метрики, чтобы понимать, как посетители пользуются этой страницей, включая запись сессий. Пока вы не согласитесь, ничего не загружается.",
+      "ck.more": "Подробнее",
+      "ck.no": "Отказаться",
+      "ck.yes": "Принять",
+      "ck.settings": "Настройки cookies"
     },
     ro: {
       "meta.title": "LoadLens: află cât plătește o cursă înainte să suni brokerul",
@@ -500,7 +511,12 @@
       "ft.legal": "© 2026 LoadLens. Nu este afiliat cu DAT Solutions sau Truckstop.",
       "ft.stats": "Statistici pe rute",
       "mail.pro": "LoadLens Pro",
-      "mail.question": "Întrebare despre LoadLens"
+      "mail.question": "Întrebare despre LoadLens",
+      "ck.text": "Folosim cookie-uri Yandex Metrica ca să vedem cum e folosită pagina, inclusiv înregistrarea sesiunilor. Nu se încarcă nimic până nu accepți.",
+      "ck.more": "Detalii",
+      "ck.no": "Refuz",
+      "ck.yes": "Accept",
+      "ck.settings": "Setări cookie"
     }
   }/*I18N-END*/;
 
@@ -542,6 +558,36 @@
     }
     const initial = document.documentElement.lang;
     apply(LANGS.includes(initial) ? initial : "en");
+  })();
+
+  /* Согласие на аналитику (GDPR): Яндекс Метрика грузится ТОЛЬКО после Accept. Выбор — localStorage
+     ll_consent = granted | denied; нет выбора → баннер. «Cookie settings» в футере открывает его снова. */
+  (function () {
+    const KEY = "ll_consent";
+    const banner = document.getElementById("consent");
+    const get = () => { try { return localStorage.getItem(KEY); } catch (e) { return null; } };
+    const set = (v) => { try { localStorage.setItem(KEY, v); } catch (e) {} };
+    let loaded = false;
+
+    function loadMetrika() {
+      if (loaded) return;
+      loaded = true;
+      (function(m,e,t,r,i,k,a){
+          m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+          m[i].l=1*new Date();
+          for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+          k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+      })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=113205805', 'ym');
+      ym(113205805, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+    }
+
+    document.getElementById("ck-yes").addEventListener("click", () => { set("granted"); banner.hidden = true; loadMetrika(); });
+    document.getElementById("ck-no").addEventListener("click", () => { set("denied"); banner.hidden = true; });
+    document.getElementById("ck-open").addEventListener("click", (e) => { e.preventDefault(); banner.hidden = false; });
+
+    const choice = get();
+    if (choice === "granted") loadMetrika();
+    else if (choice !== "denied") banner.hidden = false;
   })();
   </script>
 </body>
