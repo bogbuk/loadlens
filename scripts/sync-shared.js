@@ -33,4 +33,12 @@ const BACKEND_SHARED = path.join(ROOT, "backend", "shared");
 fs.mkdirSync(BACKEND_SHARED, { recursive: true });
 fs.writeFileSync(path.join(BACKEND_SHARED, "markets.seed.json"), seed);
 
-console.log(`synced ${FILES.length + 1} files -> extension/vendor/ + backend/shared/markets.seed.json`);
+// Модули, которые грузят страницы сайта (backend/public/js/): HOS-калькулятор лендинга.
+const PUBLIC_JS = path.join(ROOT, "backend", "public", "js");
+const SITE_FILES = ["hos-trip.js"];
+fs.mkdirSync(PUBLIC_JS, { recursive: true });
+for (const f of SITE_FILES) {
+  fs.writeFileSync(path.join(PUBLIC_JS, f), BANNER + fs.readFileSync(path.join(SHARED, f), "utf8"));
+}
+
+console.log(`synced ${FILES.length + 1} files -> extension/vendor/ + backend/shared/markets.seed.json + ${SITE_FILES.length} -> backend/public/js/`);
