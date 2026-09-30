@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "LoadLens — load scoring for DAT One / Truckstop",
+  "name": "LoadLens: Rate per Mile, HOS & Broker Check for DAT One",
   "version": "0.9.3",
-  "description": "Shows how profitable each load is ($/mile after deadhead, fuel and lane market rates).",
+  "description": "True rate per mile after deadhead and fuel, HOS check and broker credit on every DAT One load. For dispatchers and owner-operators.",
   "minimum_chrome_version": "116",
   "homepage_url": "https://loadlens.krait.studio/",
   "permissions": [

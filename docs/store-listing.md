@@ -3,69 +3,67 @@
 Готовый текст для публикации (аудитория — диспетчеры/owner-operators на DAT One / Truckstop, США).
 Privacy policy: https://loadlens.krait.studio/privacy.html
 
-## Name (Title, ≤ ~45 симв.)
+## Name (из manifest `name`, ≤ 75 симв.; поиск CWS сильнее всего весит название и краткое описание)
 
-`LoadLens: Load Scoring for DAT & Truckstop`
+`LoadLens: Rate per Mile, HOS & Broker Check for DAT One` (55)
+
+Почему так: в начале слова, которые реально вбивают в поиск (rate per mile, HOS, broker check), бренд
+борда в конце. **Truckstop в названии нет сознательно**: DOM-селекторы Truckstop всё ещё заглушки,
+пользователь Truckstop поставит расширение, ничего не увидит и оставит единицу. Вернуть в название,
+когда адаптер проверен на живой сессии.
 
 Альтернативы:
-- `LoadLens: Dispatcher Load Board Assistant` (без брендов в title, если модерация придерётся)
+- `LoadLens: True Rate per Mile & HOS Check for DAT One Load Board` (63) — есть «load board», но длиннее.
+- `LoadLens: Load Board Assistant for DAT One Dispatchers` (54) — если модерация придерётся к «for DAT One».
 
-## Short description (≤ 132 симв.)
+## Short description (из manifest `description`, ≤ 132 симв.)
 
-`Score every load by true $/mile after deadhead and fuel, check HOS, plan get-out chains, and vet brokers on DAT One & Truckstop.`
+`True rate per mile after deadhead and fuel, HOS check and broker credit on every DAT One load. For dispatchers and owner-operators.` (131)
 
-## Detailed description
+## Detailed description (правится в дашборде CWS, без нового пакета)
+
+Первые две строки видны без «Read more» — в них суть и ключевые слова. Эмодзи и списки ключевых слов
+не использовать: правило CWS против keyword spam.
 
 ```
-LoadLens works on top of the DAT One and Truckstop load boards you already use.
-It reads the loads on your screen and adds the numbers a dispatcher actually
-needs to book well, without copying anything into a spreadsheet.
+Know what a load really pays before you call the broker.
 
-WHAT YOU SEE ON EVERY LOAD
+LoadLens is a Chrome extension for truck dispatchers and owner-operators who book freight on DAT One. It puts a profit badge, an Hours-of-Service check and a broker trust score on every load, right on the board you already use. No spreadsheet, no calculator, no second screen.
 
-• True rate-per-mile. Not the posted rate divided by trip miles, but profit per
-  mile after empty miles to pickup, fuel at the current national diesel price,
-  and tolls, compared to the recent market median for that lane.
+FREE: WHAT YOU SEE ON EVERY LOAD
 
-• Hours-of-Service check. A green, amber, or red badge tells you whether the
-  driver can legally run the load under the 11-hour, 14-hour, 30-minute, and
-  70-hour/8-day rules before you make the call.
+• True rate per mile. The rate divided by loaded miles plus deadhead to pickup, with fuel counted in. Green, amber or red against your own cost per mile and target $/mile.
+• HOS check. The badge tells you whether the driver can run the load legally under the 11-hour, 14-hour, 30-minute break and 70-hour/8-day rules.
+• Broker check. DAT credit score and days to pay on one chip, so slow payers stand out before you haul.
+• Posting age. Each load shows how fresh it is, and the hot loads list puts the newest first.
+• One-click broker email. A Gmail draft with lane, miles, pickup date and a counter-offer above your break-even. You read it and press Send. Call and copy-email buttons are right next to it.
+• Side panel. Hot loads, trailer filter, sorting and a full load card next to your search results.
+• Rate the brokers you worked with: paid, slow, flaked, double-brokered.
 
-• Broker trust. DAT credit score and days-to-pay, plus a community reputation
-  built from real "paid / slow / flaked / double-brokered" reports from other
-  carriers, plus automatic red flags for rates that sit far above the market or
-  postings with no MC number.
+PRO: FOR DISPATCHERS RUNNING A FLEET
+Every new account gets 14 days of Pro free.
 
-GET-OUT TRIP PLANNER
+• Market rate per lane and destination market strength from the LoadLens database.
+• Get-out planner. Stuck in a dead market? LoadLens looks two or three loads ahead and ranks routes by how strong the destination market is. Sometimes a fair load that puts the truck where the freight is beats sitting a day.
+• Fleet matching. Add drivers with location, trailer and hours left. Every load shows which driver it fits best and how many can run it.
+• Telegram alerts with your own rules: minimum rate, max deadhead, states, trailer, broker MC, keywords like "in-bond". Matching loads arrive with the broker's phone and email.
+• Reports on brokers from other carriers, current diesel price, CSV export, up to 3 devices.
 
-Soft market with nothing good outbound? LoadLens chains two or three loads ahead
-and ranks routes by the strength of the destination market, so you can take a
-fair load that repositions the truck instead of deadheading or sitting.
+HOW IT WORKS
 
-YOUR FLEET (PRO)
+1. Add LoadLens to Chrome (version 116 or newer).
+2. Search for loads on DAT One as usual.
+3. Click the LoadLens icon to open the side panel. Badges appear on your results.
 
-Add your drivers with their current market, trailer, and remaining hours. Every
-load then shows which driver it fits best and how many of your drivers can run
-it legally and profitably. One click breaks it down driver by driver.
+You need your own DAT One account. LoadLens is not a load board: it works on top of your subscription. Truckstop support is in early beta.
 
-PRIVACY AND HOW IT WORKS
+PRIVACY
 
-LoadLens reads the load data your own signed-in session already loaded. It does
-not sign into anything for you and never sends its own requests to the board.
-The loads you view, including broker contact details and posting comments when
-the board shows them, are sent to the LoadLens server to build market rates and
-route plans. They are never linked to you, and other users never see broker
-contacts or comments. Telegram alerts include the broker's contact details so
-you can call or email right away. Full policy:
-https://loadlens.krait.studio/privacy.html
+LoadLens reads the load data your own signed-in session already loaded. It does not sign into anything for you and never sends its own requests to the board. The loads you view, including broker contact details and posting comments when the board shows them, are sent to the LoadLens server to build market rates and route plans. They are never linked to you, and other users never see broker contacts or comments. Telegram alerts include the broker's contact details so you can call or email right away. Full policy: https://loadlens.krait.studio/privacy.html
 
-REQUIREMENTS
-
-You need an active DAT One or Truckstop account and to be logged in. LoadLens
-adds insight on top of your subscription; it is not a load board by itself.
-
-Free includes load scoring, HOS badges, and broker signals. Pro adds the full
-get-out chain planner and driver fleet matching.
+Not affiliated with DAT Solutions or Truckstop.
+Questions or feedback: hello@krait.studio
+Website: https://loadlens.krait.studio
 ```
 
 ## Store fields
@@ -105,24 +103,29 @@ get-out chain planner and driver fleet matching.
 
 ## Screenshots (1280×800, до 5; заголовок крупно + строка под ним; фон #1d4ed8)
 
-> Замазать реальные телефоны/email брокеров на всех скринах. Первый — самый важный (превью в выдаче).
+> Замазать реальные телефоны/email брокеров на всех скринах. Первый — самый важный: он же превью в выдаче
+> CWS, и на нём решают, открыть карточку или нет. Подписи повторяют слова из поиска.
 
-1. **Every load, scored where you work**
-   True $/mile after deadhead and fuel, an HOS feasibility badge, and broker trust on every row of the DAT One board.
-   _Снять:_ `search-loads` с полосой бейджей под строками (выгодность · HOS · брокер · водитель).
+1. **True rate per mile on every DAT One load**
+   Profit after deadhead and fuel, HOS and broker credit, right on the board.
+   _Снять:_ выдачу DAT с полосой бейджей под строками + открытая боковая панель.
 
-2. **The full picture in one click**
-   Rate versus market, real road miles, broker credit and days-to-pay, contacts, notes, and a booking link.
-   _Снять:_ открытую карточку детали груза.
+2. **Email the broker with a counter-offer in one click**
+   Lane, miles, pickup date and a price above your break-even. You press Send.
+   _Снять:_ карточку груза в панели + открытый черновик Gmail.
 
-3. **Plan your way out of dead markets**
-   LoadLens chains two or three loads ahead and ranks routes by the strength of the destination market.
-   _Снять:_ боковую панель (вкладка Loads) с секцией get-out цепочек.
+3. **Hot loads, freshest first**
+   Filter by trailer, sort by true $/mile, open any load in one click.
+   _Снять:_ вкладку Loads боковой панели со списком «Выгодные сейчас».
 
-4. **Match every load to the right driver**
-   See which of your drivers can run a load legally and profitably, ranked by net per mile.
-   _Снять:_ чип `водитель (N/M)` на строке + разбивку «Кому подходит».
+4. **Loads that match your rules, straight to Telegram** (PRO)
+   Minimum rate, max deadhead, states, keywords like "in-bond". Broker phone and email included.
+   _Снять:_ сообщение бота в Telegram + редактор правил в Settings.
 
-5. **Run your whole fleet**
-   Add drivers with their market, trailer, and remaining hours. LoadLens handles the matching.
-   _Снять:_ боковую панель, вкладка Settings, секция «Парк».
+5. **Get out of dead markets** (PRO)
+   Two or three loads ahead, ranked by how strong the destination market is.
+   _Снять:_ секцию get-out цепочек в панели.
+
+## Промо-плитка (440×280)
+
+`True $/mile on every DAT One load` + иконка. Больше текста на плитке не читается.
