@@ -78,7 +78,11 @@
     .plan li.break, .plan li.reset { border-left-color: var(--amber); }
     .plan li.restart { border-left-color: var(--red); }
     .note { font-size: 14px; padding: 10px 12px; border-radius: 10px; background: var(--amber-bg); color: var(--amber); margin-top: 12px; }
-    .note[hidden], #plan-box[hidden], #plan-hint[hidden] { display: none; }
+    .note[hidden], #plan-box[hidden], #plan-hint[hidden], #split-box[hidden], #split-fields[hidden], #split-cond[hidden] { display: none; }
+    .split { border-top: 1px solid var(--line); padding-top: 16px; }
+    .split .check { display: inline-flex; gap: 8px; align-items: center; font-weight: 600; font-size: 15px; min-height: 44px; }
+    .split .radios { margin-top: 8px; }
+    #split-fields { margin-top: 8px; }
     .cta { text-align: center; }
     .cta .ctas { justify-content: center; }
     .faq h3 { margin-top: 20px; }
@@ -127,6 +131,25 @@
         <div class="field"><label for="used-h" data-i18n="in.used">On-duty hours in the last 8 (or 7) days</label>
           <div class="hm"><input class="ym-disable-keys" type="number" id="used-h" min="0" max="70" inputmode="numeric" value="0" /><span data-i18n="u.h">h</span>
             <input class="ym-disable-keys" type="number" id="used-m" min="0" max="59" inputmode="numeric" value="0" /><span data-i18n="u.m">m</span></div></div>
+        <fieldset class="split">
+          <label class="check"><input type="checkbox" id="split" /> <span data-i18n="in.split">I am in a split sleeper (7/3 or 8/2)</span></label>
+          <div id="split-fields" hidden>
+            <p class="mut small" data-i18n="in.split.hint">Count the first rest in “Time since your shift started” above too.</p>
+            <div class="field"><label for="first-h" data-i18n="in.first">Length of the first rest</label>
+          <div class="hm"><input class="ym-disable-keys" type="number" id="first-h" min="0" max="9" inputmode="numeric" /><span data-i18n="u.h">h</span>
+            <input class="ym-disable-keys" type="number" id="first-m" min="0" max="59" inputmode="numeric" /><span data-i18n="u.m">m</span></div>
+              <div class="radios">
+                <label><input type="radio" name="first-type" value="sb" checked /> <span data-i18n="in.first.sb">Sleeper berth</span></label>
+                <label><input type="radio" name="first-type" value="off" /> <span data-i18n="in.first.off">Off duty</span></label>
+              </div></div>
+            <div class="field"><label for="after-h" data-i18n="in.after">Driving after the first rest</label>
+          <div class="hm"><input class="ym-disable-keys" type="number" id="after-h" min="0" max="11" inputmode="numeric" /><span data-i18n="u.h">h</span>
+            <input class="ym-disable-keys" type="number" id="after-m" min="0" max="59" inputmode="numeric" /><span data-i18n="u.m">m</span></div></div>
+            <div class="field"><label for="aftert-h" data-i18n="in.aftert">Time since the first rest ended</label>
+          <div class="hm"><input class="ym-disable-keys" type="number" id="aftert-h" min="0" max="14" inputmode="numeric" /><span data-i18n="u.h">h</span>
+            <input class="ym-disable-keys" type="number" id="aftert-m" min="0" max="59" inputmode="numeric" /><span data-i18n="u.m">m</span></div></div>
+          </div>
+        </fieldset>
         <fieldset class="trip">
           <legend data-i18n="in.trip">Load (optional)</legend>
           <div class="row">
@@ -150,6 +173,10 @@
           <div class="meter" data-k="window"><div class="top"><span data-i18n="r.window">14-hour window</span><span class="val"></span></div><div class="track"><div class="fill"></div></div></div>
           <div class="meter" data-k="break"><div class="top"><span data-i18n="r.break">Until the 30-minute break</span><span class="val"></span></div><div class="track"><div class="fill"></div></div></div>
           <div class="meter" data-k="cycle"><div class="top"><span data-i18n="r.cycle">Cycle</span><span class="val"></span></div><div class="track"><div class="fill"></div></div></div>
+          <div id="split-box" hidden>
+            <p class="note" id="split-msg"></p>
+            <p class="mut small" id="split-cond" data-i18n="r.split.cond">The first rest stays out of the 14-hour window only if you complete the pair with the second rest.</p>
+          </div>
         </div>
         <div class="panel" style="margin-top: 16px">
           <h2 data-i18n="p.title">Legal trip plan</h2>
@@ -185,7 +212,7 @@
         <p data-i18n="faq.a3">A driver may not drive after 70 hours on duty in 8 days in a row, or 60 hours in 7 days if the carrier does not operate every day. A 34-hour off-duty restart sets the count back to zero.</p>
         <h3 data-i18n="faq.q4">Is this calculator a replacement for an ELD?</h3>
         <p data-i18n="faq.a4">No. It is a planning estimate for dispatchers and drivers. At an inspection, only your ELD record counts.</p>
-        <p class="disc" data-i18n="disc">Planning estimate, not legal advice and not a replacement for your ELD. Split sleeper berth, adverse driving conditions and short-haul exceptions are not modelled, and the cycle total is treated as fixed during the trip.</p>
+        <p class="disc" data-i18n="disc">Planning estimate, not legal advice and not a replacement for your ELD. Split sleeper is counted for the time left, but the trip plan uses full 10-hour resets. Adverse driving conditions and short-haul exceptions are not modelled, and the cycle total is treated as fixed during the trip.</p>
       </div>
     </section>
   </main>
@@ -212,7 +239,7 @@
     </div>
   </footer>
 
-  <!--STRINGS-START--><script type="application/json" id="ll-strings">{"js.hm":"{h}h {m}m","js.left":"{t} left","js.now":"You can drive {t} right now, then you need {next}.","js.next.break":"a 30-minute break","js.next.drive":"a 10-hour reset: the 11-hour driving limit is used up","js.next.window":"a 10-hour reset: the 14-hour window closes","js.next.cycle":"a 34-hour restart: the cycle is used up","js.seg.duty":"On duty: loading or unloading","js.seg.drive":"Drive {mi} mi","js.seg.break":"30-minute break","js.seg.reset":"10-hour reset","js.seg.restart":"34-hour restart","js.total":"Legal trip time: {t} (driving {d}, breaks and rest {r}).","js.arrive":"Done around {when} by your computer's clock."}</script><!--STRINGS-END-->
+  <!--STRINGS-START--><script type="application/json" id="ll-strings">{"js.hm":"{h}h {m}m","js.left":"{t} left","js.now":"You can drive {t} right now, then you need {next}.","js.next.break":"a 30-minute break","js.next.drive":"a 10-hour reset: the 11-hour driving limit is used up","js.next.window":"a 10-hour reset: the 14-hour window closes","js.next.cycle":"a 34-hour restart: the cycle is used up","js.seg.duty":"On duty: loading or unloading","js.seg.drive":"Drive {mi} mi","js.seg.break":"30-minute break","js.seg.reset":"10-hour reset","js.seg.restart":"34-hour restart","js.total":"Legal trip time: {t} (driving {d}, breaks and rest {r}).","js.arrive":"Done around {when} by your computer's clock.","js.next.split":"the second rest of your split","js.split.need":"To complete the split, take at least {t} {where}.","js.split.where.sb":"in the sleeper berth","js.split.where.any":"off duty or in the sleeper berth","js.split.after":"After it you can drive {d} before the next stop, and the 14-hour window has {w} left, counted from the end of your first rest.","js.split.short":"A split needs a first rest of at least 2 hours. Until then the regular limits apply.","js.split.full":"10 hours or more in a row is a full reset, not a split. Start a new shift in the fields above."}</script><!--STRINGS-END-->
   <script src="/js/hos-trip.js"></script>
   <script src="/js/hos-page.js"></script>
   <script src="/js/site.js"></script>

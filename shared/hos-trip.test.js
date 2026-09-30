@@ -113,3 +113,58 @@ test("remaining: перерыв первым, но после него окно 
   assert.strictEqual(r.limitedBy, "window");
   assert.strictEqual(r.driveNow, 60);
 });
+
+// Split sleeper (49 CFR 395.1(g)(1)(ii)): пара ≥7h sleeper + ≥2h, сумма ≥10h; ни один период не идёт в окно 14h,
+// после второго периода 11h/14h считаются от конца первого.
+const PAIR_STATE = { cycle: "70-8", drivenMin: 300, shiftMin: 700, sinceBreakMin: null, cycleUsedMin: 1000 };
+
+test("splitPair 8/2: окно без первого отдыха, второй отдых ≥2h где угодно, после — от конца первого", () => {
+  const r = H.splitPair(PAIR_STATE, { firstMin: 480, firstSleeper: true, drivenAfterMin: 120, sinceMin: 150 });
+  assert.strictEqual(r.ok, true);
+  assert.strictEqual(r.secondMin, 120);
+  assert.strictEqual(r.secondSleeper, false);
+  // окно: 700 − 480 = 220 прошло; перерыв: первый отдых ≥30 мин обнулил счётчик → 120 вождения после него
+  assert.deepStrictEqual(r.now, { drive: 360, window: 620, break: 360, cycle: 3200, driveNow: 360, limitedBy: "drive" });
+  assert.deepStrictEqual(r.after, { drive: 540, window: 690, break: 480, cycle: 3200, driveNow: 480, limitedBy: "break" });
+  assert.deepStrictEqual(r.state, { cycle: "70-8", drivenMin: 300, shiftMin: 220, sinceBreakMin: 120, cycleUsedMin: 1000 });
+});
+
+test("splitPair 7/3 и 3/7: длинный период обязан быть в sleeper berth", () => {
+  const seven = H.splitPair(PAIR_STATE, { firstMin: 420, firstSleeper: true, drivenAfterMin: 0, sinceMin: 0 });
+  assert.strictEqual(seven.secondMin, 180);
+  assert.strictEqual(seven.secondSleeper, false);
+  const three = H.splitPair(PAIR_STATE, { firstMin: 180, firstSleeper: false, drivenAfterMin: 0, sinceMin: 0 });
+  assert.strictEqual(three.secondMin, 420);
+  assert.strictEqual(three.secondSleeper, true);
+});
+
+test("splitPair: первые 7h off duty — не sleeper, значит второй отдых ≥7h в sleeper", () => {
+  const r = H.splitPair(PAIR_STATE, { firstMin: 420, firstSleeper: false, drivenAfterMin: 0, sinceMin: 0 });
+  assert.strictEqual(r.secondMin, 420);
+  assert.strictEqual(r.secondSleeper, true);
+});
+
+test("splitPair: первый отдых <2h — не пара, ≥10h — полный reset; остаток как без split", () => {
+  const short = H.splitPair(PAIR_STATE, { firstMin: 90, firstSleeper: true, drivenAfterMin: 0, sinceMin: 0 });
+  assert.deepStrictEqual([short.ok, short.reason], [false, "short"]);
+  assert.deepStrictEqual(short.now, H.remaining(PAIR_STATE));
+  assert.deepStrictEqual(short.state, H.normalize(PAIR_STATE));
+  const full = H.splitPair(PAIR_STATE, { firstMin: 600, firstSleeper: true, drivenAfterMin: 0, sinceMin: 0 });
+  assert.deepStrictEqual([full.ok, full.reason], [false, "full"]);
+});
+
+test("splitPair: несогласованный ввод зажимается в безопасную сторону", () => {
+  // смена короче первого отдыха + времени после него → в окне считаем хотя бы время после отдыха;
+  // вождение после отдыха больше вождения за смену → берём большее
+  const r = H.splitPair({ drivenMin: 60, shiftMin: 300 }, { firstMin: 480, firstSleeper: true, drivenAfterMin: 200, sinceMin: 250 });
+  assert.strictEqual(r.state.shiftMin, 250);
+  assert.strictEqual(r.state.drivenMin, 200);
+  assert.strictEqual(r.after.window, 840 - 250);
+  assert.strictEqual(r.after.drive, 660 - 200);
+});
+
+test("splitPair: план по эффективному состоянию не нарушает окно (первый отдых не в окне)", () => {
+  const r = H.splitPair(PAIR_STATE, { firstMin: 480, firstSleeper: true, drivenAfterMin: 120, sinceMin: 150 });
+  const p = H.plan(r.state, { miles: 330, mph: 55, ...NO_DOCK });
+  assert.deepStrictEqual(shape(p), ["drive:360"]);
+});

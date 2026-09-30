@@ -1,7 +1,8 @@
 /* LoadLens — HOS-калькулятор для страницы лендинга /hos-calculator/.
    Zero-dep (браузер + Node + тесты), все величины — минуты. Модель упрощённая (см. спеку
    2026-09-30-hos-calculator-page-design): 11h driving, окно 14h, 30-мин перерыв после 8h вождения,
-   цикл 70/8 или 60/7, 10h reset, 34h restart. Split sleeper, adverse conditions, short-haul и
+   цикл 70/8 или 60/7, 10h reset, 34h restart. Split sleeper — только остаток часов (splitPair),
+   план рейса по-прежнему ставит полные 10h reset. Adverse conditions, short-haul и
    «скатывание» часов цикла по дням не моделируются. planner.stepHos сознательно не трогаем —
    он питает скоринг расширения. */
 const LLHOSTRIP = (() => {
@@ -10,6 +11,7 @@ const LLHOSTRIP = (() => {
   const DRIVE = 660, WINDOW = 840, BREAK_AFTER = 480, BREAK = 30, RESET = 600, RESTART = 2040;
   const CYCLES = { "70-8": 4200, "60-7": 3600 };
   const LIMITS = { drive: DRIVE, window: WINDOW, break: BREAK_AFTER };
+  const SPLIT_LONG = 420, SPLIT_SHORT = 120;     // пара: ≥7h в sleeper + ≥2h, сумма ≥10h
   const MAX_STEPS = 400;                         // страховка от бесконечного цикла; при mph ≥ 30 недостижимо
   const ORDER = ["cycle", "window", "drive", "break"]; // при равенстве — то, что лечится дольше
 
@@ -105,7 +107,39 @@ const LLHOSTRIP = (() => {
     };
   }
 
-  return { normalize, remaining, plan, LIMITS, CYCLES };
+  // Водитель уже взял первый период пары (49 CFR 395.1(g)(1)(ii)). state — вся смена от начала, ВКЛЮЧАЯ
+  // первый отдых; split — сам отдых и что было после него. Пока пара не закрыта, первый отдых не идёт в окно
+  // 14h (при условии, что водитель возьмёт второй); после второго 11h/14h считаются от конца первого.
+  // Несогласованный ввод зажимаем так, чтобы остаток не вышел больше настоящего.
+  function splitPair(state, split = {}) {
+    const s = normalize(state);
+    const firstMin = Math.max(0, num(split.firstMin));
+    if (firstMin < SPLIT_SHORT || firstMin >= RESET) {
+      return { ok: false, reason: firstMin < SPLIT_SHORT ? "short" : "full", state: s, now: remaining(s) };
+    }
+    const drivenAfter = clamp(split.drivenAfterMin, 0, DRIVE);
+    const since = clamp(split.sinceMin, 0, WINDOW);
+    const longFirst = firstMin >= SPLIT_LONG && !!split.firstSleeper;
+    const eff = normalize({
+      cycle: s.cycle,
+      drivenMin: Math.max(s.drivenMin, drivenAfter),
+      shiftMin: Math.max(s.shiftMin - firstMin, since),
+      // отдых ≥2h — это и 30-минутный перерыв
+      sinceBreakMin: Math.min(s.sinceBreakMin, drivenAfter),
+      cycleUsedMin: s.cycleUsedMin,
+    });
+    const afterState = { cycle: s.cycle, drivenMin: drivenAfter, shiftMin: since, sinceBreakMin: 0, cycleUsedMin: s.cycleUsedMin };
+    return {
+      ok: true,
+      secondMin: Math.max(longFirst ? SPLIT_SHORT : SPLIT_LONG, RESET - firstMin),
+      secondSleeper: !longFirst,
+      state: eff,
+      now: remaining(eff),
+      after: remaining(afterState),
+    };
+  }
+
+  return { normalize, remaining, plan, splitPair, LIMITS, CYCLES };
 })();
 
 if (typeof module !== "undefined" && module.exports) module.exports = LLHOSTRIP;
