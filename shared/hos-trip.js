@@ -24,8 +24,9 @@ const LLHOSTRIP = (() => {
       cycle,
       drivenMin,
       shiftMin: clamp(s.shiftMin, 0, WINDOW),
-      // 10h reset тоже перерыв, поэтому вождение после перерыва не может превышать вождение в смене
-      sinceBreakMin: clamp(s.sinceBreakMin, 0, Math.min(BREAK_AFTER, drivenMin)),
+      // 10h reset тоже перерыв, поэтому вождение после перерыва не может превышать вождение в смене.
+      // Не заполнено → перерыва в смене не было (консервативно: иначе план мог бы нарушить правило 30 мин).
+      sinceBreakMin: clamp(orDefault(s.sinceBreakMin, drivenMin), 0, Math.min(BREAK_AFTER, drivenMin)),
       cycleUsedMin: clamp(s.cycleUsedMin, 0, CYCLES[cycle]),
     };
   }
@@ -40,7 +41,10 @@ const LLHOSTRIP = (() => {
     };
     let limitedBy = ORDER[0];
     for (const k of ORDER) if (r[k] < r[limitedBy]) limitedBy = k;
-    return { ...r, driveNow: r[limitedBy], limitedBy };
+    const driveNow = r[limitedBy];
+    // Перерыв наступит первым, но после него от окна останется ≤30 мин — дальше всё равно 10h reset (как в plan()).
+    if (limitedBy === "break" && r.window - r.break <= BREAK) limitedBy = "window";
+    return { ...r, driveNow, limitedBy };
   }
 
   function plan(state, trip = {}) {

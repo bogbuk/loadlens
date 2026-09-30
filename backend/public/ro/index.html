@@ -38,7 +38,9 @@
       var lang = q === "en" || L.indexOf(q) >= 0 ? q : s === "en" || L.indexOf(s) >= 0 ? s : n;
       if (L.indexOf(lang) < 0) return;
       document.documentElement.className = "i18n-pending";
-      location.replace("/" + lang + location.pathname + location.hash);
+      // Только известные страницы: ServeStatic отдаёт EN-главную на любой путь, иначе /ru/<неизвестный> зациклится.
+      var P = ["/", "/hos-calculator/"], p = location.pathname;
+      location.replace("/" + lang + (P.indexOf(p) >= 0 ? p : "/") + location.hash);
     })();
   </script>
   <link rel="stylesheet" href="/css/site.css" />

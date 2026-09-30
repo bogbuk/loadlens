@@ -8,12 +8,14 @@
   const fill = (tpl, v) => tpl.replace(/\{(\w+)\}/g, (_, k) => (k in v ? v[k] : ""));
   const num = (id) => { const n = parseFloat($(id).value); return Number.isFinite(n) && n > 0 ? n : 0; };
   const hm = (name) => num(name + "-h") * 60 + num(name + "-m");
+  // Оба поля пустые → null: модуль считает, что перерыва в смене не было.
+  const hmOrEmpty = (name) => ($(name + "-h").value === "" && $(name + "-m").value === "" ? null : hm(name));
   const fmt = (min) => { const t = Math.max(0, Math.round(min)); return fill(S["js.hm"], { h: Math.floor(t / 60), m: t % 60 }); };
 
   function readState() {
     return {
       cycle: document.querySelector('input[name="cycle"]:checked').value,
-      drivenMin: hm("driven"), shiftMin: hm("shift"), sinceBreakMin: hm("since"), cycleUsedMin: hm("used"),
+      drivenMin: hm("driven"), shiftMin: hm("shift"), sinceBreakMin: hmOrEmpty("since"), cycleUsedMin: hm("used"),
     };
   }
 

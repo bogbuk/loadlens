@@ -25,8 +25,8 @@ test("remaining: свежий водитель упирается в 30-мину
 });
 
 test("remaining: минимум — лимит 11h; при равенстве побеждает окно (порядок cycle, window, drive, break)", () => {
-  assert.strictEqual(H.remaining({ drivenMin: 600, shiftMin: 600 }).limitedBy, "drive");
-  const tie = H.remaining({ drivenMin: 600, shiftMin: 780 });
+  assert.strictEqual(H.remaining({ drivenMin: 600, shiftMin: 600, sinceBreakMin: 0 }).limitedBy, "drive");
+  const tie = H.remaining({ drivenMin: 600, shiftMin: 780, sinceBreakMin: 0 });
   assert.strictEqual(tie.limitedBy, "window");
   assert.strictEqual(tie.driveNow, 60);
 });
@@ -98,4 +98,18 @@ test("plan: 5000 mi @ 30 — длинный рейс с рестартами з�
   assert.strictEqual(p.driveMin, 10000);
   assert.ok(p.restarts >= 2);
   assert.ok(p.segments.length < 200);
+});
+
+test("normalize: незаполненное «вождение после перерыва» = всё вождение смены (перерыва не было)", () => {
+  assert.strictEqual(H.normalize({ drivenMin: 420 }).sinceBreakMin, 420);
+  assert.strictEqual(H.normalize({ drivenMin: 420, sinceBreakMin: "" }).sinceBreakMin, 420);
+  assert.strictEqual(H.normalize({ drivenMin: 420, sinceBreakMin: 0 }).sinceBreakMin, 0);
+  const p = H.plan({ drivenMin: 420, shiftMin: 540 }, { miles: 200, mph: 50, loadMin: 0, unloadMin: 0 });
+  assert.deepStrictEqual(shape(p), ["drive:60", "break:30", "drive:180"]);
+});
+
+test("remaining: перерыв первым, но после него окно почти закрыто → лимит — окно (нужен 10h reset)", () => {
+  const r = H.remaining({ drivenMin: 420, shiftMin: 770, sinceBreakMin: 420 });
+  assert.strictEqual(r.limitedBy, "window");
+  assert.strictEqual(r.driveNow, 60);
 });

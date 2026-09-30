@@ -94,10 +94,10 @@ test("robots.txt указывает на sitemap и закрывает admin/api
   assert.match(fs.readFileSync(path.join(pub, "admin.html"), "utf8"), /<meta name="robots" content="noindex/);
 });
 
-test("общие стили и редирект по языку: site.css в <head>, редирект сохраняет путь страницы", () => {
+test("общие стили и редирект по языку: site.css в <head>, редирект сохраняет путь известной страницы", () => {
   const head = html.split("</head>")[0];
   assert.match(head, /<link rel="stylesheet" href="\/css\/site\.css" \/>/);
-  assert.ok(head.includes('location.replace("/" + lang + location.pathname + location.hash)'));
+  assert.ok(head.includes('location.replace("/" + lang + (P.indexOf(p) >= 0 ? p : "/") + location.hash)'));
   assert.ok(!/\.consent \{/.test(head), "стили баннера должны жить в site.css");
 });
 
@@ -191,4 +191,33 @@ test("главная ссылается на калькулятор (карто�
   const privacy = fs.readFileSync(path.join(PUB, "privacy.html"), "utf8");
   assert.match(privacy, /HOS calculator/);
   assert.ok(!privacy.includes("The page has no forms"), "на калькуляторе есть поля — формулировка устарела");
+});
+
+// Редирект по языку из <head> EN-страниц: ServeStatic отдаёт EN-главную на любой неизвестный путь,
+// поэтому неизвестный путь (в т.ч. /ru/…) должен уводить на главную языка, а не на /ru/<путь> (петля).
+const vm = require("node:vm");
+function redirectOf(src, pathname) {
+  const code = src.match(/<script>\s*(\(function \(\) \{\s*if \(document\.documentElement\.lang !== "en"\)[\s\S]*?\}\)\(\);)\s*<\/script>/)[1];
+  let to = null;
+  vm.runInNewContext(code, {
+    document: { documentElement: { lang: "en", className: "" } },
+    location: { pathname, search: "", hash: "", replace: (u) => { to = u; } },
+    URLSearchParams, localStorage: { getItem: () => "ru" }, navigator: { language: "ru-RU" },
+  });
+  return to;
+}
+for (const pg of PAGES) test(`редирект по языку (${pg.src}): известные страницы — на свою версию, неизвестный путь — на главную языка`, () => {
+  const src = fs.readFileSync(path.join(PUB, pg.src), "utf8");
+  for (const p of PAGES) assert.strictEqual(redirectOf(src, p.path), "/ru" + p.path);
+  assert.strictEqual(redirectOf(src, "/pricing"), "/ru/");
+  assert.strictEqual(redirectOf(src, "/ru/pricing"), "/ru/");
+});
+
+test("калькулятор: поля «после перерыва» пустые по умолчанию, результаты скрыты от Webvisor, privacy точна", () => {
+  for (const id of ["since-h", "since-m"]) assert.doesNotMatch(calcHtml.match(new RegExp(`<input[^>]*id="${id}"[^>]*>`))[0], /value=/);
+  assert.match(calcHtml, /<p class="now ym-hide-content" id="now"/);
+  assert.match(calcHtml, /<div class="panel ym-hide-content"[^>]*>\s*<h2 data-i18n="r\.title">/);
+  assert.match(calcHtml, /<div id="plan-box" class="ym-hide-content" hidden>/);
+  const privacy = fs.readFileSync(path.join(PUB, "privacy.html"), "utf8");
+  assert.match(privacy, /the numbers you enter in the HOS calculator and its results are hidden from session replay/);
 });

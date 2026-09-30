@@ -38,7 +38,9 @@
       var lang = q === "en" || L.indexOf(q) >= 0 ? q : s === "en" || L.indexOf(s) >= 0 ? s : n;
       if (L.indexOf(lang) < 0) return;
       document.documentElement.className = "i18n-pending";
-      location.replace("/" + lang + location.pathname + location.hash);
+      // Только известные страницы: ServeStatic отдаёт EN-главную на любой путь, иначе /ru/<неизвестный> зациклится.
+      var P = ["/", "/hos-calculator/"], p = location.pathname;
+      location.replace("/" + lang + (P.indexOf(p) >= 0 ? p : "/") + location.hash);
     })();
   </script>
   <link rel="stylesheet" href="/css/site.css" />
@@ -119,8 +121,9 @@
           <div class="hm"><input class="ym-disable-keys" type="number" id="shift-h" min="0" max="14" inputmode="numeric" value="0" /><span data-i18n="u.h">ч</span>
             <input class="ym-disable-keys" type="number" id="shift-m" min="0" max="59" inputmode="numeric" value="0" /><span data-i18n="u.m">мин</span></div></div>
         <div class="field"><label for="since-h" data-i18n="in.since">Вождение после последнего перерыва 30 мин</label>
-          <div class="hm"><input class="ym-disable-keys" type="number" id="since-h" min="0" max="8" inputmode="numeric" value="0" /><span data-i18n="u.h">ч</span>
-            <input class="ym-disable-keys" type="number" id="since-m" min="0" max="59" inputmode="numeric" value="0" /><span data-i18n="u.m">мин</span></div></div>
+          <div class="hm"><input class="ym-disable-keys" type="number" id="since-h" min="0" max="8" inputmode="numeric" /><span data-i18n="u.h">ч</span>
+            <input class="ym-disable-keys" type="number" id="since-m" min="0" max="59" inputmode="numeric" /><span data-i18n="u.m">мин</span></div>
+          <p class="mut small" data-i18n="in.since.hint">Оставьте пустым, если перерыва в этой смене ещё не было.</p></div>
         <div class="field"><label for="used-h" data-i18n="in.used">Часов on duty за последние 8 (или 7) дней</label>
           <div class="hm"><input class="ym-disable-keys" type="number" id="used-h" min="0" max="70" inputmode="numeric" value="0" /><span data-i18n="u.h">ч</span>
             <input class="ym-disable-keys" type="number" id="used-m" min="0" max="59" inputmode="numeric" value="0" /><span data-i18n="u.m">мин</span></div></div>
@@ -140,9 +143,9 @@
       </form>
 
       <div>
-        <div class="panel" aria-live="polite">
+        <div class="panel ym-hide-content" aria-live="polite">
           <h2 data-i18n="r.title">Осталось</h2>
-          <p class="now" id="now"></p>
+          <p class="now ym-hide-content" id="now"></p>
           <div class="meter" data-k="drive"><div class="top"><span data-i18n="r.drive">Лимит вождения 11 часов</span><span class="val"></span></div><div class="track"><div class="fill"></div></div></div>
           <div class="meter" data-k="window"><div class="top"><span data-i18n="r.window">Окно 14 часов</span><span class="val"></span></div><div class="track"><div class="fill"></div></div></div>
           <div class="meter" data-k="break"><div class="top"><span data-i18n="r.break">До 30-минутного перерыва</span><span class="val"></span></div><div class="track"><div class="fill"></div></div></div>
@@ -151,7 +154,7 @@
         <div class="panel" style="margin-top: 16px">
           <h2 data-i18n="p.title">Легальный план рейса</h2>
           <p class="mut" id="plan-hint" data-i18n="p.hint">Введите мили с грузом, чтобы увидеть план рейса.</p>
-          <div id="plan-box" hidden>
+          <div id="plan-box" class="ym-hide-content" hidden>
             <ol class="plan" id="plan"></ol>
             <p><b id="total"></b></p>
             <p class="mut small" id="arrive"></p>
