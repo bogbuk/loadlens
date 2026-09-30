@@ -22,6 +22,27 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://loadlens.krait.studio/"/>
   </url>
   <url>
+    <loc>https://loadlens.krait.studio/hos-calculator/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://loadlens.krait.studio/hos-calculator/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://loadlens.krait.studio/ru/hos-calculator/"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://loadlens.krait.studio/ro/hos-calculator/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://loadlens.krait.studio/hos-calculator/"/>
+  </url>
+  <url>
+    <loc>https://loadlens.krait.studio/ru/hos-calculator/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://loadlens.krait.studio/hos-calculator/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://loadlens.krait.studio/ru/hos-calculator/"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://loadlens.krait.studio/ro/hos-calculator/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://loadlens.krait.studio/hos-calculator/"/>
+  </url>
+  <url>
+    <loc>https://loadlens.krait.studio/ro/hos-calculator/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://loadlens.krait.studio/hos-calculator/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://loadlens.krait.studio/ru/hos-calculator/"/>
+    <xhtml:link rel="alternate" hreflang="ro" href="https://loadlens.krait.studio/ro/hos-calculator/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://loadlens.krait.studio/hos-calculator/"/>
+  </url>
+  <url>
     <loc>https://loadlens.krait.studio/stats.html</loc>
   </url>
   <url>

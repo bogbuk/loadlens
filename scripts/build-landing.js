@@ -24,6 +24,7 @@ const LANGS = {
 const COMMON_DICT = "landing/i18n.json";
 const PAGES = [
   { src: "index.html", dict: COMMON_DICT, path: "/", ld: "app" },
+  { src: "hos-calculator/index.html", dict: "landing/hos-calculator.i18n.json", path: "/hos-calculator/", ld: "tool" },
 ];
 // Прочие публичные страницы для sitemap (admin.html — noindex, в карту не идёт).
 const EXTRA_PAGES = ["/stats.html", "/privacy.html"];

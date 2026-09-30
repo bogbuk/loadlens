@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!--SEO-START-->
+  <title>Calculator HOS: câte ore mai poate conduce șoferul | LoadLens</title>
+  <meta name="description" content="Calculator HOS gratuit pentru șoferi și dispeceri: timpul rămas pentru regulile de 11 și 14 ore, pauza de 30 de minute și ciclul de 70/60 de ore, plus un plan legal de cursă cu pauze și odihnă." />
+  <link rel="canonical" href="https://loadlens.krait.studio/ro/hos-calculator/" />
+  <link rel="alternate" hreflang="en" href="https://loadlens.krait.studio/hos-calculator/" />
+  <link rel="alternate" hreflang="ru" href="https://loadlens.krait.studio/ru/hos-calculator/" />
+  <link rel="alternate" hreflang="ro" href="https://loadlens.krait.studio/ro/hos-calculator/" />
+  <link rel="alternate" hreflang="x-default" href="https://loadlens.krait.studio/hos-calculator/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="LoadLens" />
+  <meta property="og:title" content="Calculator HOS: câte ore mai poate conduce șoferul | LoadLens" />
+  <meta property="og:description" content="Calculator HOS gratuit pentru șoferi și dispeceri: timpul rămas pentru regulile de 11 și 14 ore, pauza de 30 de minute și ciclul de 70/60 de ore, plus un plan legal de cursă cu pauze și odihnă." />
+  <meta property="og:url" content="https://loadlens.krait.studio/ro/hos-calculator/" />
+  <meta property="og:image" content="https://loadlens.krait.studio/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="ro_RO" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta property="og:locale:alternate" content="ru_RU" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Calculator HOS: câte ore mai poate conduce șoferul | LoadLens","url":"https://loadlens.krait.studio/ro/hos-calculator/","description":"Calculator HOS gratuit pentru șoferi și dispeceri: timpul rămas pentru regulile de 11 și 14 ore, pauza de 30 de minute și ciclul de 70/60 de ore, plus un plan legal de cursă cu pauze și odihnă.","applicationCategory":"BusinessApplication","operatingSystem":"Any","browserRequirements":"Requires JavaScript","inLanguage":"ro","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}},{"@type":"FAQPage","inLanguage":"ro","mainEntity":[{"@type":"Question","name":"Câte ore pe zi poate conduce un șofer de camion?","acceptedAnswer":{"@type":"Answer","text":"Până la 11 ore de condus după 10 ore consecutive libere, și doar într-o fereastră de 14 ore care începe odată cu tura. Pauzele nu prelungesc fereastra de 14 ore."}},{"@type":"Question","name":"Când este obligatorie pauza de 30 de minute?","acceptedAnswer":{"@type":"Answer","text":"După 8 ore de condus în total fără o pauză de cel puțin 30 de minute. Pauza poate fi liberă, în cabina de dormit sau în tură fără condus, de exemplu la încărcare."}},{"@type":"Question","name":"Ce este regula de 70 de ore în 8 zile?","acceptedAnswer":{"@type":"Answer","text":"Șoferul nu poate conduce după 70 de ore în tură în 8 zile consecutive, sau 60 de ore în 7 zile dacă transportatorul nu lucrează zilnic. Un restart de 34 de ore libere readuce contorul la zero."}},{"@type":"Question","name":"Înlocuiește acest calculator un ELD?","acceptedAnswer":{"@type":"Answer","text":"Nu. Este o estimare pentru planificare, pentru dispeceri și șoferi. La un control contează doar înregistrarea din ELD."}}]}]}</script>
+  <!--SEO-END-->
+  <link rel="icon" href="/icon.png" />
+  <!-- Каждый язык — свой URL (/, /ru/, /ro/), страницы RU/RO собирает scripts/build-landing.js.
+       На EN-странице уводим на языковую версию: ?lang= (старые ссылки) → сохранённый выбор → язык
+       браузера. Бот видит en-US без localStorage и остаётся на /. Тело прячем, чтобы EN не мигал. -->
+  <script>
+    (function () {
+      if (document.documentElement.lang !== "en") return;
+      var L = ["ru", "ro"], q = new URLSearchParams(location.search).get("lang"), s = null;
+      try { s = localStorage.getItem("ll_lang"); } catch (e) {}
+      var n = (navigator.language || "").slice(0, 2).toLowerCase();
+      var lang = q === "en" || L.indexOf(q) >= 0 ? q : s === "en" || L.indexOf(s) >= 0 ? s : n;
+      if (L.indexOf(lang) < 0) return;
+      document.documentElement.className = "i18n-pending";
+      location.replace("/" + lang + location.pathname + location.hash);
+    })();
+  </script>
+  <link rel="stylesheet" href="/css/site.css" />
+  <style>
+    .calc-head { padding: 48px 0 8px; }
+    .calc-head h1 { margin-bottom: 12px; }
+    .calc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; padding: 24px 0 56px; }
+    @media (max-width: 860px) { .calc { grid-template-columns: minmax(0, 1fr); } }
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; box-shadow: var(--shadow); }
+    .panel h2 { font-size: 20px; margin-bottom: 14px; }
+    fieldset { border: 0; padding: 0; margin: 0 0 16px; min-width: 0; }
+    legend, .field > label { display: block; font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+    .radios { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+    .radios label { display: inline-flex; gap: 6px; align-items: center; font-size: 15px; }
+    .field { margin-bottom: 14px; }
+    .hm, .one { display: flex; align-items: center; gap: 6px; }
+    .hm input, .one input { width: 88px; min-height: 44px; padding: 8px 10px; font: inherit; color: var(--ink);
+                            background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+    .hm span { color: var(--mut); margin-right: 8px; }
+    .trip { border-top: 1px solid var(--line); padding-top: 16px; }
+    .trip .row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .now { font-size: 17px; margin-bottom: 16px; }
+    .meter { margin-bottom: 12px; }
+    .meter .top { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+    .meter .val { font-weight: 700; }
+    .meter .track { height: 8px; border-radius: 999px; background: var(--bg2); overflow: hidden; margin-top: 4px; }
+    .meter .fill { height: 100%; background: var(--green); }
+    .meter.first .fill { background: var(--amber); }
+    .meter.first .top { color: var(--amber); }
+    .plan { list-style: none; margin: 0 0 12px; padding: 0; }
+    .plan li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0 8px 14px; border-bottom: 1px solid var(--line);
+               font-size: 15px; border-left: 3px solid var(--line); }
+    .plan li.drive { border-left-color: var(--green); }
+    .plan li.duty { border-left-color: var(--blue); }
+    .plan li.break, .plan li.reset { border-left-color: var(--amber); }
+    .plan li.restart { border-left-color: var(--red); }
+    .note { font-size: 14px; padding: 10px 12px; border-radius: 10px; background: var(--amber-bg); color: var(--amber); margin-top: 12px; }
+    .note[hidden], #plan-box[hidden], #plan-hint[hidden] { display: none; }
+    .cta { text-align: center; }
+    .cta .ctas { justify-content: center; }
+    .faq h3 { margin-top: 20px; }
+    .disc { font-size: 14px; color: var(--mut); margin-top: 28px; }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="logo" data-local href="/ro/"><img src="/icon.png" alt="" /><span>Load<b>Lens</b></span></a>
+      <div class="langs" role="group" aria-label="Language">
+        <a href="/hos-calculator/" hreflang="en" lang="en" data-lang="en">EN</a>
+        <a href="/ru/hos-calculator/" hreflang="ru" lang="ru" data-lang="ru">RU</a>
+        <a href="/ro/hos-calculator/" hreflang="ro" lang="ro" data-lang="ro" aria-current="page">RO</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="calc-head">
+      <div class="wrap">
+        <h1 data-i18n="h.title">Calculator HOS: câte ore mai poți conduce?</h1>
+        <p class="lead" data-i18n="h.lead">Introdu orele de azi și vezi timpul rămas pentru fiecare limită FMCSA. Adaugă milele cursei ca să vezi un plan legal cu pauze și odihnă de 10 ore.</p>
+      </div>
+    </section>
+
+    <div class="wrap calc">
+      <form class="panel" id="calc" onsubmit="return false">
+        <fieldset>
+          <legend data-i18n="in.cycle">Ciclu</legend>
+          <div class="radios">
+            <label><input type="radio" name="cycle" value="70-8" checked /> <span data-i18n="in.c70">70 de ore / 8 zile</span></label>
+            <label><input type="radio" name="cycle" value="60-7" /> <span data-i18n="in.c60">60 de ore / 7 zile</span></label>
+          </div>
+        </fieldset>
+        <div class="field"><label for="driven-h" data-i18n="in.driven">Timp de condus în tura curentă</label>
+          <div class="hm"><input class="ym-disable-keys" type="number" id="driven-h" min="0" max="11" inputmode="numeric" value="0" /><span data-i18n="u.h">h</span>
+            <input class="ym-disable-keys" type="number" id="driven-m" min="0" max="59" inputmode="numeric" value="0" /><span data-i18n="u.m">min</span></div></div>
+        <div class="field"><label for="shift-h" data-i18n="in.shift">Timp de la începutul turei</label>
+          <div class="hm"><input class="ym-disable-keys" type="number" id="shift-h" min="0" max="14" inputmode="numeric" value="0" /><span data-i18n="u.h">h</span>
+            <input class="ym-disable-keys" type="number" id="shift-m" min="0" max="59" inputmode="numeric" value="0" /><span data-i18n="u.m">min</span></div></div>
+        <div class="field"><label for="since-h" data-i18n="in.since">Condus de la ultima pauză de 30 de minute</label>
+          <div class="hm"><input class="ym-disable-keys" type="number" id="since-h" min="0" max="8" inputmode="numeric" value="0" /><span data-i18n="u.h">h</span>
+            <input class="ym-disable-keys" type="number" id="since-m" min="0" max="59" inputmode="numeric" value="0" /><span data-i18n="u.m">min</span></div></div>
+        <div class="field"><label for="used-h" data-i18n="in.used">Ore on duty în ultimele 8 (sau 7) zile</label>
+          <div class="hm"><input class="ym-disable-keys" type="number" id="used-h" min="0" max="70" inputmode="numeric" value="0" /><span data-i18n="u.h">h</span>
+            <input class="ym-disable-keys" type="number" id="used-m" min="0" max="59" inputmode="numeric" value="0" /><span data-i18n="u.m">min</span></div></div>
+        <fieldset class="trip">
+          <legend data-i18n="in.trip">Cursă (opțional)</legend>
+          <div class="row">
+            <div class="field"><label for="miles" data-i18n="in.miles">Mile cu marfă</label>
+              <div class="one"><input class="ym-disable-keys" type="number" id="miles" min="0" max="5000" inputmode="numeric" /></div></div>
+            <div class="field"><label for="mph" data-i18n="in.mph">Viteză medie, mph</label>
+              <div class="one"><input class="ym-disable-keys" type="number" id="mph" min="30" max="75" inputmode="numeric" value="55" /></div></div>
+            <div class="field"><label for="load" data-i18n="in.load">Încărcare, min</label>
+              <div class="one"><input class="ym-disable-keys" type="number" id="load" min="0" max="600" inputmode="numeric" value="60" /></div></div>
+            <div class="field"><label for="unload" data-i18n="in.unload">Descărcare, min</label>
+              <div class="one"><input class="ym-disable-keys" type="number" id="unload" min="0" max="600" inputmode="numeric" value="60" /></div></div>
+          </div>
+        </fieldset>
+      </form>
+
+      <div>
+        <div class="panel" aria-live="polite">
+          <h2 data-i18n="r.title">Timp rămas</h2>
+          <p class="now" id="now"></p>
+          <div class="meter" data-k="drive"><div class="top"><span data-i18n="r.drive">Limita de condus de 11 ore</span><span class="val"></span></div><div class="track"><div class="fill"></div></div></div>
+          <div class="meter" data-k="window"><div class="top"><span data-i18n="r.window">Fereastra de 14 ore</span><span class="val"></span></div><div class="track"><div class="fill"></div></div></div>
+          <div class="meter" data-k="break"><div class="top"><span data-i18n="r.break">Până la pauza de 30 de minute</span><span class="val"></span></div><div class="track"><div class="fill"></div></div></div>
+          <div class="meter" data-k="cycle"><div class="top"><span data-i18n="r.cycle">Ciclu</span><span class="val"></span></div><div class="track"><div class="fill"></div></div></div>
+        </div>
+        <div class="panel" style="margin-top: 16px">
+          <h2 data-i18n="p.title">Plan legal de cursă</h2>
+          <p class="mut" id="plan-hint" data-i18n="p.hint">Introdu milele cu marfă ca să vezi planul cursei.</p>
+          <div id="plan-box" hidden>
+            <ol class="plan" id="plan"></ol>
+            <p><b id="total"></b></p>
+            <p class="mut small" id="arrive"></p>
+            <p class="note" id="restart-note" hidden data-i18n="p.restart">Cursa are nevoie de un restart de 34 de ore, pentru că ciclul se termină pe drum. Dacă în timpul cursei unele ore ies din totalul pe 8 (7) zile, poate fi nevoie de mai puțin.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section class="alt cta">
+      <div class="wrap">
+        <h2 data-i18n="cta.t">LoadLens face această verificare pentru fiecare cursă din DAT One</h2>
+        <p class="lead" style="margin: 0 auto" data-i18n="cta.p">Extensia pune un badge HOS lângă fiecare anunț, împreună cu $/milă real după drumul în gol și verificarea brokerului. Plan gratuit, fără card.</p>
+        <div class="ctas">
+          <a class="btn primary" data-cws="hos_calc" href="https://chromewebstore.google.com/detail/chemnjopdclcmcckgfbmabielhobmknk?utm_source=hos_calc" target="_blank" rel="noopener" data-i18n="cta.install">Adaugă în Chrome, gratuit</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq">
+      <div class="wrap">
+        <h2 data-i18n="faq.title">Întrebări frecvente</h2>
+        <h3 data-i18n="faq.q1">Câte ore pe zi poate conduce un șofer de camion?</h3>
+        <p data-i18n="faq.a1">Până la 11 ore de condus după 10 ore consecutive libere, și doar într-o fereastră de 14 ore care începe odată cu tura. Pauzele nu prelungesc fereastra de 14 ore.</p>
+        <h3 data-i18n="faq.q2">Când este obligatorie pauza de 30 de minute?</h3>
+        <p data-i18n="faq.a2">După 8 ore de condus în total fără o pauză de cel puțin 30 de minute. Pauza poate fi liberă, în cabina de dormit sau în tură fără condus, de exemplu la încărcare.</p>
+        <h3 data-i18n="faq.q3">Ce este regula de 70 de ore în 8 zile?</h3>
+        <p data-i18n="faq.a3">Șoferul nu poate conduce după 70 de ore în tură în 8 zile consecutive, sau 60 de ore în 7 zile dacă transportatorul nu lucrează zilnic. Un restart de 34 de ore libere readuce contorul la zero.</p>
+        <h3 data-i18n="faq.q4">Înlocuiește acest calculator un ELD?</h3>
+        <p data-i18n="faq.a4">Nu. Este o estimare pentru planificare, pentru dispeceri și șoferi. La un control contează doar înregistrarea din ELD.</p>
+        <p class="disc" data-i18n="disc">Estimare pentru planificare, nu consultanță juridică și nu înlocuiește ELD-ul. Split sleeper, condițiile nefavorabile și excepțiile pentru curse scurte nu sunt modelate, iar totalul ciclului este considerat fix pe durata cursei.</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="consent" id="consent" role="dialog" aria-label="Cookies" hidden>
+    <p><span data-i18n="ck.text">Folosim cookie-uri Yandex Metrica ca să vedem cum e folosită pagina, inclusiv înregistrarea sesiunilor. Nu se încarcă nimic până nu accepți.</span>
+      <a href="/privacy.html#website" data-i18n="ck.more">Detalii</a></p>
+    <div class="btns">
+      <button type="button" class="btn ghost" id="ck-no" data-i18n="ck.no">Refuz</button>
+      <button type="button" class="btn primary" id="ck-yes" data-i18n="ck.yes">Accept</button>
+    </div>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      <span data-i18n="ft.legal">© 2026 LoadLens. Nu este afiliat cu DAT Solutions sau Truckstop.</span>
+      <nav>
+        <a href="mailto:hello@krait.studio?subject=%C3%8Entrebare%20despre%20LoadLens" data-mail="question">hello@krait.studio</a>
+        <a href="/privacy.html" data-i18n="pv.link">Politica de confidențialitate (English)</a>
+        <a href="/stats.html" data-i18n="ft.stats">Statistici pe rute</a>
+        <a href="#" class="linkbtn" id="ck-open" data-i18n="ck.settings">Setări cookie</a>
+      </nav>
+    </div>
+  </footer>
+
+  <!--STRINGS-START--><script type="application/json" id="ll-strings">{"js.hm":"{h} h {m} min","js.left":"{t} rămase","js.now":"Poți conduce {t} chiar acum, apoi ai nevoie de {next}.","js.next.break":"o pauză de 30 de minute","js.next.drive":"o odihnă de 10 ore: limita de condus de 11 ore s-a epuizat","js.next.window":"o odihnă de 10 ore: se închide fereastra de 14 ore","js.next.cycle":"un restart de 34 de ore: ciclul s-a epuizat","js.seg.duty":"În tură: încărcare sau descărcare","js.seg.drive":"Condus {mi} mile","js.seg.break":"Pauză de 30 de minute","js.seg.reset":"Odihnă de 10 ore","js.seg.restart":"Restart de 34 de ore","js.total":"Timp legal al cursei: {t} (condus {d}, pauze și odihnă {r}).","js.arrive":"Gata în jurul orei {when}, după ceasul calculatorului tău."}</script><!--STRINGS-END-->
+  <script src="/js/hos-trip.js"></script>
+  <script src="/js/hos-page.js"></script>
+  <script src="/js/site.js"></script>
+</body>
+</html>

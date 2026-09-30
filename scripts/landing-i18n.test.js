@@ -121,3 +121,65 @@ for (const lang of ["ru", "ro"]) test(`${lang}: ссылки data-local веду
   assert.match(page, new RegExp(`<a class="logo" data-local href="/${lang}/"`));
   assert.ok(!/data-local href="\/(?!ru\/|ro\/)/.test(page));
 });
+
+// ---- HOS-калькулятор ----
+const CALC = PAGES.find((p) => p.path === "/hos-calculator/");
+const calcHtml = fs.readFileSync(path.join(PUB, "hos-calculator", "index.html"), "utf8");
+const CALC_I18N = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "landing", "hos-calculator.i18n.json"), "utf8"));
+const calcKeys = new Set([...calcHtml.matchAll(/data-i18n="([^"]+)"/g)].map((m) => m[1]));
+const hosPageJs = fs.readFileSync(path.join(PUB, "js", "hos-page.js"), "utf8");
+const JS_KEYS = ["js.hm", "js.left", "js.now", "js.total", "js.arrive",
+  ...["break", "drive", "window", "cycle"].map((k) => "js.next." + k),
+  ...["duty", "drive", "break", "reset", "restart"].map((k) => "js.seg." + k)];
+
+test("калькулятор в PAGES как инструмент", () => {
+  assert.ok(CALC);
+  assert.strictEqual(CALC.ld, "tool");
+});
+
+for (const lang of ["ru", "ro"]) {
+  test(`калькулятор ${lang}: переведён каждый ключ разметки (свой словарь или общий)`, () => {
+    const d = { ...I18N[lang], ...CALC_I18N[lang] };
+    assert.deepStrictEqual([...calcKeys].filter((k) => !(d[k] || "").trim()), []);
+  });
+  test(`калькулятор ${lang}: в своём словаре нет лишних ключей; js.* и meta.* совпадают с EN`, () => {
+    const own = Object.keys(CALC_I18N[lang]);
+    assert.deepStrictEqual(own.filter((k) => !calcKeys.has(k) && !/^(js|meta)\./.test(k)), []);
+    const scriptKeys = (o) => Object.keys(o).filter((k) => /^(js|meta)\./.test(k)).sort();
+    assert.deepStrictEqual(scriptKeys(CALC_I18N[lang]), scriptKeys(CALC_I18N.en));
+  });
+}
+
+test("калькулятор: EN-словарь содержит только meta.* и все js.*, которые читает hos-page.js", () => {
+  assert.deepStrictEqual(Object.keys(CALC_I18N.en).filter((k) => !/^(js|meta)\./.test(k)), []);
+  for (const k of JS_KEYS) assert.ok((CALC_I18N.en[k] || "").trim(), `нет ${k}`);
+  for (const m of hosPageJs.matchAll(/S\["(js\.[^"]+)"\]/g)) assert.ok(JS_KEYS.includes(m[1]), `ключ ${m[1]} не в JS_KEYS`);
+});
+
+for (const lang of Object.keys(LANGS)) {
+  const rel = path.join(urlOf(lang, CALC).slice(1), "index.html");
+  test(`калькулятор ${lang}: canonical, FAQPage, строки для JS, переключатель на версии калькулятора`, () => {
+    const page = built[rel];
+    assert.ok(page.includes(`<link rel="canonical" href="${BASE + urlOf(lang, CALC)}" />`));
+    const ld = JSON.parse(page.match(/<script type="application\/ld\+json">(.*?)<\/script>/)[1]);
+    const faq = ld["@graph"].find((x) => x["@type"] === "FAQPage");
+    assert.strictEqual(faq.mainEntity.length, 4);
+    for (const q of faq.mainEntity) assert.ok(q.name && q.acceptedAnswer.text);
+    const strings = JSON.parse(page.match(/<script type="application\/json" id="ll-strings">(.*?)<\/script>/)[1]);
+    for (const k of JS_KEYS) assert.ok(strings[k], `${lang}: нет ${k}`);
+    for (const l of Object.keys(LANGS)) assert.ok(page.includes(`href="${urlOf(l, CALC)}" hreflang="${l}"`));
+    assert.match(page, new RegExp(`data-lang="${lang}" aria-current="page"`));
+    if (lang !== "en") assert.ok(page.includes(`<title>${CALC_I18N[lang]["meta.title"]}</title>`));
+  });
+}
+
+test("калькулятор: кнопка установки с utm_source=hos_calc, поля скрыты от Webvisor, скрипты подключены", () => {
+  const hrefs = [...calcHtml.matchAll(/<a [^>]*data-cws="hos_calc"[^>]*href="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepStrictEqual(hrefs, ["https://chromewebstore.google.com/detail/chemnjopdclcmcckgfbmabielhobmknk?utm_source=hos_calc"]);
+  const inputs = [...calcHtml.matchAll(/<input\b[^>]*>/g)].map((m) => m[0]).filter((t) => /type="number"/.test(t));
+  assert.ok(inputs.length >= 12);
+  for (const t of inputs) assert.match(t, /class="[^"]*ym-disable-keys/);
+  assert.match(calcHtml, /<script src="\/js\/hos-trip\.js"><\/script>\s*<script src="\/js\/hos-page\.js"><\/script>\s*<script src="\/js\/site\.js"><\/script>\s*<\/body>/);
+  assert.match(calcHtml, /<link rel="stylesheet" href="\/css\/site\.css" \/>/);
+  assert.match(calcHtml, /not a replacement for your ELD/);
+});
