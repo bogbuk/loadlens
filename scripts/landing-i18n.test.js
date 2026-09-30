@@ -183,3 +183,12 @@ test("калькулятор: кнопка установки с utm_source=hos_
   assert.match(calcHtml, /<link rel="stylesheet" href="\/css\/site\.css" \/>/);
   assert.match(calcHtml, /not a replacement for your ELD/);
 });
+
+test("главная ссылается на калькулятор (карточка HOS и футер), privacy упоминает калькулятор", () => {
+  assert.match(html, /<a data-local href="\/hos-calculator\/" data-i18n="f2\.link">/);
+  assert.match(html, /<a data-local href="\/hos-calculator\/" data-i18n="ft\.hos">/);
+  assert.match(built[path.join("ru", "index.html")], /data-local href="\/ru\/hos-calculator\/"/);
+  const privacy = fs.readFileSync(path.join(PUB, "privacy.html"), "utf8");
+  assert.match(privacy, /HOS calculator/);
+  assert.ok(!privacy.includes("The page has no forms"), "на калькуляторе есть поля — формулировка устарела");
+});
