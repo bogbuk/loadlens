@@ -10,7 +10,7 @@ const html = fs.readFileSync(path.join(__dirname, "..", "backend", "public", "in
 const PUB = path.join(__dirname, "..", "backend", "public");
 const siteJs = fs.readFileSync(path.join(PUB, "js", "site.js"), "utf8");
 const I18N = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "landing", "i18n.json"), "utf8"));
-const { build, BASE, LANGS } = require("./build-landing");
+const { build, BASE, LANGS, PAGES, urlOf } = require("./build-landing");
 const built = build();
 // ключи, которые ставит скрипт, а не разметка: <title>/описание и темы писем
 const SCRIPT_KEYS = ["meta.title", "meta.desc", "mail.pro", "mail.question"];
@@ -99,4 +99,25 @@ test("общие стили и редирект по языку: site.css в <he
   assert.match(head, /<link rel="stylesheet" href="\/css\/site\.css" \/>/);
   assert.ok(head.includes('location.replace("/" + lang + location.pathname + location.hash)'));
   assert.ok(!/\.consent \{/.test(head), "стили баннера должны жить в site.css");
+});
+
+test("urlOf: префикс языка + путь страницы", () => {
+  const calc = { path: "/hos-calculator/" };
+  assert.strictEqual(urlOf("en", calc), "/hos-calculator/");
+  assert.strictEqual(urlOf("ru", calc), "/ru/hos-calculator/");
+  assert.strictEqual(urlOf("ro", PAGES[0]), "/ro/");
+});
+
+test("sitemap: каждая страница на каждом языке, с hreflang своей группы", () => {
+  const sm = built["sitemap.xml"];
+  for (const pg of PAGES) for (const l of Object.keys(LANGS)) {
+    assert.ok(sm.includes(`<loc>${BASE + urlOf(l, pg)}</loc>`), `нет ${urlOf(l, pg)}`);
+    assert.ok(sm.includes(`hreflang="${l}" href="${BASE + urlOf(l, pg)}"`));
+  }
+});
+
+for (const lang of ["ru", "ro"]) test(`${lang}: ссылки data-local ведут на свою языковую версию`, () => {
+  const page = built[path.join(lang, "index.html")];
+  assert.match(page, new RegExp(`<a class="logo" data-local href="/${lang}/"`));
+  assert.ok(!/data-local href="\/(?!ru\/|ro\/)/.test(page));
 });

@@ -3,6 +3,7 @@
    Источник — EN-разметка backend/public/index.html (правится руками) + словарь landing/i18n.json.
    Генерирует: SEO-блок <head> во всех трёх страницах (между <!--SEO-START/END-->),
    backend/public/{ru,ro}/index.html и backend/public/sitemap.xml.
+   Страницы — список PAGES; словарь страницы накладывается на общий landing/i18n.json.
    Запуск: npm run build:landing (входит в npm test; устаревшие файлы ловит landing-i18n.test.js). */
 const fs = require("node:fs");
 const path = require("node:path");
@@ -12,20 +13,38 @@ const PUBLIC = path.join(ROOT, "backend", "public");
 // Домен в одном месте: при переезде на свой домен меняется только здесь (+ robots.txt).
 const BASE = "https://loadlens.krait.studio";
 const CWS = "https://chromewebstore.google.com/detail/chemnjopdclcmcckgfbmabielhobmknk";
+// Префиксы языков; URL страницы = префикс + её путь (EN без префикса).
 const LANGS = {
   en: { path: "/", locale: "en_US" },
   ru: { path: "/ru/", locale: "ru_RU" },
   ro: { path: "/ro/", locale: "ro_RO" },
 };
+// src — EN-исходник в backend/public (правится руками), dict — словарь поверх landing/i18n.json.
+// ld: "app" — карточка расширения (SoftwareApplication), "tool" — бесплатный инструмент (WebApplication + FAQPage).
+const COMMON_DICT = "landing/i18n.json";
+const PAGES = [
+  { src: "index.html", dict: COMMON_DICT, path: "/", ld: "app" },
+];
 // Прочие публичные страницы для sitemap (admin.html — noindex, в карту не идёт).
 const EXTRA_PAGES = ["/stats.html", "/privacy.html"];
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const urlOf = (lang, pg) => LANGS[lang].path + pg.path.slice(1);
+const jsonScript = (o) => JSON.stringify(o).replace(/</g, "\\u003c");
 
-function seoBlock(lang, d) {
-  const url = BASE + LANGS[lang].path;
-  const title = esc(d["meta.title"]), desc = esc(d["meta.desc"]);
-  const ld = {
+function jsonLd(lang, pg, d, faq) {
+  const url = BASE + urlOf(lang, pg);
+  if (pg.ld === "tool") return {
+    "@context": "https://schema.org",
+    "@graph": [
+      { "@type": "WebApplication", name: d["meta.title"], url, description: d["meta.desc"],
+        applicationCategory: "BusinessApplication", operatingSystem: "Any", browserRequirements: "Requires JavaScript",
+        inLanguage: lang, isAccessibleForFree: true, offers: { "@type": "Offer", price: "0", priceCurrency: "USD" } },
+      { "@type": "FAQPage", inLanguage: lang, mainEntity: faq.map(([q, a]) =>
+        ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) },
+    ],
+  };
+  return {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     name: "LoadLens",
@@ -38,12 +57,17 @@ function seoBlock(lang, d) {
     installUrl: CWS,
     offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
   };
+}
+
+function seoBlock(lang, pg, d, faq) {
+  const url = BASE + urlOf(lang, pg);
+  const title = esc(d["meta.title"]), desc = esc(d["meta.desc"]);
   const lines = [
     `<title>${title}</title>`,
     `<meta name="description" content="${desc}" />`,
     `<link rel="canonical" href="${url}" />`,
-    ...Object.entries(LANGS).map(([l, v]) => `<link rel="alternate" hreflang="${l}" href="${BASE + v.path}" />`),
-    `<link rel="alternate" hreflang="x-default" href="${BASE}/" />`,
+    ...Object.keys(LANGS).map((l) => `<link rel="alternate" hreflang="${l}" href="${BASE + urlOf(l, pg)}" />`),
+    `<link rel="alternate" hreflang="x-default" href="${BASE + pg.path}" />`,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:site_name" content="LoadLens" />`,
     `<meta property="og:title" content="${title}" />`,
@@ -55,7 +79,7 @@ function seoBlock(lang, d) {
     `<meta property="og:locale" content="${LANGS[lang].locale}" />`,
     ...Object.keys(LANGS).filter((l) => l !== lang).map((l) => `<meta property="og:locale:alternate" content="${LANGS[l].locale}" />`),
     `<meta name="twitter:card" content="summary_large_image" />`,
-    `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>`,
+    `<script type="application/ld+json">${jsonScript(jsonLd(lang, pg, d, faq))}</script>`,
   ];
   return "<!--SEO-START-->\n" + lines.map((l) => "  " + l).join("\n") + "\n  <!--SEO-END-->";
 }
@@ -88,36 +112,63 @@ function mailHrefs(html, d) {
       a + "mailto:hello@krait.studio?subject=" + encodeURIComponent(d["mail." + kind]) + b);
 }
 
-function page(src, lang, dict) {
+// Строки, которые рисует JS страницы (ключи js.*), — JSON-блок между маркерами.
+function stringsBlock(d) {
+  const js = Object.fromEntries(Object.entries(d).filter(([k]) => k.startsWith("js.")));
+  return `<!--STRINGS-START--><script type="application/json" id="ll-strings">${jsonScript(js)}</script><!--STRINGS-END-->`;
+}
+
+// Вопросы/ответы FAQ из уже переведённой разметки: data-i18n="faq.qN" / "faq.aN", текст без тегов.
+function faqFrom(html) {
+  const get = (k) => (html.match(new RegExp(`data-i18n="faq\\.${k}"[^>]*>([^<]*)<`)) || [])[1];
+  const out = [];
+  for (let i = 1; get("q" + i); i++) out.push([get("q" + i), get("a" + i)]);
+  return out;
+}
+
+function page(src, lang, pg, dict) {
   const d = { ...dict.en, ...(dict[lang] || {}) };
-  let html = src.replace(/<!--SEO-START-->[\s\S]*?<!--SEO-END-->/, () => seoBlock(lang, d));
-  html = mailHrefs(html, d);
-  if (lang === "en") return html;
-  html = html.replace(/<html lang="en">/, `<html lang="${lang}">`);
-  const bodyAt = html.indexOf("<body>");
-  html = html.slice(0, bodyAt) + translateBody(html.slice(bodyAt), dict[lang]);
-  return html.replace(/ aria-current="page"/g, "")
-    .replace(new RegExp(`(data-lang="${lang}")`), '$1 aria-current="page"');
+  let html = mailHrefs(src, d);
+  if (lang !== "en") {
+    html = html.replace(/<html lang="en">/, `<html lang="${lang}">`);
+    const bodyAt = html.indexOf("<body>");
+    html = html.slice(0, bodyAt) + translateBody(html.slice(bodyAt), dict[lang]);
+    html = html.replace(/ aria-current="page"/g, "")
+      .replace(new RegExp(`(data-lang="${lang}")`), '$1 aria-current="page"')
+      .replace(/(<a\b[^>]*\bdata-local href=")\//g, (_, a) => `${a}/${lang}/`);
+  }
+  html = html.replace(/<!--STRINGS-START-->[\s\S]*?<!--STRINGS-END-->/, () => stringsBlock(d));
+  return html.replace(/<!--SEO-START-->[\s\S]*?<!--SEO-END-->/, () => seoBlock(lang, pg, d, faqFrom(html)));
 }
 
 function sitemap() {
-  const alts = Object.entries(LANGS).map(([l, v]) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${BASE + v.path}"/>`)
-    .concat(`    <xhtml:link rel="alternate" hreflang="x-default" href="${BASE}/"/>`).join("\n");
-  const urls = Object.values(LANGS).map((v) => `  <url>\n    <loc>${BASE + v.path}</loc>\n${alts}\n  </url>`)
-    .concat(EXTRA_PAGES.map((p) => `  <url>\n    <loc>${BASE + p}</loc>\n  </url>`));
+  const urls = PAGES.flatMap((pg) => {
+    const alts = Object.keys(LANGS).map((l) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${BASE + urlOf(l, pg)}"/>`)
+      .concat(`    <xhtml:link rel="alternate" hreflang="x-default" href="${BASE + pg.path}"/>`).join("\n");
+    return Object.keys(LANGS).map((l) => `  <url>\n    <loc>${BASE + urlOf(l, pg)}</loc>\n${alts}\n  </url>`);
+  }).concat(EXTRA_PAGES.map((p) => `  <url>\n    <loc>${BASE + p}</loc>\n  </url>`));
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls.join("\n")}\n</urlset>\n`;
+}
+
+const readDict = (rel) => JSON.parse(fs.readFileSync(path.join(ROOT, rel), "utf8"));
+// Словарь страницы поверх общего: общие ключи (шапка, футер, согласие, cta.install) — из landing/i18n.json.
+function layer(base, own) {
+  return Object.fromEntries(Object.keys(LANGS).map((l) => [l, { ...(base[l] || {}), ...(own[l] || {}) }]));
 }
 
 // Возвращает { относительный путь в backend/public: содержимое } — тест сверяет его с диском.
 function build() {
-  const src = fs.readFileSync(path.join(PUBLIC, "index.html"), "utf8");
-  const dict = JSON.parse(fs.readFileSync(path.join(ROOT, "landing", "i18n.json"), "utf8"));
+  const common = readDict(COMMON_DICT);
   const files = { "sitemap.xml": sitemap() };
-  for (const lang of Object.keys(LANGS)) files[path.join(LANGS[lang].path.slice(1), "index.html")] = page(src, lang, dict);
+  for (const pg of PAGES) {
+    const src = fs.readFileSync(path.join(PUBLIC, pg.src), "utf8");
+    const dict = pg.dict === COMMON_DICT ? common : layer(common, readDict(pg.dict));
+    for (const lang of Object.keys(LANGS)) files[path.join(urlOf(lang, pg).slice(1), "index.html")] = page(src, lang, pg, dict);
+  }
   return files;
 }
 
-module.exports = { build, BASE, LANGS };
+module.exports = { build, BASE, LANGS, PAGES, urlOf };
 
 if (require.main === module) {
   for (const [rel, content] of Object.entries(build())) {
