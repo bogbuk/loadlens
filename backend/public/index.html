@@ -179,7 +179,7 @@
           <h1 data-i18n="hero.title">Know what a load really pays before you call the broker</h1>
           <p class="lead" data-i18n="hero.lead">LoadLens works inside DAT One and Truckstop. Every load gets a profit badge after deadhead and fuel, an Hours-of-Service check and a broker trust score, right on the board you already use.</p>
           <div class="ctas">
-            <a class="btn primary" data-cws href="https://chromewebstore.google.com/detail/chemnjopdclcmcckgfbmabielhobmknk?utm_source=landing" target="_blank" rel="noopener" data-i18n="cta.install">Add to Chrome, free</a>
+            <a class="btn primary" data-cws="hero" href="https://chromewebstore.google.com/detail/chemnjopdclcmcckgfbmabielhobmknk?utm_source=landing" target="_blank" rel="noopener" data-i18n="cta.install">Add to Chrome, free</a>
             <a class="btn ghost" href="#how" data-i18n="cta.how">See how it works</a>
           </div>
           <p class="mut small" data-i18n="hero.note">Free plan, no card. Sign up in the extension and get 14 days of Pro.</p>
@@ -276,7 +276,7 @@
               <li data-i18n="pr.f3">Hot loads list, trailer filter and sorting</li>
               <li data-i18n="pr.f4">Rate the brokers you worked with</li>
             </ul>
-            <a class="btn ghost" data-cws href="https://chromewebstore.google.com/detail/chemnjopdclcmcckgfbmabielhobmknk?utm_source=landing" target="_blank" rel="noopener" data-i18n="cta.install">Add to Chrome, free</a>
+            <a class="btn ghost" data-cws="pricing" href="https://chromewebstore.google.com/detail/chemnjopdclcmcckgfbmabielhobmknk?utm_source=landing" target="_blank" rel="noopener" data-i18n="cta.install">Add to Chrome, free</a>
           </div>
           <div class="plan hl">
             <h3>Pro</h3>
@@ -317,7 +317,7 @@
         <h2 data-i18n="fin.title">Your next good load is already on the board</h2>
         <p class="lead" style="margin:0 auto" data-i18n="fin.lead">Install in a minute and see the real numbers on your next search.</p>
         <div class="ctas">
-          <a class="btn primary" data-cws href="https://chromewebstore.google.com/detail/chemnjopdclcmcckgfbmabielhobmknk?utm_source=landing" target="_blank" rel="noopener" data-i18n="cta.install">Add to Chrome, free</a>
+          <a class="btn primary" data-cws="final" href="https://chromewebstore.google.com/detail/chemnjopdclcmcckgfbmabielhobmknk?utm_source=landing" target="_blank" rel="noopener" data-i18n="cta.install">Add to Chrome, free</a>
         </div>
         <p class="mut small"><span data-i18n="fin.q">Questions?</span> <a data-mail="question" href="mailto:hello@krait.studio?subject=LoadLens%20question">hello@krait.studio</a></p>
       </div>
@@ -584,6 +584,15 @@
     document.getElementById("ck-yes").addEventListener("click", () => { set("granted"); banner.hidden = true; loadMetrika(); });
     document.getElementById("ck-no").addEventListener("click", () => { set("denied"); banner.hidden = true; });
     document.getElementById("ck-open").addEventListener("click", (e) => { e.preventDefault(); banner.hidden = false; });
+
+    // Цель install_click (Метрика → Цели → JavaScript-событие) с местом кнопки и языком страницы.
+    // Без согласия ym не загружен — вызов пропускаем, ничего не отправляется.
+    for (const a of document.querySelectorAll("[data-cws]")) {
+      a.addEventListener("click", () => {
+        if (typeof window.ym === "function")
+          window.ym(113205805, 'reachGoal', 'install_click', { place: a.dataset.cws, lang: document.documentElement.lang });
+      });
+    }
 
     const choice = get();
     if (choice === "granted") loadMetrika();

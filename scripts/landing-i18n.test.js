@@ -48,3 +48,10 @@ test("Метрика грузится только после согласия: 
   assert.match(html, /id="ck-no"/);
   assert.match(html, /id="ck-open"/);
 });
+
+test("цель install_click: у каждой кнопки установки своё место, reachGoal только при загруженной Метрике", () => {
+  const places = [...html.matchAll(/<a [^>]*data-cws="([^"]*)"/g)].map((m) => m[1]);
+  assert.deepStrictEqual(places.sort(), ["final", "hero", "pricing"]);
+  assert.match(html, /reachGoal', 'install_click'/);
+  assert.match(html, /typeof window\.ym === "function"/);
+});
