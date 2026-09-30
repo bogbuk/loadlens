@@ -66,6 +66,102 @@ Questions or feedback: hello@krait.studio
 Website: https://loadlens.krait.studio
 ```
 
+## Локализованные описания (RU, RO)
+
+Дашборд CWS → Store listing → выпадающий список языка → добавить `Russian` и `Romanian` → вставить
+Detailed description. Магазин показывает их пользователям Chrome на этом языке, у конкурентов их нет.
+Название и краткое описание остаются английскими: их локализация требует `_locales/` в пакете
+(отдельное решение; плюс английские поисковые слова «rate per mile», «DAT One» русскоязычные
+диспетчеры всё равно вбивают по-английски). Строка «Интерфейс на английском» обязательна: UI
+расширения только EN, обещать русский интерфейс нельзя. Абзац о приватности — дословный перевод
+английского (он сверен с privacy.html). RO не вычитан носителем.
+
+### Russian
+
+```
+Узнайте, сколько реально платит груз, ещё до звонка брокеру.
+
+LoadLens — расширение Chrome для диспетчеров и овнер-операторов, которые ищут грузы на DAT One. У каждого груза прямо на борде появляются бейдж выгодности, проверка HOS и оценка брокера. Без таблиц, калькулятора и второго экрана.
+
+БЕСПЛАТНО: ЧТО ВИДНО НА КАЖДОМ ГРУЗЕ
+
+• Реальная ставка за милю (rate per mile). Ставка делится на мили с грузом плюс пустой пробег до погрузки (deadhead), с учётом топлива. Зелёный, жёлтый или красный относительно вашей себестоимости мили и целевого $/миля.
+• Проверка HOS. Бейдж показывает, успеет ли водитель легально: правила 11 часов, 14 часов, 30-минутного перерыва и 70 часов за 8 дней.
+• Проверка брокера. Кредитный рейтинг DAT и срок оплаты в одном бейдже: тех, кто тянет с оплатой, видно ещё до рейса.
+• Свежесть объявления. У каждого груза видно, как давно его выставили, а список выгодных грузов начинается со свежих.
+• Письмо брокеру в один клик. Черновик в Gmail с направлением, милями, датой погрузки и контр-оффером выше вашей точки безубыточности. Вы читаете и сами нажимаете «Отправить». Рядом кнопки звонка и копирования email.
+• Боковая панель. Выгодные грузы, фильтр прицепа, сортировка и полная карточка груза рядом с результатами поиска.
+• Оценки брокеров, с которыми вы работали: оплатил, тянул с оплатой, сорвал груз, двойной брокеридж.
+
+PRO: ДЛЯ ДИСПЕТЧЕРОВ С ПАРКОМ
+Каждый новый аккаунт получает 14 дней Pro бесплатно.
+
+• Рыночная ставка по направлению и сила рынка в точке доставки из базы LoadLens.
+• Планировщик выезда. Застряли в мёртвом рынке? LoadLens смотрит на два-три груза вперёд и ранжирует маршруты по силе рынка доставки. Иногда груз со средней ставкой, который привезёт трак туда, где есть грузы, лучше суток простоя.
+• Подбор водителя. Добавьте водителей с локацией, прицепом и остатком часов. На каждом грузе видно, кому он подходит лучше и скольким вообще.
+• Алерты в Telegram по вашим правилам: минимальная ставка, максимум пустого пробега, штаты, прицеп, MC брокера, ключевые слова вроде «in-bond». Подходящие грузы приходят с телефоном и email брокера.
+• Отзывы других перевозчиков о брокерах, актуальная цена дизеля, экспорт в CSV, до 3 устройств.
+
+КАК ЭТО РАБОТАЕТ
+
+1. Установите LoadLens в Chrome (версия 116 или новее).
+2. Ищите грузы на DAT One как обычно.
+3. Нажмите на иконку LoadLens, чтобы открыть боковую панель. Бейджи появятся на результатах поиска.
+
+Нужен свой аккаунт DAT One. LoadLens не является бордом грузов: он работает поверх вашей подписки. Поддержка Truckstop в ранней бете. Интерфейс расширения на английском.
+
+ПРИВАТНОСТЬ
+
+LoadLens читает данные о грузах, которые уже загрузила ваша собственная сессия. Он ни в какие аккаунты не входит за вас и никогда не отправляет собственных запросов к борду. Грузы, которые вы просматриваете, включая контакты брокеров и комментарии к объявлениям, когда борд их показывает, отправляются на сервер LoadLens для расчёта рыночных ставок и планов маршрутов. Они никогда не привязываются к вам, и другие пользователи не видят контакты брокеров и комментарии. Алерты в Telegram содержат контакты брокера, чтобы вы могли сразу позвонить или написать. Полная политика (на английском): https://loadlens.krait.studio/privacy.html
+
+Не связан с DAT Solutions и Truckstop.
+Вопросы и отзывы: hello@krait.studio, можно писать по-русски.
+Сайт: https://loadlens.krait.studio/ru/
+```
+
+### Romanian
+
+```
+Află cât plătește de fapt o cursă înainte să suni brokerul.
+
+LoadLens este o extensie Chrome pentru dispeceri și owner-operatori care caută curse pe DAT One. Fiecare cursă primește direct pe board un badge de profit, o verificare HOS și un scor de încredere pentru broker. Fără tabele, fără calculator, fără al doilea ecran.
+
+GRATUIT: CE VEZI LA FIECARE CURSĂ
+
+• $/milă real (rate per mile). Tariful împărțit la milele încărcate plus milele goale până la încărcare (deadhead), cu tot cu combustibilul. Verde, galben sau roșu față de costul tău pe milă și de ținta ta de $/milă.
+• Verificare HOS. Badge-ul îți arată dacă șoferul poate face cursa legal după regulile de 11 ore, 14 ore, pauza de 30 de minute și 70 de ore în 8 zile.
+• Verificarea brokerului. Scorul de credit DAT și termenul de plată într-un singur badge, ca să vezi rău-platnicii înainte de cursă.
+• Vechimea anunțului. La fiecare cursă vezi de cât timp e postată, iar lista curselor bune începe cu cele mai noi.
+• Email brokerului dintr-un clic. O ciornă în Gmail cu ruta, milele, data încărcării și o contraofertă peste pragul tău de rentabilitate. Tu o citești și apeși Send. Lângă ea ai butoane de apel și de copiere a emailului.
+• Panou lateral. Curse bune, filtru de remorcă, sortare și fișa completă a cursei lângă rezultatele căutării.
+• Evaluezi brokerii cu care ai lucrat: a plătit, plătește greu, a anulat, double-brokering.
+
+PRO: PENTRU DISPECERI CU FLOTĂ
+Fiecare cont nou primește 14 zile de Pro gratuit.
+
+• Tariful pieței pe rută și puterea pieței de destinație din baza LoadLens.
+• Plan de ieșire. Blocat într-o piață moartă? LoadLens se uită la două-trei curse înainte și ordonează rutele după cât de puternică e piața de la destinație. Uneori o cursă cu tarif mediu care duce camionul acolo unde e marfă e mai bună decât să stai o zi pe loc.
+• Potrivire pe șoferi. Adaugă șoferii cu locația, remorca și orele rămase. La fiecare cursă vezi cui i se potrivește cel mai bine și câți o pot face.
+• Alerte în Telegram după regulile tale: tarif minim, deadhead maxim, state, remorcă, MC-ul brokerului, cuvinte cheie ca „in-bond”. Cursele potrivite vin cu telefonul și emailul brokerului.
+• Rapoarte despre brokeri de la alți transportatori, prețul actual al motorinei, export CSV, până la 3 dispozitive.
+
+CUM FUNCȚIONEAZĂ
+
+1. Adaugă LoadLens în Chrome (versiunea 116 sau mai nouă).
+2. Caută curse pe DAT One ca de obicei.
+3. Apasă pe iconița LoadLens ca să deschizi panoul lateral. Badge-urile apar pe rezultatele căutării.
+
+Ai nevoie de propriul cont DAT One. LoadLens nu este un load board: funcționează peste abonamentul tău. Suportul pentru Truckstop e în beta timpurie. Interfața extensiei este în engleză.
+
+CONFIDENȚIALITATE
+
+LoadLens citește datele despre curse pe care sesiunea ta le-a încărcat deja. Nu se loghează nicăieri în locul tău și nu trimite niciodată cereri proprii către board. Cursele pe care le vezi, inclusiv contactele brokerilor și comentariile din anunțuri atunci când board-ul le afișează, sunt trimise la serverul LoadLens pentru a calcula tarifele pieței și planurile de rută. Nu sunt legate niciodată de tine, iar alți utilizatori nu văd contactele brokerilor sau comentariile. Alertele din Telegram includ contactele brokerului, ca să poți suna sau scrie imediat. Politica completă (în engleză): https://loadlens.krait.studio/privacy.html
+
+Nu este afiliat cu DAT Solutions sau Truckstop.
+Întrebări și sugestii: hello@krait.studio, ne poți scrie și în română.
+Site: https://loadlens.krait.studio/ro/
+```
+
 ## Store fields
 
 - Category: Workflow & Planning (или Productivity)
