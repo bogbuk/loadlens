@@ -89,7 +89,8 @@ test("clientId: в cloud mode — cloud:<instanceId>, ll_cid не создаёт
 test("getMe: кэш из ll_auth отдаёт cloudEnabled", async () => {
   const store = { ll_auth: { accessToken: "a", refreshToken: "r", email: "x@y.z", plan: "pro", cloudEnabled: true, planTs: Date.now() } };
   globalThis.chrome = fakeChrome(store);
-  assert.deepStrictEqual(await LLAPI.getMe(), { email: "x@y.z", plan: "pro", trialEndsAt: null, cloudEnabled: true });
+  assert.deepStrictEqual(await LLAPI.getMe(), { email: "x@y.z", plan: "pro", trialEndsAt: null, cloudEnabled: true,
+                                                billing: false, subscription: null });
 });
 
 test("login: cloudEnabled переживает вход и отдаётся из кэша getMe", async () => {
@@ -166,4 +167,13 @@ test("login: trialEndsAt сохраняется в ll_auth", async () => {
     json: async () => ({ accessToken: "a", refreshToken: "r", user: { email: "x@y.z", plan: "pro", trialEndsAt: 123, cloudEnabled: false } }) });
   try { await LLAPI.login("x@y.z", "pw"); } finally { globalThis.fetch = origFetch; }
   assert.strictEqual(store.ll_auth.trialEndsAt, 123);
+});
+
+test("getMe: кэш отдаёт billing и подписку (кнопка Upgrade/Manage без запроса к серверу)", async () => {
+  const sub = { status: "active", renewsAt: 1790000000000, endsAt: null };
+  const store = { ll_auth: { accessToken: "a", refreshToken: "r", email: "x@y.z", plan: "pro", billing: true, subscription: sub, planTs: Date.now() } };
+  globalThis.chrome = fakeChrome(store);
+  const me = await LLAPI.getMe();
+  assert.strictEqual(me.billing, true);
+  assert.deepStrictEqual(me.subscription, sub);
 });

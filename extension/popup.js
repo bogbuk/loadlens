@@ -213,6 +213,15 @@ const round1 = (n) => Math.round(n * 10) / 10;
 
 // ---- аккаунт (копия паттерна PriceLens) ----
 function planNote(pv, email) {
+  if (pv.action === "manage")
+    return '<div class="note">' + (pv.subLine ? escA(pv.subLine) + " · " : "") +
+      '<a href="#" id="acc-manage">Manage subscription</a><div id="acc-bill-err" class="err"></div></div>';
+  if (pv.action === "upgrade") {
+    const lead = pv.note === "trial" ? "Pro trial: " + pv.daysLeft + (pv.daysLeft === 1 ? " day" : " days") + " left. "
+      : pv.note === "ended" ? "Your Pro trial has ended. " : "";
+    return '<div class="note get-pro">' + lead + '<button id="acc-upgrade" class="primary">Upgrade to Pro — $24/mo</button>' +
+      '<div id="acc-bill-err" class="err"></div></div>';
+  }
   if (pv.note === "trial")
     return '<div class="note get-pro">Pro trial: ' + pv.daysLeft + (pv.daysLeft === 1 ? " day" : " days") + " left. " +
       contactLink("pro", email, "Keep Pro") + "</div>";
@@ -235,6 +244,17 @@ function accRow(user) {
     '<button id="acc-del" class="danger">Delete account</button></div>';
   document.getElementById("acc-pwd-btn").onclick = () => pwdForm(document.getElementById("acc-pwd"));
   document.getElementById("acc-out").onclick = async () => { shownAcct = ""; await LLAPI.logout(); accForm(); renderFleet(null); renderTelegram(null); renderCloud(null); };
+  const openBilling = (fn) => async (e) => {
+    e.preventDefault();
+    const err = document.getElementById("acc-bill-err");
+    if (err) err.textContent = "";
+    try { const r = await fn(); if (r.url) chrome.tabs.create({ url: r.url }); }
+    catch (x) { if (err) err.textContent = x.message; }
+  };
+  const up = document.getElementById("acc-upgrade");
+  if (up) up.onclick = openBilling(LLAPI.billingCheckout);
+  const man = document.getElementById("acc-manage");
+  if (man) man.onclick = openBilling(LLAPI.billingPortal);
   document.getElementById("acc-del").onclick = async () => {
     if (!confirm("Delete your account permanently? Your profile and all drivers will be removed. This does not cancel your DAT/Truckstop subscription.")) return;
     try { shownAcct = ""; await LLAPI.deleteAccount(); accForm("Account deleted."); renderFleet(null); renderTelegram(null); renderCloud(null); }
@@ -675,7 +695,8 @@ chrome.storage.onChanged.addListener(async (ch) => {
 // аккаунта в другом окне иначе не доходили до Settings. Перерисовываем блоки аккаунта, только когда
 // сменился сам аккаунт (email/план/облако): полная перерисовка стёрла бы недописанное правило или водителя.
 let shownAcct;                    // undefined — ещё не рисовали; null — аноним
-const acctKey = (u) => (u ? [u.email, u.plan, !!u.cloudEnabled, u.trialEndsAt ?? ""].join("|") : "");
+const acctKey = (u) => (u ? [u.email, u.plan, !!u.cloudEnabled, u.trialEndsAt ?? "", !!u.billing,
+  u.subscription ? u.subscription.status + ":" + (u.subscription.endsAt ?? u.subscription.renewsAt ?? "") : ""].join("|") : "");
 async function renderAccount(u) {
   shownAcct = acctKey(u);
   if (u) accRow(u); else accForm(await LLAPI.takeSignoutMessage());

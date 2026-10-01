@@ -180,6 +180,7 @@ const LLAPI = (() => {
     await setAuth({ accessToken: data.accessToken, refreshToken: data.refreshToken,
                     email: data.user.email, plan: data.user.plan,
                     cloudEnabled: !!data.user.cloudEnabled, trialEndsAt: data.user.trialEndsAt ?? null,
+                    billing: !!data.user.billing, subscription: data.user.subscription ?? null,
                     planTs: Date.now() });
     return data.user;
   }
@@ -220,7 +221,8 @@ const LLAPI = (() => {
     const end = auth.trialEndsAt;
     return !(end != null && auth.planTs < end && end <= now);
   }
-  const meFrom = (a) => ({ email: a.email, plan: a.plan, trialEndsAt: a.trialEndsAt ?? null, cloudEnabled: !!a.cloudEnabled });
+  const meFrom = (a) => ({ email: a.email, plan: a.plan, trialEndsAt: a.trialEndsAt ?? null, cloudEnabled: !!a.cloudEnabled,
+                           billing: !!a.billing, subscription: a.subscription ?? null });
 
   async function getMe(force) {
     let auth = await getAuth();
@@ -236,7 +238,8 @@ const LLAPI = (() => {
       if (!res.ok) return meFrom(auth);
       const user = await res.json();
       const next = { ...auth, email: user.email, plan: user.plan, trialEndsAt: user.trialEndsAt ?? null,
-                     cloudEnabled: !!user.cloudEnabled, planTs: Date.now() };
+                     cloudEnabled: !!user.cloudEnabled, billing: !!user.billing, subscription: user.subscription ?? null,
+                     planTs: Date.now() };
       await setAuth(next);
       return meFrom(next);
     } catch { return meFrom(auth); }
@@ -334,6 +337,19 @@ const LLAPI = (() => {
     return { ok: true };
   }
 
+  // Оплата Pro (Paddle): сервер отдаёт URL оплаты/портала, вкладку открывает Settings.
+  async function billingCall(path) {
+    const res = await authedFetch(path, { method: "POST" });
+    if (!res) throw new Error("sign in required");
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(res.status === 502 || res.status === 503
+      ? "Payment service is unavailable, try later or email " + (globalThis.LLCONTACT ? LLCONTACT.EMAIL : "us")
+      : data.message || `error ${res.status}`);
+    return data; // { url }
+  }
+  const billingCheckout = () => billingCall("/billing/checkout");
+  const billingPortal = () => billingCall("/billing/portal");
+
   // Смена своего пароля. Серверное сообщение об ошибке (400 — неверный текущий / новый = старый) пробрасываем как есть.
   async function changePassword(currentPassword, newPassword) {
     const res = await authedFetch("/users/me/password", {
@@ -399,7 +415,7 @@ const LLAPI = (() => {
            takeSignoutMessage,
            getDrivers, createDriver, updateDriver, deleteDriver, deleteAccount, changePassword, forgotPassword, resetPassword,
            telegramStatus, telegramLink, telegramAlerts, telegramUnlink, notifyAlerts,
-           cloudStatus, cloudEnable, cloudDisable, cloudScreen, cloudHeartbeat };
+           cloudStatus, cloudEnable, cloudDisable, cloudScreen, cloudHeartbeat, billingCheckout, billingPortal };
 })();
 
 if (typeof module !== "undefined" && module.exports) { module.exports = LLAPI; }

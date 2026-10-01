@@ -26,6 +26,7 @@ errors, console, results = [], [], []
 tg_linked = True   # мок /telegram/status; сценарий Free-без-привязки переключает в False
 me_trial = None   # мок /auth/me: trialEndsAt
 me_plan = "pro"    # мок /auth/me: попап освежает кэш плана из сети, иначе сценарий Free «съезжает» в Pro
+me_billing, me_sub = False, None  # мок /auth/me: оплата Paddle (BILLING_MODE) и подписка
 
 
 def check(name, cond, extra=""):
@@ -49,7 +50,9 @@ def mock(route, request):
     elif "/drivers" in url:
         body = []
     elif "/auth/me" in url:
-        body = {"email": "demo@loadlens.test", "plan": me_plan, "trialEndsAt": me_trial}
+        body = {"email": "demo@loadlens.test", "plan": me_plan, "trialEndsAt": me_trial, "billing": me_billing, "subscription": me_sub}
+    elif "/billing/checkout" in url:
+        body = {"url": "https://example.com/checkout.html?_ptxn=txn_e2e"}
     elif "/rates" in url:
         body = {"diesel": 3.95}
     route.fulfill(status=200, content_type="application/json", body=json.dumps(body))
@@ -223,6 +226,32 @@ with sync_playwright() as p:
     page.wait_for_selector("text=Your Pro trial has ended", timeout=10000)
     check("trial ended: FREE и ссылка на продление", "Email us to keep Pro" in page.inner_text("body"))
     page.screenshot(path=str(OUT / "08-trial-ended.png"), full_page=True)
+
+    # ---- Оплата Paddle: без billing — кнопки нет; с billing — Upgrade открывает checkout; подписчик — Manage ----
+    check("billing выключен: кнопки Upgrade нет", page.locator("#acc-upgrade").count() == 0)
+    me_billing = True
+    page.evaluate("() => chrome.storage.local.get('ll_auth').then(r => chrome.storage.local.set({ ll_auth: { ...r.ll_auth, billing: true } }))")
+    page.reload()
+    page.wait_for_load_state("networkidle")
+    open_settings(page)
+    page.wait_for_selector("#acc-upgrade", timeout=10000)
+    check("billing: Upgrade to Pro — $24/mo", "Upgrade to Pro" in page.locator("#acc-upgrade").inner_text())
+    with ctx.expect_page() as new_tab:
+        page.click("#acc-upgrade")
+    check("Upgrade открывает checkout во вкладке", "_ptxn=txn_e2e" in new_tab.value.url, new_tab.value.url)
+    new_tab.value.close()
+    page.screenshot(path=str(OUT / "09-billing-upgrade.png"), full_page=True)
+    me_trial = None  # бэкенд у plan=pro отдаёт trialEndsAt: null
+    me_plan, me_sub = "pro", {"status": "active", "renewsAt": int(time.time() * 1000) + 20 * day, "endsAt": None}
+    page.evaluate("(sub) => chrome.storage.local.get('ll_auth').then(r => chrome.storage.local.set({ ll_auth: { ...r.ll_auth, plan: 'pro', trialEndsAt: null, billing: true, subscription: sub } }))", me_sub)
+    page.reload()
+    page.wait_for_load_state("networkidle")
+    open_settings(page)
+    page.wait_for_selector("#acc-manage", timeout=10000)
+    acc = page.inner_text("#account")
+    check("подписчик: бейдж PRO, Manage subscription и Renews on", "PRO" in acc and "FREE" not in acc and "Renews on" in acc, acc[:120])
+    page.screenshot(path=str(OUT / "10-billing-manage.png"), full_page=True)
+    me_billing, me_sub, me_plan = False, None, "pro"
 
     # ---- Save пишет только правленное здесь: сортировку/авто-пилот с вкладки Loads не откатывает ----
     page.reload()
