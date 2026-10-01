@@ -93,6 +93,8 @@
     .plan { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; }
     .plan.hl { border: 2px solid var(--blue); }
     .plan h3 { font-size: 22px; }
+    .plan .price { margin: 6px 0 4px; font-size: 15px; color: var(--mut); }
+    .plan .price b { font-size: 32px; color: var(--ink); letter-spacing: -.5px; }
     .plan ul { list-style: none; padding: 0; margin: 16px 0 24px; flex: 1; }
     .plan li { padding: 7px 0 7px 26px; position: relative; border-bottom: 1px solid var(--line); font-size: 15px; }
     .plan li:last-child { border-bottom: 0; }
@@ -222,6 +224,7 @@
         <div class="plans">
           <div class="plan">
             <h3>Free</h3>
+            <p class="price"><b>$0</b> <span data-i18n="pr.free.per">forever</span></p>
             <p class="mut" data-i18n="pr.free.sub">For owner-operators and solo dispatchers.</p>
             <ul>
               <li data-i18n="pr.f1">Profit, HOS and broker badges on every load</li>
@@ -233,6 +236,7 @@
           </div>
           <div class="plan hl">
             <h3>Pro</h3>
+            <p class="price"><b>$24</b> <span data-i18n="pr.pro.per">per month</span></p>
             <p class="mut" data-i18n="pr.pro.sub">Try Pro free for 14 days. Everything in Free, plus:</p>
             <ul>
               <li data-i18n="pr.p1">Market rate per lane and market strength from the LoadLens database</li>
@@ -244,6 +248,7 @@
             </ul>
             <a class="btn primary" data-mail="pro" href="mailto:hello@krait.studio?subject=LoadLens%20Pro" data-i18n="cta.pro">Contact us for Pro</a>
             <p class="mut small" style="margin:10px 0 0" data-i18n="pr.pro.note">After the trial, write to us to keep Pro.</p>
+            <p class="mut small" style="margin:6px 0 0"><span data-i18n="pr.pro.cancel">Cancel anytime. Full refund within 14 days of your first payment.</span> <a href="/refund.html" data-i18n="pr.pro.refund">Refund policy</a></p>
           </div>
         </div>
       </div>
@@ -292,6 +297,8 @@
       <nav>
         <a href="mailto:hello@krait.studio?subject=LoadLens%20question" data-mail="question">hello@krait.studio</a>
         <a href="/privacy.html" data-i18n="pv.link">Privacy policy</a>
+        <a href="/terms.html" data-i18n="ft.terms">Terms</a>
+        <a href="/refund.html" data-i18n="ft.refund">Refunds</a>
         <a href="/stats.html" data-i18n="ft.stats">Lane stats</a>
         <a data-local href="/hos-calculator/" data-i18n="ft.hos">HOS calculator</a>
         <a href="#" class="linkbtn" id="ck-open" data-i18n="ck.settings">Cookie settings</a>

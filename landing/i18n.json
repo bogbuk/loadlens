@@ -89,7 +89,13 @@
     "ck.more": "Подробнее",
     "ck.no": "Отказаться",
     "ck.yes": "Принять",
-    "ck.settings": "Настройки cookies"
+    "ck.settings": "Настройки cookies",
+    "pr.free.per": "навсегда",
+    "pr.pro.per": "в месяц",
+    "pr.pro.cancel": "Отмена в любой момент. Полный возврат в течение 14 дней после первой оплаты.",
+    "pr.pro.refund": "Условия возврата (English)",
+    "ft.terms": "Условия использования (English)",
+    "ft.refund": "Возврат средств (English)"
   },
   "ro": {
     "meta.title": "LoadLens: află cât plătește o cursă înainte să suni brokerul",
@@ -175,6 +181,12 @@
     "ck.more": "Detalii",
     "ck.no": "Refuz",
     "ck.yes": "Accept",
-    "ck.settings": "Setări cookie"
+    "ck.settings": "Setări cookie",
+    "pr.free.per": "pentru totdeauna",
+    "pr.pro.per": "pe lună",
+    "pr.pro.cancel": "Anulezi oricând. Rambursare integrală în 14 zile de la prima plată.",
+    "pr.pro.refund": "Politica de rambursare (English)",
+    "ft.terms": "Termeni și condiții (English)",
+    "ft.refund": "Rambursări (English)"
   }
 }

@@ -222,3 +222,18 @@ test("калькулятор: поля «после перерыва» пуст�
   const privacy = fs.readFileSync(path.join(PUB, "privacy.html"), "utf8");
   assert.match(privacy, /the numbers you enter in the HOS calculator and its results are hidden from session replay/);
 });
+
+test("модерация Paddle: цена Pro, страницы Terms и Refund в подвале и sitemap", () => {
+  assert.match(html, /<h3>Pro<\/h3>\s*<p class="price"><b>\$24<\/b>/);
+  const hos = fs.readFileSync(path.join(PUB, "hos-calculator", "index.html"), "utf8");
+  const sitemap = fs.readFileSync(path.join(PUB, "sitemap.xml"), "utf8");
+  for (const pg of ["terms", "refund"]) {
+    const page = fs.readFileSync(path.join(PUB, `${pg}.html`), "utf8");
+    assert.match(page, /Paddle\.com/, `${pg}: Paddle как Merchant of Record`);
+    assert.match(html, new RegExp(`href="/${pg}\\.html"`));
+    assert.match(hos, new RegExp(`href="/${pg}\\.html"`));
+    assert.match(sitemap, new RegExp(`${BASE}/${pg}\\.html`));
+  }
+  assert.match(fs.readFileSync(path.join(PUB, "terms.html"), "utf8"), /US\$24 per month/);
+  assert.match(fs.readFileSync(path.join(PUB, "refund.html"), "utf8"), /within 14 days of your first payment/);
+});

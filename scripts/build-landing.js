@@ -27,7 +27,7 @@ const PAGES = [
   { src: "hos-calculator/index.html", dict: "landing/hos-calculator.i18n.json", path: "/hos-calculator/", ld: "tool" },
 ];
 // Прочие публичные страницы для sitemap (admin.html — noindex, в карту не идёт).
-const EXTRA_PAGES = ["/stats.html", "/privacy.html"];
+const EXTRA_PAGES = ["/stats.html", "/privacy.html", "/terms.html", "/refund.html"];
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const urlOf = (lang, pg) => LANGS[lang].path + pg.path.slice(1);

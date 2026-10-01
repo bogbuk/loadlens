@@ -93,6 +93,8 @@
     .plan { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; }
     .plan.hl { border: 2px solid var(--blue); }
     .plan h3 { font-size: 22px; }
+    .plan .price { margin: 6px 0 4px; font-size: 15px; color: var(--mut); }
+    .plan .price b { font-size: 32px; color: var(--ink); letter-spacing: -.5px; }
     .plan ul { list-style: none; padding: 0; margin: 16px 0 24px; flex: 1; }
     .plan li { padding: 7px 0 7px 26px; position: relative; border-bottom: 1px solid var(--line); font-size: 15px; }
     .plan li:last-child { border-bottom: 0; }
@@ -222,6 +224,7 @@
         <div class="plans">
           <div class="plan">
             <h3>Free</h3>
+            <p class="price"><b>$0</b> <span data-i18n="pr.free.per">pentru totdeauna</span></p>
             <p class="mut" data-i18n="pr.free.sub">Pentru owner-operatori și dispeceri care lucrează singuri.</p>
             <ul>
               <li data-i18n="pr.f1">Badge-uri de profit, HOS și broker la fiecare cursă</li>
@@ -233,6 +236,7 @@
           </div>
           <div class="plan hl">
             <h3>Pro</h3>
+            <p class="price"><b>$24</b> <span data-i18n="pr.pro.per">pe lună</span></p>
             <p class="mut" data-i18n="pr.pro.sub">Încearcă Pro gratuit 14 zile. Tot ce e în Free, plus:</p>
             <ul>
               <li data-i18n="pr.p1">Tariful pieței pe rută și puterea pieței din baza LoadLens</li>
@@ -244,6 +248,7 @@
             </ul>
             <a class="btn primary" data-mail="pro" href="mailto:hello@krait.studio?subject=LoadLens%20Pro" data-i18n="cta.pro">Scrie-ne pentru Pro</a>
             <p class="mut small" style="margin:10px 0 0" data-i18n="pr.pro.note">După perioada de probă, scrie-ne ca să păstrezi Pro.</p>
+            <p class="mut small" style="margin:6px 0 0"><span data-i18n="pr.pro.cancel">Anulezi oricând. Rambursare integrală în 14 zile de la prima plată.</span> <a href="/refund.html" data-i18n="pr.pro.refund">Politica de rambursare (English)</a></p>
           </div>
         </div>
       </div>
@@ -292,6 +297,8 @@
       <nav>
         <a href="mailto:hello@krait.studio?subject=%C3%8Entrebare%20despre%20LoadLens" data-mail="question">hello@krait.studio</a>
         <a href="/privacy.html" data-i18n="pv.link">Politica de confidențialitate (English)</a>
+        <a href="/terms.html" data-i18n="ft.terms">Termeni și condiții (English)</a>
+        <a href="/refund.html" data-i18n="ft.refund">Rambursări (English)</a>
         <a href="/stats.html" data-i18n="ft.stats">Statistici pe rute</a>
         <a data-local href="/ro/hos-calculator/" data-i18n="ft.hos">Calculator HOS</a>
         <a href="#" class="linkbtn" id="ck-open" data-i18n="ck.settings">Setări cookie</a>

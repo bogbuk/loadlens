@@ -93,6 +93,8 @@
     .plan { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; }
     .plan.hl { border: 2px solid var(--blue); }
     .plan h3 { font-size: 22px; }
+    .plan .price { margin: 6px 0 4px; font-size: 15px; color: var(--mut); }
+    .plan .price b { font-size: 32px; color: var(--ink); letter-spacing: -.5px; }
     .plan ul { list-style: none; padding: 0; margin: 16px 0 24px; flex: 1; }
     .plan li { padding: 7px 0 7px 26px; position: relative; border-bottom: 1px solid var(--line); font-size: 15px; }
     .plan li:last-child { border-bottom: 0; }
@@ -222,6 +224,7 @@
         <div class="plans">
           <div class="plan">
             <h3>Free</h3>
+            <p class="price"><b>$0</b> <span data-i18n="pr.free.per">навсегда</span></p>
             <p class="mut" data-i18n="pr.free.sub">Для owner-operator'ов и диспетчеров-одиночек.</p>
             <ul>
               <li data-i18n="pr.f1">Бейджи выгодности, HOS и брокера на каждом грузе</li>
@@ -233,6 +236,7 @@
           </div>
           <div class="plan hl">
             <h3>Pro</h3>
+            <p class="price"><b>$24</b> <span data-i18n="pr.pro.per">в месяц</span></p>
             <p class="mut" data-i18n="pr.pro.sub">14 дней Pro бесплатно. Всё из Free, плюс:</p>
             <ul>
               <li data-i18n="pr.p1">Рыночная ставка по направлению и сила рынка из базы LoadLens</li>
@@ -244,6 +248,7 @@
             </ul>
             <a class="btn primary" data-mail="pro" href="mailto:hello@krait.studio?subject=LoadLens%20Pro" data-i18n="cta.pro">Написать нам про Pro</a>
             <p class="mut small" style="margin:10px 0 0" data-i18n="pr.pro.note">После пробного периода напишите нам, чтобы оставить Pro.</p>
+            <p class="mut small" style="margin:6px 0 0"><span data-i18n="pr.pro.cancel">Отмена в любой момент. Полный возврат в течение 14 дней после первой оплаты.</span> <a href="/refund.html" data-i18n="pr.pro.refund">Условия возврата (English)</a></p>
           </div>
         </div>
       </div>
@@ -292,6 +297,8 @@
       <nav>
         <a href="mailto:hello@krait.studio?subject=%D0%92%D0%BE%D0%BF%D1%80%D0%BE%D1%81%20%D0%BF%D0%BE%20LoadLens" data-mail="question">hello@krait.studio</a>
         <a href="/privacy.html" data-i18n="pv.link">Политика конфиденциальности (English)</a>
+        <a href="/terms.html" data-i18n="ft.terms">Условия использования (English)</a>
+        <a href="/refund.html" data-i18n="ft.refund">Возврат средств (English)</a>
         <a href="/stats.html" data-i18n="ft.stats">Статистика по направлениям</a>
         <a data-local href="/ru/hos-calculator/" data-i18n="ft.hos">HOS-калькулятор</a>
         <a href="#" class="linkbtn" id="ck-open" data-i18n="ck.settings">Настройки cookies</a>
