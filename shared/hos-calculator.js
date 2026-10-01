@@ -158,51 +158,57 @@ class HOSCalculator {
     return regularRest;
   }
 
-  findSplitSleeperBerth(logs, currentTime) {
-    const sleeperPeriods = [];
-
+  // Отрезки отдыха: подряд идущие OFF/SB (PC — не отдых). sbMax — самый длинный непрерывный кусок
+  // sleeper berth внутри отрезка, sbEnd — его конец.
+  findRestRuns(logs, currentTime) {
+    const runs = [];
+    let run = null, sbStart = null;
     for (let i = 0; i < logs.length; i++) {
       const log = logs[i];
-
-      if (log.eventCode === 2) {
-        const nextLog =
-          i < logs.length - 1 ? logs[i + 1] : { timestamp: currentTime };
-        const duration = (nextLog.timestamp - log.timestamp) / 60000;
-
-        if (duration >= this.SLEEPER_SECOND_PERIOD) {
-          sleeperPeriods.push({
-            startTime: log.timestamp,
-            endTime: nextLog.timestamp,
-            duration: duration,
-          });
-        }
+      const end = i < logs.length - 1 ? logs[i + 1].timestamp : currentTime;
+      const n = this.normalizeEventCode(log);
+      if (!n.isRest) { run = null; sbStart = null; continue; }
+      if (!run) { run = { startTime: log.timestamp, endTime: end, duration: 0, sbMax: 0, sbEnd: null }; runs.push(run); }
+      run.endTime = end;
+      run.duration = (end - run.startTime) / 60000;
+      if (n.normalizedCode === 2) {
+        if (sbStart === null) sbStart = log.timestamp;
+        const sb = (end - sbStart) / 60000;
+        if (sb >= run.sbMax) { run.sbMax = sb; run.sbEnd = end; }
+      } else {
+        sbStart = null;
       }
     }
+    return runs;
+  }
 
-    if (sleeperPeriods.length >= 2) {
-      const last = sleeperPeriods[sleeperPeriods.length - 1];
-      const beforeLast = sleeperPeriods[sleeperPeriods.length - 2];
-
-      const totalDuration = last.duration + beforeLast.duration;
-
-      const validSplit =
-        (last.duration >= this.SLEEPER_FIRST_PERIOD ||
-          beforeLast.duration >= this.SLEEPER_FIRST_PERIOD) &&
-        last.duration >= this.SLEEPER_SECOND_PERIOD &&
-        beforeLast.duration >= this.SLEEPER_SECOND_PERIOD &&
-        totalDuration >= 10 * 60;
-
-      if (validSplit) {
-        return {
-          startTime: beforeLast.startTime,
-          endTime: beforeLast.endTime,
-          duration: totalDuration,
-          splitPeriods: [beforeLast, last],
-        };
-      }
+  // Split sleeper (49 CFR 395.1(g)(1)(ii)): пара из ≥7h подряд в sleeper berth и ≥2h off duty/sleeper
+  // (или их сочетания), в сумме ≥10h, в любом порядке. Ни один период пары не идёт в окно 14h,
+  // 11h/14h считаются от конца первого периода. Берём два последних отрезка отдыха ≥2h.
+  findSplitSleeperBerth(logs, currentTime) {
+    const runs = this.findRestRuns(logs, currentTime).filter((r) => r.duration >= this.SLEEPER_SECOND_PERIOD);
+    if (runs.length < 2) return null;
+    const [first, second] = runs.slice(-2);
+    const options = [];
+    // длинный — первый: в паре засчитан только кусок sleeper, счёт пойдёт от его конца
+    if (first.sbMax >= this.SLEEPER_FIRST_PERIOD) {
+      options.push({ shiftStart: first.sbEnd, excluded: second.duration, total: first.sbMax + second.duration });
     }
-
-    return null;
+    if (second.sbMax >= this.SLEEPER_FIRST_PERIOD) {
+      options.push({ shiftStart: first.endTime, excluded: second.sbMax, total: first.duration + second.sbMax });
+    }
+    const valid = options.filter((o) => o.total >= 10 * 60);
+    if (!valid.length) return null;
+    // Если пара собирается двумя способами — тот, где в окне 14h остаётся больше прошедшего времени.
+    const elapsed = (o) => (currentTime - o.shiftStart) / 60000 - o.excluded;
+    const best = valid.reduce((x, y) => (elapsed(y) > elapsed(x) ? y : x));
+    return {
+      startTime: first.startTime,
+      endTime: best.shiftStart,
+      duration: best.total,
+      excludedMinutes: best.excluded,
+      splitPeriods: [first, second],
+    };
   }
 
   findLastRestPeriod(logs, currentTime) {
@@ -271,9 +277,10 @@ class HOSCalculator {
         onDutyTime += duration;
       }
 
-      if (i === 0) {
-        elapsedTime = (currentTime - log.timestamp) / 60000;
-      }
+    }
+    // Окно 14h — от начала смены; второй период пары split sleeper в него не входит.
+    if (shiftLogs.length) {
+      elapsedTime = (currentTime - shiftLogs[0].timestamp) / 60000 - (lastRestPeriod.excludedMinutes || 0);
     }
 
     return {
