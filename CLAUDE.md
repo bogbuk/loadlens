@@ -63,6 +63,8 @@ backend/src/                NestJS, synchronize:true (миграций нет)
   auth/ users/              register/login/refresh/me, DELETE /users/me (hard-delete + каскад водителей)
                             admin/* (JwtAuthGuard+AdminRoleGuard, role из ADMIN_EMAIL): GET users/stats, PATCH users/:email/plan|block|cloud. Страница /admin.html
   cloud/                    Coolify-оркестрация облачного браузера: cloud_instances (модель), CoolifyService (API-клиент+compose), CloudService (enable/disable/status/screen/heartbeat), watchdog-cron
+  billing/                  оплата Pro через Paddle (MoR): billing.ts (чистые: BILLING_MODE off|test|live, подпись, событие→план),
+                            paddle.client (fetch), checkout/portal (Jwt) + paddle/webhook; checkout.html в public/ (Paddle.js, noindex)
   shared/markets.seed.json  ★ копия seed для Docker-контекста backend/ (генерит sync:shared)
 backend/public/             статика (ServeStatic): index.html — лендинг EN (правится руками); ru/ ro/index.html + sitemap.xml
                             + SEO-блок <head> (canonical/hreflang/og/JSON-LD) ГЕНЕРИТ `npm run build:landing` из index.html +
@@ -222,6 +224,11 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   (`plan==='pro'`); иначе 403. POST-инжест (`POST /loads`, `POST /brokers/reports`) — открыт (крауд
   пополняется от всех). Расширение шлёт `Authorization: Bearer` на read-вызовах; Free/аноним → 403 →
   локальный скоринг без крауд-данных. Ключи только в ENV, реальные значения не коммитить.
+- **Оплата Pro — Paddle (с 2026-10-01).** Stripe в Молдове нет; Paddle — Merchant of Record. **Кнопку оплаты видит только
+  тот, кому `billingVisible`**: `BILLING_MODE` off (дефолт, опечатка = off) | test (только админы, sandbox-ключи) | live.
+  План меняет ТОЛЬКО вебхук (`active/trialing/past_due` → pro, `paused/canceled` → free; старые события по `paddle_event_at`
+  игнорируются). `DELETE /users/me` сначала отменяет подписку (Paddle недоступен → 502, аккаунт цел). Спека —
+  `docs/superpowers/specs/2026-10-01-paddle-billing-design.md`.
 - **Pro trial (с 2026-09-29)** — `backend/src/users/plan.ts`: эффективный план = `plan==='pro'` ИЛИ
   `pro_until > now`; **`isPro(user, now)` — единственная проверка Pro** на бэкенде (гарды); исключение — лимит
   устройств: `limitsDevices` = только постоянный Pro, чтобы выдача триала не вытесняла устройства Free. Триал (`TRIAL_DAYS`, дефолт 14, `0` = не выдавать) выдаёт `AuthService.ensureTrial` в
@@ -313,7 +320,8 @@ coolify --context yoolip999 app deployments list hiooby9kgzj8i79ycl33drec
 
 Env в Coolify: `DATABASE_URL`, `JWT_SECRET`, `ADMIN_EMAIL` (список email админов через запятую), `PORT`. Опц. `EIA_API_KEY` (без него дизель =
 фолбэк $3.95), `OSRM_URL` (дефолт публичный OSRM), `API_KEYS` (список валидных X-API-Key через запятую
-для Premium-чтения; пусто → читает только Pro-JWT), `TRIAL_DAYS` (дней Pro-триала на аккаунт; пусто → 14, `0` → новые не выдаются). Для Telegram-алертов: `TELEGRAM_BOT_TOKEN` +
+для Premium-чтения; пусто → читает только Pro-JWT), `TRIAL_DAYS` (дней Pro-триала на аккаунт; пусто → 14, `0` → новые не выдаются). Оплата: `BILLING_MODE`, `PADDLE_ENV`, `PADDLE_API_KEY`, `PADDLE_CLIENT_TOKEN`, `PADDLE_PRICE_ID`,
+`PADDLE_WEBHOOK_SECRET` (без `BILLING_MODE` оплата скрыта). Для Telegram-алертов: `TELEGRAM_BOT_TOKEN` +
 `TELEGRAM_BOT_USERNAME` (deep-link) + `TELEGRAM_WEBHOOK_SECRET` (без них фича выключена). После деплоя
 один раз зарегистрировать вебхук: `setWebhook` на `https://loadlens.krait.studio/api/v1/telegram/webhook/<secret>`.
 
