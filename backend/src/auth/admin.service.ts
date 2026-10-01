@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, col, fn } from 'sequelize';
 import { User } from '../users/user.model';
+import { LIVE_STATUSES } from '../billing/billing';
 import { LanesService } from '../lanes/lanes.service';
 import { UserDevice } from './user-device.model';
 import { CloudInstance } from '../cloud/cloud-instance.model';
@@ -21,6 +22,7 @@ export interface AdminUserView {
   cloudEnabled: boolean;
   cloudStatus: string | null;
   cloudHeartbeatAt: Date | null;
+  subscriptionStatus: string | null;
   createdAt: Date;
 }
 
@@ -48,6 +50,7 @@ export class AdminService {
       cloudEnabled: !!u.cloudEnabled,
       cloudStatus: ci?.status ?? null,
       cloudHeartbeatAt: ci?.lastHeartbeatAt ?? null,
+      subscriptionStatus: u.subscriptionStatus ?? null,
       createdAt: (u as any).createdAt,
     };
   }
@@ -69,15 +72,16 @@ export class AdminService {
   }
 
   async stats() {
-    const [users, proUsers, trialUsers, blockedUsers, evictions, overview] = await Promise.all([
+    const [users, proUsers, trialUsers, blockedUsers, evictions, overview, subscribers] = await Promise.all([
       this.userModel.count(),
       this.userModel.count({ where: { plan: 'pro' } }),
       this.userModel.count({ where: { plan: 'free', proUntil: { [Op.gt]: Date.now() } } }),
       this.userModel.count({ where: { blocked: true } }),
       this.userModel.sum('deviceEvictions'),
       this.lanes.overview(),
+      this.userModel.count({ where: { subscriptionStatus: [...LIVE_STATUSES] } }),
     ]);
-    return { users, proUsers, trialUsers, blockedUsers, evictions: evictions ?? 0, ...overview };
+    return { users, proUsers, trialUsers, blockedUsers, subscribers, evictions: evictions ?? 0, ...overview };
   }
 
   async setPlan(emailRaw: string, plan: 'free' | 'pro') {

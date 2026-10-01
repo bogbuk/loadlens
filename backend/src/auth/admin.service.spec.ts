@@ -33,6 +33,7 @@ describe('AdminService', () => {
         let list = Object.values(users) as any[];
         if (where?.plan) list = list.filter((u) => u.plan === where.plan);
         if (where?.blocked !== undefined) list = list.filter((u) => u.blocked === where.blocked);
+        if (Array.isArray(where?.subscriptionStatus)) list = list.filter((u) => where.subscriptionStatus.includes(u.subscriptionStatus));
         const gt = where?.proUntil?.[Op.gt];
         if (gt !== undefined) list = list.filter((u) => u.proUntil != null && Number(u.proUntil) > gt);
         return Promise.resolve(list.length);
@@ -181,5 +182,17 @@ describe('AdminService', () => {
     users['a@b.md'].trialStartedAt = 123;
     await service.setPlan('a@b.md', 'pro');
     expect(users['a@b.md'].trialStartedAt).toBe(123);
+  });
+  it('stats: подписчики — только живые статусы Paddle', async () => {
+    users['pro@b.md'].subscriptionStatus = 'active';
+    users['a@b.md'].subscriptionStatus = 'canceled';
+    expect((await service.stats()).subscribers).toBe(1);
+  });
+
+  it('listUsers: статус подписки в строке, null без подписки', async () => {
+    users['pro@b.md'].subscriptionStatus = 'past_due';
+    const rows = await service.listUsers();
+    expect(rows.find((r) => r.email === 'pro@b.md')!.subscriptionStatus).toBe('past_due');
+    expect(rows.find((r) => r.email === 'a@b.md')!.subscriptionStatus).toBeNull();
   });
 });
