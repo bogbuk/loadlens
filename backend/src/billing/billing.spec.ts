@@ -27,12 +27,18 @@ describe('billingVisible', () => {
     expect(billingVisible({ ...KEYS, BILLING_MODE: 'test' }, user)).toBe(false);
   });
   it('live — всем, кроме заблокированных', () => {
-    expect(billingVisible({ ...KEYS, BILLING_MODE: 'live' }, user)).toBe(true);
-    expect(billingVisible({ ...KEYS, BILLING_MODE: 'live' }, { role: 'user', blocked: true })).toBe(false);
+    expect(billingVisible({ ...KEYS, BILLING_MODE: 'live', PADDLE_ENV: 'production' }, user)).toBe(true);
+    expect(billingVisible({ ...KEYS, BILLING_MODE: 'live', PADDLE_ENV: 'production' }, { role: 'user', blocked: true })).toBe(false);
+  });
+  it('live только с PADDLE_ENV=production — иначе sandbox-карта 4242 раздавала бы Pro', () => {
+    for (const env of [undefined, 'sandbox', 'prod'])
+      expect(billingConfigured({ ...KEYS, BILLING_MODE: 'live', PADDLE_ENV: env })).toBe(false);
+    expect(billingConfigured({ ...KEYS, BILLING_MODE: 'live', PADDLE_ENV: 'production' })).toBe(true);
+    expect(billingConfigured({ ...KEYS, BILLING_MODE: 'test', PADDLE_ENV: 'sandbox' })).toBe(true);
   });
   it('без любого ключа — никому даже в live', () => {
     for (const k of Object.keys(KEYS)) {
-      const env = { ...KEYS, BILLING_MODE: 'live', [k]: '' };
+      const env = { ...KEYS, BILLING_MODE: 'live', PADDLE_ENV: 'production', [k]: '' };
       expect(billingConfigured(env)).toBe(false);
       expect(billingVisible(env, admin)).toBe(false);
     }

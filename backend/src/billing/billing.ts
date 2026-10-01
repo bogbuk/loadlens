@@ -18,8 +18,10 @@ export function billingMode(raw: string | undefined): BillingMode {
   return m === 'test' || m === 'live' ? m : 'off';
 }
 
+// live — только с боевым Paddle: иначе любой «оплатил» бы sandbox-картой 4242 и получил Pro.
 export function billingConfigured(env: Env): boolean {
-  return !!(env.PADDLE_API_KEY && env.PADDLE_CLIENT_TOKEN && env.PADDLE_PRICE_ID);
+  if (!(env.PADDLE_API_KEY && env.PADDLE_CLIENT_TOKEN && env.PADDLE_PRICE_ID)) return false;
+  return billingMode(env.BILLING_MODE) !== 'live' || env.PADDLE_ENV === 'production';
 }
 
 // test — только админы (проверка на проде с sandbox-ключами), live — все не заблокированные.

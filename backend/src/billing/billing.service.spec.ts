@@ -1,15 +1,18 @@
 import { createHmac } from 'crypto';
+import { Op } from 'sequelize';
 import { ConflictException, ForbiddenException, ServiceUnavailableException, UnauthorizedException, BadGatewayException } from '@nestjs/common';
 import { BillingService } from './billing.service';
 import { PaddleError } from './paddle.client';
 
 const SECRET = 'whsec';
+const U1 = '11111111-1111-4111-8111-111111111111';
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const sign = (body: string, now = Date.now()) => {
   const ts = String(Math.floor(now / 1000));
   return `ts=${ts};h1=${createHmac('sha256', SECRET).update(`${ts}:${body}`).digest('hex')}`;
 };
 const mkUser = (over: any = {}) => ({
-  id: 'u1', email: 'a@b.co', role: 'admin', blocked: false, plan: 'free', trialStartedAt: '1',
+  id: U1, email: 'a@b.co', role: 'admin', blocked: false, plan: 'free', trialStartedAt: '1',
   paddleCustomerId: null, paddleSubscriptionId: null, subscriptionStatus: null, paddleEventAt: null,
   update: jest.fn(function (this: any, patch: any) { Object.assign(this, patch); return Promise.resolve(this); }),
   ...over,
@@ -28,7 +31,18 @@ describe('BillingService', () => {
     });
     users = { u1: mkUser() };
     userModel = {
-      findByPk: jest.fn((id) => Promise.resolve(users[id] ?? null)),
+      // Как Postgres: не-UUID в первичном ключе — ошибка запроса, а не «не найдено».
+      findByPk: jest.fn((id) => UUID_RE.test(String(id))
+        ? Promise.resolve(Object.values(users).find((u: any) => u.id === id) ?? null)
+        : Promise.reject(new Error('invalid input syntax for type uuid'))),
+      // Условный UPDATE: patch применяется, только если строка подходит под where (id + paddle_event_at).
+      update: jest.fn((patch, { where }) => {
+        const row: any = Object.values(users).find((u: any) => u.id === where.id);
+        const at = where[Op.or]?.[1]?.paddleEventAt?.[Op.lt];
+        const fresh = row && (row.paddleEventAt == null || (at !== undefined && Number(row.paddleEventAt) < at));
+        if (fresh) Object.assign(row, patch);
+        return Promise.resolve([fresh ? 1 : 0]);
+      }),
       findOne: jest.fn(({ where }) => Promise.resolve(Object.values(users).find((u: any) =>
         Object.entries(where).every(([k, v]) => u[k] === v)) ?? null)),
     };
@@ -54,53 +68,53 @@ describe('BillingService', () => {
 
   describe('createCheckout', () => {
     it('создаёт покупателя и транзакцию с userId, запоминает customer id', async () => {
-      const r = await service.createCheckout('u1');
+      const r = await service.createCheckout(U1);
       expect(r.url).toContain('_ptxn=txn_1');
       expect(paddle.createCustomer).toHaveBeenCalledWith('a@b.co');
-      expect(paddle.createTransaction).toHaveBeenCalledWith({ priceId: 'pri_1', customerId: 'ctm_new', userId: 'u1' });
+      expect(paddle.createTransaction).toHaveBeenCalledWith({ priceId: 'pri_1', customerId: 'ctm_new', userId: U1 });
       expect(users.u1.paddleCustomerId).toBe('ctm_new');
     });
     it('находит существующего покупателя по email', async () => {
       paddle.findCustomerByEmail.mockReturnValue(Promise.resolve('ctm_old'));
-      await service.createCheckout('u1');
+      await service.createCheckout(U1);
       expect(paddle.createCustomer).not.toHaveBeenCalled();
       expect(paddle.createTransaction).toHaveBeenCalledWith(expect.objectContaining({ customerId: 'ctm_old' }));
     });
     it('сохранённый customer id — без поиска', async () => {
       users.u1.paddleCustomerId = 'ctm_saved';
-      await service.createCheckout('u1');
+      await service.createCheckout(U1);
       expect(paddle.findCustomerByEmail).not.toHaveBeenCalled();
     });
     it('test-режим, не админ → 403', async () => {
       users.u1.role = 'user';
-      await expect(service.createCheckout('u1')).rejects.toThrow(ForbiddenException);
+      await expect(service.createCheckout(U1)).rejects.toThrow(ForbiddenException);
       expect(paddle.createTransaction).not.toHaveBeenCalled();
     });
     it('уже подписан → 409', async () => {
       users.u1.subscriptionStatus = 'active';
-      await expect(service.createCheckout('u1')).rejects.toThrow(ConflictException);
+      await expect(service.createCheckout(U1)).rejects.toThrow(ConflictException);
     });
     it('Paddle упал → 502', async () => {
       paddle.createTransaction.mockReturnValue(Promise.reject(new PaddleError(500, 'boom')));
-      await expect(service.createCheckout('u1')).rejects.toThrow(BadGatewayException);
+      await expect(service.createCheckout(U1)).rejects.toThrow(BadGatewayException);
     });
   });
 
   describe('createPortal', () => {
     it('ссылка портала по customer/subscription', async () => {
       Object.assign(users.u1, { paddleCustomerId: 'ctm_1', paddleSubscriptionId: 'sub_1', subscriptionStatus: 'active' });
-      expect(await service.createPortal('u1')).toEqual({ url: 'https://portal/x' });
+      expect(await service.createPortal(U1)).toEqual({ url: 'https://portal/x' });
       expect(paddle.createPortalSession).toHaveBeenCalledWith('ctm_1', 'sub_1');
     });
     it('без покупателя → 409', async () => {
-      await expect(service.createPortal('u1')).rejects.toThrow(ConflictException);
+      await expect(service.createPortal(U1)).rejects.toThrow(ConflictException);
     });
   });
 
   describe('handleWebhook', () => {
     const event = (over: any = {}) => ({
       event_type: 'subscription.created', occurred_at: '2026-10-01T10:00:00Z',
-      data: { id: 'sub_1', status: 'active', customer_id: 'ctm_1', custom_data: { userId: 'u1' },
+      data: { id: 'sub_1', status: 'active', customer_id: 'ctm_1', custom_data: { userId: U1 },
               next_billed_at: '2026-11-01T10:00:00Z', scheduled_change: null },
       ...over,
     });
@@ -161,6 +175,63 @@ describe('BillingService', () => {
       paddle.cancelSubscription.mockReturnValue(Promise.reject(new PaddleError(500, 'boom')));
       await expect(service.cancelForUser(mkUser({ paddleSubscriptionId: 'sub_1', subscriptionStatus: 'active' }) as any))
         .rejects.toThrow(BadGatewayException);
+    });
+  });
+  describe('ревью: важные замечания', () => {
+    const base = () => ({
+      event_type: 'subscription.created', occurred_at: '2026-10-01T10:00:00Z',
+      data: { id: 'sub_1', status: 'active', customer_id: 'ctm_1', custom_data: { userId: U1 } as any,
+              next_billed_at: '2026-11-01T10:00:00Z', scheduled_change: null },
+    });
+    const send = (body: any) => {
+      const raw = JSON.stringify(body);
+      return service.handleWebhook(sign(raw), Buffer.from(raw), body);
+    };
+
+    it('не-UUID в custom_data.userId — фолбэк по subscription id, без 500', async () => {
+      users.u1.paddleSubscriptionId = 'sub_1';
+      const ev = base(); ev.data.custom_data = { userId: 'not-a-uuid' };
+      await expect(send(ev)).resolves.toEqual({ ok: true });
+      expect(users.u1.plan).toBe('pro');
+    });
+
+    it('параллельная доставка: устаревшее чтение не перетирает более новое событие', async () => {
+      Object.assign(users.u1, { plan: 'free', subscriptionStatus: 'canceled', paddleEventAt: Date.parse('2026-10-05T10:00:00Z') });
+      // findByPk отдаёт снимок, прочитанный до записи canceled
+      userModel.findByPk.mockImplementationOnce(() => Promise.resolve({ ...users.u1, paddleEventAt: null, plan: 'pro', subscriptionStatus: 'active',
+        update: jest.fn(function (this: any, patch: any) { Object.assign(users.u1, patch); return Promise.resolve(this); }) }));
+      await send({ ...base(), event_type: 'subscription.updated', occurred_at: '2026-10-04T10:00:00Z' });
+      expect(users.u1.plan).toBe('free');
+      expect(users.u1.subscriptionStatus).toBe('canceled');
+    });
+
+    it('вторая живая подписка того же пользователя — logger.error с обоими id', async () => {
+      Object.assign(users.u1, { paddleSubscriptionId: 'sub_old', subscriptionStatus: 'active', paddleEventAt: Date.parse('2026-09-01T10:00:00Z') });
+      const err = jest.spyOn((service as any).logger, 'error').mockImplementation(() => undefined);
+      await send(base());
+      expect(err).toHaveBeenCalledWith(expect.stringMatching(/sub_old.*sub_1|sub_1.*sub_old/));
+    });
+
+    it('live без PADDLE_ENV=production — оплата выключена (503), checkout недоступен', async () => {
+      process.env.BILLING_MODE = 'live';
+      process.env.PADDLE_ENV = 'sandbox';
+      expect(() => service.clientConfig()).toThrow(ServiceUnavailableException);
+      await expect(service.createCheckout(U1)).rejects.toThrow(ServiceUnavailableException);
+    });
+
+    it('удаление: Paddle 404/400 на отмену (уже отменена) — не блокирует удаление', async () => {
+      paddle.cancelSubscription.mockReturnValue(Promise.reject(new PaddleError(404, 'not found')));
+      await expect(service.cancelForUser(mkUser({ paddleSubscriptionId: 'sub_1', subscriptionStatus: 'active' }) as any)).resolves.toBeUndefined();
+      paddle.cancelSubscription.mockReturnValue(Promise.reject(new PaddleError(400, 'subscription is canceled')));
+      await expect(service.cancelForUser(mkUser({ paddleSubscriptionId: 'sub_1', subscriptionStatus: 'active' }) as any)).resolves.toBeUndefined();
+    });
+
+    it('удаление: Paddle 401/429 — 502 (ключи или лимит, отмена не подтверждена)', async () => {
+      for (const st of [401, 429]) {
+        paddle.cancelSubscription.mockReturnValue(Promise.reject(new PaddleError(st, 'x')));
+        await expect(service.cancelForUser(mkUser({ paddleSubscriptionId: 'sub_1', subscriptionStatus: 'active' }) as any))
+          .rejects.toThrow(BadGatewayException);
+      }
     });
   });
 });
