@@ -168,3 +168,65 @@ test("splitPair: план по эффективному состоянию не 
   const p = H.plan(r.state, { miles: 330, mph: 55, ...NO_DOCK });
   assert.deepStrictEqual(shape(p), ["drive:360"]);
 });
+
+// Recap: часы цикла по дням, days[0] = сегодня, days[i] = i дней назад.
+const DAYS8 = (...d) => ({ cycle: "70-8", drivenMin: 0, shiftMin: 0, sinceBreakMin: 0, days: d });
+
+test("normalize days: берёт 8 дней для 70/8 и 7 для 60/7, зажимает 0–24h, цикл = сумма", () => {
+  const s = H.normalize({ cycle: "70-8", days: [60, -5, "120", 9999] });
+  assert.deepStrictEqual(s.days, [60, 0, 120, 1440, 0, 0, 0, 0]);
+  assert.strictEqual(s.cycleUsedMin, 1620);
+  const s7 = H.normalize({ cycle: "60-7", days: [600, 600, 600, 600, 600, 600, 600, 600], cycleUsedMin: 5 });
+  assert.strictEqual(s7.days.length, 7);
+  assert.strictEqual(s7.cycleUsedMin, 3600);
+  assert.ok(!("days" in H.normalize({ cycleUsedMin: 60 })));
+});
+
+test("remaining days: recapMin — часы самого старого дня, которые вернутся в полночь", () => {
+  const r = H.remaining(DAYS8(0, 600, 600, 600, 600, 600, 600, 540));
+  assert.strictEqual(r.cycle, 60);
+  assert.strictEqual(r.recapMin, 540);
+  assert.ok(!("recapMin" in H.remaining(FRESH)));
+});
+
+test("plan days: цикл исчерпан, recap в полночь ближе 34h → ждём полночь вместо restart", () => {
+  const p = H.plan(DAYS8(0, 540, 540, 540, 540, 540, 540, 960), { miles: 110, mph: 55, clockMin: 22 * 60, ...NO_DOCK });
+  assert.deepStrictEqual(shape(p), ["recap:120", "drive:120"]);
+  assert.strictEqual(p.restarts, 0);
+  assert.strictEqual(p.recaps, 1);
+  assert.strictEqual(p.restMin, 120);
+});
+
+test("plan days: полночь в пути возвращает часы — едем без restart", () => {
+  const st = DAYS8(0, 600, 600, 600, 600, 600, 600, 540);
+  const p = H.plan(st, { miles: 275, mph: 55, clockMin: 23 * 60 + 30, ...NO_DOCK });
+  assert.deepStrictEqual(shape(p), ["drive:300"]);
+  // без дней тот же цикл (60 мин) упирается в restart
+  const flat = H.plan({ cycleUsedMin: 4140 }, { miles: 275, mph: 55, ...NO_DOCK });
+  assert.strictEqual(flat.restarts, 1);
+});
+
+test("plan days: recap дальше 34h → обычный restart", () => {
+  const p = H.plan(DAYS8(600, 600, 600, 600, 600, 600, 600, 0), { miles: 55, mph: 55, clockMin: 1, ...NO_DOCK });
+  assert.deepStrictEqual(shape(p), ["restart:2040", "drive:60"]);
+  assert.strictEqual(p.recaps, 0);
+});
+
+test("plan days: цикл и окно кончились, полночь ближе 10h → 10h reset, за него часы вернулись", () => {
+  const st = { ...DAYS8(600, 540, 540, 540, 540, 540, 540, 360), drivenMin: 600, shiftMin: 840 };
+  const p = H.plan(st, { miles: 55, mph: 55, clockMin: 20 * 60, ...NO_DOCK });
+  assert.deepStrictEqual(shape(p), ["reset:600", "drive:60"]);
+});
+
+test("plan days: долгий рейс с днями завершается", () => {
+  const p = H.plan(DAYS8(0, 600, 600, 600, 600, 600, 600, 600), { miles: 5000, mph: 30, clockMin: 8 * 60, ...NO_DOCK });
+  assert.strictEqual(p.driveMin, 10000);
+  assert.ok(p.segments.length < 200);
+});
+
+test("splitPair days: дни цикла сохраняются в эффективном состоянии (план считает recap)", () => {
+  const st = { ...DAYS8(600, 600, 600, 600, 600, 600, 600, 300), drivenMin: 300, shiftMin: 600 };
+  const pair = H.splitPair(st, { firstMin: 480, firstSleeper: true, drivenAfterMin: 0, sinceMin: 0 });
+  assert.deepStrictEqual(pair.state.days, st.days);
+  assert.strictEqual(pair.now.recapMin, 300);
+});

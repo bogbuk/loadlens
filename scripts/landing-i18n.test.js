@@ -129,9 +129,9 @@ const CALC_I18N = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "landing
 const calcKeys = new Set([...calcHtml.matchAll(/data-i18n="([^"]+)"/g)].map((m) => m[1]));
 const hosPageJs = fs.readFileSync(path.join(PUB, "js", "hos-page.js"), "utf8");
 const JS_KEYS = ["js.hm", "js.left", "js.now", "js.total", "js.arrive",
-  ...["break", "drive", "window", "cycle", "split"].map((k) => "js.next." + k),
+  ...["break", "drive", "window", "cycle", "split", "recap"].map((k) => "js.next." + k),
   ...["need", "where.sb", "where.any", "after", "short", "full"].map((k) => "js.split." + k),
-  ...["duty", "drive", "break", "reset", "restart"].map((k) => "js.seg." + k)];
+  ...["duty", "drive", "break", "reset", "restart", "recap"].map((k) => "js.seg." + k), "js.recap"];
 
 test("калькулятор в PAGES как инструмент", () => {
   assert.ok(CALC);

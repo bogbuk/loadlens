@@ -78,7 +78,16 @@
     .plan li.break, .plan li.reset { border-left-color: var(--amber); }
     .plan li.restart { border-left-color: var(--red); }
     .note { font-size: 14px; padding: 10px 12px; border-radius: 10px; background: var(--amber-bg); color: var(--amber); margin-top: 12px; }
-    .note[hidden], #plan-box[hidden], #plan-hint[hidden], #split-box[hidden], #split-fields[hidden], #split-cond[hidden] { display: none; }
+    .note[hidden], #plan-box[hidden], #plan-hint[hidden], #split-box[hidden], #split-fields[hidden], #split-cond[hidden],
+    #days-fields[hidden], #used-field[hidden], #recap-msg[hidden], .day[hidden] { display: none; }
+    .byday { margin-top: -4px; }
+    .byday .check { display: inline-flex; gap: 8px; align-items: center; font-weight: 600; font-size: 15px; min-height: 44px; }
+    .days { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 8px; }
+    @media (max-width: 420px) { .days { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .day label { display: block; font-size: 13px; color: var(--mut); margin-bottom: 4px; }
+    .day input { width: 100%; min-height: 44px; padding: 8px 10px; font: inherit; color: var(--ink);
+                 background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+    .plan li.recap { border-left-color: var(--amber); }
     .split { border-top: 1px solid var(--line); padding-top: 16px; }
     .split .check { display: inline-flex; gap: 8px; align-items: center; font-weight: 600; font-size: 15px; min-height: 44px; }
     .split .radios { margin-top: 8px; }
@@ -128,9 +137,25 @@
           <div class="hm"><input class="ym-disable-keys" type="number" id="since-h" min="0" max="8" inputmode="numeric" /><span data-i18n="u.h">h</span>
             <input class="ym-disable-keys" type="number" id="since-m" min="0" max="59" inputmode="numeric" /><span data-i18n="u.m">min</span></div>
           <p class="mut small" data-i18n="in.since.hint">Lasă gol dacă nu ai avut încă o pauză în această tură.</p></div>
-        <div class="field"><label for="used-h" data-i18n="in.used">Ore on duty în ultimele 8 (sau 7) zile</label>
+        <div class="field" id="used-field"><label for="used-h" data-i18n="in.used">Ore on duty în ultimele 8 (sau 7) zile</label>
           <div class="hm"><input class="ym-disable-keys" type="number" id="used-h" min="0" max="70" inputmode="numeric" value="0" /><span data-i18n="u.h">h</span>
             <input class="ym-disable-keys" type="number" id="used-m" min="0" max="59" inputmode="numeric" value="0" /><span data-i18n="u.m">min</span></div></div>
+        <fieldset class="byday">
+          <label class="check"><input type="checkbox" id="byday" /> <span data-i18n="in.byday">Introduceți orele pe zile ca să fie calculat recap-ul</span></label>
+          <div id="days-fields" hidden>
+            <p class="mut small" data-i18n="in.byday.hint">Orele on duty (condus și lucru fără condus) pentru fiecare zi, după logbook. Ziua se schimbă la miezul nopții după ceasul calculatorului.</p>
+            <div class="days">
+            <div class="day"><label for="d0"><span data-i18n="in.d0">Azi</span></label><input class="ym-disable-keys" type="number" id="d0" min="0" max="24" step="0.25" inputmode="decimal" /></div>
+            <div class="day"><label for="d1"><span data-i18n="in.d1">Ieri</span></label><input class="ym-disable-keys" type="number" id="d1" min="0" max="24" step="0.25" inputmode="decimal" /></div>
+            <div class="day"><label for="d2"><span data-i18n="in.dn">Ziua</span> −2</label><input class="ym-disable-keys" type="number" id="d2" min="0" max="24" step="0.25" inputmode="decimal" /></div>
+            <div class="day"><label for="d3"><span data-i18n="in.dn">Ziua</span> −3</label><input class="ym-disable-keys" type="number" id="d3" min="0" max="24" step="0.25" inputmode="decimal" /></div>
+            <div class="day"><label for="d4"><span data-i18n="in.dn">Ziua</span> −4</label><input class="ym-disable-keys" type="number" id="d4" min="0" max="24" step="0.25" inputmode="decimal" /></div>
+            <div class="day"><label for="d5"><span data-i18n="in.dn">Ziua</span> −5</label><input class="ym-disable-keys" type="number" id="d5" min="0" max="24" step="0.25" inputmode="decimal" /></div>
+            <div class="day"><label for="d6"><span data-i18n="in.dn">Ziua</span> −6</label><input class="ym-disable-keys" type="number" id="d6" min="0" max="24" step="0.25" inputmode="decimal" /></div>
+            <div class="day d7"><label for="d7"><span data-i18n="in.dn">Ziua</span> −7</label><input class="ym-disable-keys" type="number" id="d7" min="0" max="24" step="0.25" inputmode="decimal" /></div>
+            </div>
+          </div>
+        </fieldset>
         <fieldset class="split">
           <label class="check"><input type="checkbox" id="split" /> <span data-i18n="in.split">Șoferul e în split sleeper (7/3 sau 8/2)</span></label>
           <div id="split-fields" hidden>
@@ -173,6 +198,7 @@
           <div class="meter" data-k="window"><div class="top"><span data-i18n="r.window">Fereastra de 14 ore</span><span class="val"></span></div><div class="track"><div class="fill"></div></div></div>
           <div class="meter" data-k="break"><div class="top"><span data-i18n="r.break">Până la pauza de 30 de minute</span><span class="val"></span></div><div class="track"><div class="fill"></div></div></div>
           <div class="meter" data-k="cycle"><div class="top"><span data-i18n="r.cycle">Ciclu</span><span class="val"></span></div><div class="track"><div class="fill"></div></div></div>
+          <p class="mut small" id="recap-msg" hidden></p>
           <div id="split-box" hidden>
             <p class="note" id="split-msg"></p>
             <p class="mut small" id="split-cond" data-i18n="r.split.cond">Prima odihnă nu intră în fereastra de 14 ore doar dacă șoferul închide perechea cu a doua odihnă.</p>
@@ -185,7 +211,7 @@
             <ol class="plan" id="plan"></ol>
             <p><b id="total"></b></p>
             <p class="mut small" id="arrive"></p>
-            <p class="note" id="restart-note" hidden data-i18n="p.restart">Cursa are nevoie de un restart de 34 de ore, pentru că ciclul se termină pe drum. Dacă în timpul cursei unele ore ies din totalul pe 8 (7) zile, poate fi nevoie de mai puțin.</p>
+            <p class="note" id="restart-note" hidden data-i18n="p.restart">Cursa are nevoie de un restart de 34 de ore, pentru că ciclul se termină pe drum. Dacă în timpul cursei unele ore ies din totalul pe 8 (7) zile, poate fi nevoie de mai puțin. Ca să fie calculat recap-ul, introduceți orele pe zile.</p>
           </div>
         </div>
       </div>
@@ -212,7 +238,7 @@
         <p data-i18n="faq.a3">Șoferul nu poate conduce după 70 de ore în tură în 8 zile consecutive, sau 60 de ore în 7 zile dacă transportatorul nu lucrează zilnic. Un restart de 34 de ore libere readuce contorul la zero.</p>
         <h3 data-i18n="faq.q4">Înlocuiește acest calculator un ELD?</h3>
         <p data-i18n="faq.a4">Nu. Este o estimare pentru planificare, pentru dispeceri și șoferi. La un control contează doar înregistrarea din ELD.</p>
-        <p class="disc" data-i18n="disc">Estimare pentru planificare, nu consultanță juridică și nu înlocuiește ELD-ul. Split sleeper e luat în calcul pentru orele rămase, dar planul cursei folosește odihnă completă de 10 ore. Condițiile nefavorabile și excepțiile pentru curse scurte nu sunt modelate, iar totalul ciclului este considerat fix pe durata cursei. Împărțirile 6/4 și 5/5 din programul pilot FMCSA (flexible sleeper berth) se aplică doar participanților și nu sunt acceptate.</p>
+        <p class="disc" data-i18n="disc">Estimare pentru planificare, nu consultanță juridică și nu înlocuiește ELD-ul. Split sleeper e luat în calcul pentru orele rămase, dar planul cursei folosește odihnă completă de 10 ore. Condițiile nefavorabile și excepțiile pentru curse scurte nu sunt modelate. Recap-ul e calculat doar dacă introduceți orele pe zile; altfel totalul ciclului este considerat fix pe durata cursei. Împărțirile 6/4 și 5/5 din programul pilot FMCSA (flexible sleeper berth) se aplică doar participanților și nu sunt acceptate.</p>
       </div>
     </section>
   </main>
@@ -239,7 +265,7 @@
     </div>
   </footer>
 
-  <!--STRINGS-START--><script type="application/json" id="ll-strings">{"js.hm":"{h} h {m} min","js.left":"{t} rămase","js.now":"Poți conduce {t} chiar acum, apoi ai nevoie de {next}.","js.next.break":"o pauză de 30 de minute","js.next.drive":"o odihnă de 10 ore: limita de condus de 11 ore s-a epuizat","js.next.window":"o odihnă de 10 ore: se închide fereastra de 14 ore","js.next.cycle":"un restart de 34 de ore: ciclul s-a epuizat","js.seg.duty":"În tură: încărcare sau descărcare","js.seg.drive":"Condus {mi} mile","js.seg.break":"Pauză de 30 de minute","js.seg.reset":"Odihnă de 10 ore","js.seg.restart":"Restart de 34 de ore","js.total":"Timp legal al cursei: {t} (condus {d}, pauze și odihnă {r}).","js.arrive":"Gata în jurul orei {when}, după ceasul calculatorului tău.","js.next.split":"a doua odihnă din split","js.split.need":"Ca să închideți split-ul, mai luați cel puțin {t} {where}.","js.split.where.sb":"în sleeper berth","js.split.where.any":"off duty sau în sleeper berth","js.split.after":"După ea puteți conduce {d} până la următoarea oprire, iar fereastra de 14 ore mai are {w}, socotit de la sfârșitul primei odihne.","js.split.short":"Pentru split prima odihnă trebuie să dureze cel puțin 2 ore. Până atunci se aplică limitele obișnuite.","js.split.full":"10 ore la rând sau mai mult înseamnă odihnă completă, nu split. Începeți o tură nouă în câmpurile de mai sus."}</script><!--STRINGS-END-->
+  <!--STRINGS-START--><script type="application/json" id="ll-strings">{"js.hm":"{h} h {m} min","js.left":"{t} rămase","js.now":"Poți conduce {t} chiar acum, apoi ai nevoie de {next}.","js.next.break":"o pauză de 30 de minute","js.next.drive":"o odihnă de 10 ore: limita de condus de 11 ore s-a epuizat","js.next.window":"o odihnă de 10 ore: se închide fereastra de 14 ore","js.next.cycle":"un restart de 34 de ore: ciclul s-a epuizat","js.seg.duty":"În tură: încărcare sau descărcare","js.seg.drive":"Condus {mi} mile","js.seg.break":"Pauză de 30 de minute","js.seg.reset":"Odihnă de 10 ore","js.seg.restart":"Restart de 34 de ore","js.total":"Timp legal al cursei: {t} (condus {d}, pauze și odihnă {r}).","js.arrive":"Gata în jurul orei {when}, după ceasul calculatorului tău.","js.next.split":"a doua odihnă din split","js.split.need":"Ca să închideți split-ul, mai luați cel puțin {t} {where}.","js.split.where.sb":"în sleeper berth","js.split.where.any":"off duty sau în sleeper berth","js.split.after":"După ea puteți conduce {d} până la următoarea oprire, iar fereastra de 14 ore mai are {w}, socotit de la sfârșitul primei odihne.","js.split.short":"Pentru split prima odihnă trebuie să dureze cel puțin 2 ore. Până atunci se aplică limitele obișnuite.","js.split.full":"10 ore la rând sau mai mult înseamnă odihnă completă, nu split. Începeți o tură nouă în câmpurile de mai sus.","js.seg.recap":"Off duty: așteptați orele de recap la miezul nopții","js.recap":"La miezul nopții ziua de acum {n} zile iese din ciclu: se întorc {t}.","js.next.recap":"odihnă până la miezul nopții, când se întorc orele de recap (sau un restart de 34 de ore)"}</script><!--STRINGS-END-->
   <script src="/js/hos-trip.js"></script>
   <script src="/js/hos-page.js"></script>
   <script src="/js/site.js"></script>

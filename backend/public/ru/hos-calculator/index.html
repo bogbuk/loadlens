@@ -78,7 +78,16 @@
     .plan li.break, .plan li.reset { border-left-color: var(--amber); }
     .plan li.restart { border-left-color: var(--red); }
     .note { font-size: 14px; padding: 10px 12px; border-radius: 10px; background: var(--amber-bg); color: var(--amber); margin-top: 12px; }
-    .note[hidden], #plan-box[hidden], #plan-hint[hidden], #split-box[hidden], #split-fields[hidden], #split-cond[hidden] { display: none; }
+    .note[hidden], #plan-box[hidden], #plan-hint[hidden], #split-box[hidden], #split-fields[hidden], #split-cond[hidden],
+    #days-fields[hidden], #used-field[hidden], #recap-msg[hidden], .day[hidden] { display: none; }
+    .byday { margin-top: -4px; }
+    .byday .check { display: inline-flex; gap: 8px; align-items: center; font-weight: 600; font-size: 15px; min-height: 44px; }
+    .days { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 8px; }
+    @media (max-width: 420px) { .days { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .day label { display: block; font-size: 13px; color: var(--mut); margin-bottom: 4px; }
+    .day input { width: 100%; min-height: 44px; padding: 8px 10px; font: inherit; color: var(--ink);
+                 background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+    .plan li.recap { border-left-color: var(--amber); }
     .split { border-top: 1px solid var(--line); padding-top: 16px; }
     .split .check { display: inline-flex; gap: 8px; align-items: center; font-weight: 600; font-size: 15px; min-height: 44px; }
     .split .radios { margin-top: 8px; }
@@ -128,9 +137,25 @@
           <div class="hm"><input class="ym-disable-keys" type="number" id="since-h" min="0" max="8" inputmode="numeric" /><span data-i18n="u.h">ч</span>
             <input class="ym-disable-keys" type="number" id="since-m" min="0" max="59" inputmode="numeric" /><span data-i18n="u.m">мин</span></div>
           <p class="mut small" data-i18n="in.since.hint">Оставьте пустым, если перерыва в этой смене ещё не было.</p></div>
-        <div class="field"><label for="used-h" data-i18n="in.used">Часов on duty за последние 8 (или 7) дней</label>
+        <div class="field" id="used-field"><label for="used-h" data-i18n="in.used">Часов on duty за последние 8 (или 7) дней</label>
           <div class="hm"><input class="ym-disable-keys" type="number" id="used-h" min="0" max="70" inputmode="numeric" value="0" /><span data-i18n="u.h">ч</span>
             <input class="ym-disable-keys" type="number" id="used-m" min="0" max="59" inputmode="numeric" value="0" /><span data-i18n="u.m">мин</span></div></div>
+        <fieldset class="byday">
+          <label class="check"><input type="checkbox" id="byday" /> <span data-i18n="in.byday">Ввести часы по дням, чтобы учесть recap</span></label>
+          <div id="days-fields" hidden>
+            <p class="mut small" data-i18n="in.byday.hint">Часы on duty (вождение и работа без вождения) за каждый день, по логбуку. День меняется в полночь по часам вашего компьютера.</p>
+            <div class="days">
+            <div class="day"><label for="d0"><span data-i18n="in.d0">Сегодня</span></label><input class="ym-disable-keys" type="number" id="d0" min="0" max="24" step="0.25" inputmode="decimal" /></div>
+            <div class="day"><label for="d1"><span data-i18n="in.d1">Вчера</span></label><input class="ym-disable-keys" type="number" id="d1" min="0" max="24" step="0.25" inputmode="decimal" /></div>
+            <div class="day"><label for="d2"><span data-i18n="in.dn">День</span> −2</label><input class="ym-disable-keys" type="number" id="d2" min="0" max="24" step="0.25" inputmode="decimal" /></div>
+            <div class="day"><label for="d3"><span data-i18n="in.dn">День</span> −3</label><input class="ym-disable-keys" type="number" id="d3" min="0" max="24" step="0.25" inputmode="decimal" /></div>
+            <div class="day"><label for="d4"><span data-i18n="in.dn">День</span> −4</label><input class="ym-disable-keys" type="number" id="d4" min="0" max="24" step="0.25" inputmode="decimal" /></div>
+            <div class="day"><label for="d5"><span data-i18n="in.dn">День</span> −5</label><input class="ym-disable-keys" type="number" id="d5" min="0" max="24" step="0.25" inputmode="decimal" /></div>
+            <div class="day"><label for="d6"><span data-i18n="in.dn">День</span> −6</label><input class="ym-disable-keys" type="number" id="d6" min="0" max="24" step="0.25" inputmode="decimal" /></div>
+            <div class="day d7"><label for="d7"><span data-i18n="in.dn">День</span> −7</label><input class="ym-disable-keys" type="number" id="d7" min="0" max="24" step="0.25" inputmode="decimal" /></div>
+            </div>
+          </div>
+        </fieldset>
         <fieldset class="split">
           <label class="check"><input type="checkbox" id="split" /> <span data-i18n="in.split">Водитель в split sleeper (7/3 или 8/2)</span></label>
           <div id="split-fields" hidden>
@@ -173,6 +198,7 @@
           <div class="meter" data-k="window"><div class="top"><span data-i18n="r.window">Окно 14 часов</span><span class="val"></span></div><div class="track"><div class="fill"></div></div></div>
           <div class="meter" data-k="break"><div class="top"><span data-i18n="r.break">До 30-минутного перерыва</span><span class="val"></span></div><div class="track"><div class="fill"></div></div></div>
           <div class="meter" data-k="cycle"><div class="top"><span data-i18n="r.cycle">Цикл</span><span class="val"></span></div><div class="track"><div class="fill"></div></div></div>
+          <p class="mut small" id="recap-msg" hidden></p>
           <div id="split-box" hidden>
             <p class="note" id="split-msg"></p>
             <p class="mut small" id="split-cond" data-i18n="r.split.cond">Первый отдых не входит в окно 14 часов, только если водитель закроет пару вторым отдыхом.</p>
@@ -185,7 +211,7 @@
             <ol class="plan" id="plan"></ol>
             <p><b id="total"></b></p>
             <p class="mut small" id="arrive"></p>
-            <p class="note" id="restart-note" hidden data-i18n="p.restart">Рейсу нужен 34-часовой рестарт: цикл заканчивается в пути. Если за время рейса часть часов выпадет из суммы за 8 (7) дней, может хватить и меньшего отдыха.</p>
+            <p class="note" id="restart-note" hidden data-i18n="p.restart">Рейсу нужен 34-часовой рестарт: цикл заканчивается в пути. Если за время рейса часть часов выпадет из суммы за 8 (7) дней, может хватить и меньшего отдыха. Чтобы учесть recap, введите часы по дням.</p>
           </div>
         </div>
       </div>
@@ -212,7 +238,7 @@
         <p data-i18n="faq.a3">Водитель не может ехать после 70 часов на смене за 8 дней подряд, или 60 часов за 7 дней, если перевозчик работает не каждый день. 34-часовой рестарт вне смены обнуляет счёт.</p>
         <h3 data-i18n="faq.q4">Заменяет ли калькулятор ELD?</h3>
         <p data-i18n="faq.a4">Нет. Это оценка для планирования диспетчерам и водителям. На проверке считается только запись вашего ELD.</p>
-        <p class="disc" data-i18n="disc">Оценка для планирования, а не юридическая консультация и не замена ELD. Split sleeper учитывается в остатке часов, но план рейса ставит полный 10-часовой отдых. Неблагоприятные условия и исключения для коротких рейсов не учитываются, а сумма цикла считается неизменной на время рейса. Разбивки 6/4 и 5/5 из пилотной программы FMCSA (flexible sleeper berth) действуют только для её участников и не поддерживаются.</p>
+        <p class="disc" data-i18n="disc">Оценка для планирования, а не юридическая консультация и не замена ELD. Split sleeper учитывается в остатке часов, но план рейса ставит полный 10-часовой отдых. Неблагоприятные условия и исключения для коротких рейсов не учитываются. Recap учитывается, только если ввести часы по дням; иначе сумма цикла считается неизменной на время рейса. Разбивки 6/4 и 5/5 из пилотной программы FMCSA (flexible sleeper berth) действуют только для её участников и не поддерживаются.</p>
       </div>
     </section>
   </main>
@@ -239,7 +265,7 @@
     </div>
   </footer>
 
-  <!--STRINGS-START--><script type="application/json" id="ll-strings">{"js.hm":"{h} ч {m} мин","js.left":"осталось {t}","js.now":"Сейчас можно ехать {t}, потом нужен {next}.","js.next.break":"30-минутный перерыв","js.next.drive":"10-часовой отдых: лимит вождения 11 часов исчерпан","js.next.window":"10-часовой отдых: закрывается окно 14 часов","js.next.cycle":"34-часовой рестарт: цикл исчерпан","js.seg.duty":"На смене: погрузка или разгрузка","js.seg.drive":"Ехать {mi} миль","js.seg.break":"Перерыв 30 минут","js.seg.reset":"Отдых 10 часов","js.seg.restart":"Рестарт 34 часа","js.total":"Легальное время рейса: {t} (вождение {d}, перерывы и отдых {r}).","js.arrive":"Готово примерно {when} по часам вашего компьютера.","js.next.split":"второй отдых split","js.split.need":"Чтобы закрыть split, отдохните ещё минимум {t} {where}.","js.split.where.sb":"в sleeper berth","js.split.where.any":"off duty или в sleeper berth","js.split.after":"После этого можно ехать {d} до следующей остановки, а в окне 14 часов останется {w}, считая от конца первого отдыха.","js.split.short":"Для split первый отдых должен длиться не меньше 2 часов. Пока действуют обычные лимиты.","js.split.full":"10 часов подряд и больше — это полный отдых, а не split. Начните новую смену в полях выше."}</script><!--STRINGS-END-->
+  <!--STRINGS-START--><script type="application/json" id="ll-strings">{"js.hm":"{h} ч {m} мин","js.left":"осталось {t}","js.now":"Сейчас можно ехать {t}, потом нужен {next}.","js.next.break":"30-минутный перерыв","js.next.drive":"10-часовой отдых: лимит вождения 11 часов исчерпан","js.next.window":"10-часовой отдых: закрывается окно 14 часов","js.next.cycle":"34-часовой рестарт: цикл исчерпан","js.seg.duty":"На смене: погрузка или разгрузка","js.seg.drive":"Ехать {mi} миль","js.seg.break":"Перерыв 30 минут","js.seg.reset":"Отдых 10 часов","js.seg.restart":"Рестарт 34 часа","js.total":"Легальное время рейса: {t} (вождение {d}, перерывы и отдых {r}).","js.arrive":"Готово примерно {when} по часам вашего компьютера.","js.next.split":"второй отдых split","js.split.need":"Чтобы закрыть split, отдохните ещё минимум {t} {where}.","js.split.where.sb":"в sleeper berth","js.split.where.any":"off duty или в sleeper berth","js.split.after":"После этого можно ехать {d} до следующей остановки, а в окне 14 часов останется {w}, считая от конца первого отдыха.","js.split.short":"Для split первый отдых должен длиться не меньше 2 часов. Пока действуют обычные лимиты.","js.split.full":"10 часов подряд и больше — это полный отдых, а не split. Начните новую смену в полях выше.","js.seg.recap":"Off duty: ждать часы recap в полночь","js.recap":"В полночь из цикла выпадет день {n} дней назад: вернётся {t}.","js.next.recap":"отдых до полуночи, когда вернутся часы recap (или 34-часовой рестарт)"}</script><!--STRINGS-END-->
   <script src="/js/hos-trip.js"></script>
   <script src="/js/hos-page.js"></script>
   <script src="/js/site.js"></script>
