@@ -7,23 +7,23 @@ const NOW = 1790000000000;
 
 test("постоянный Pro: бейдж PRO, без заметки", () => {
   assert.deepStrictEqual(LLPLANVIEW.view({ plan: "pro", trialEndsAt: null }, NOW),
-    { badge: "PRO", pro: true, note: null, daysLeft: null, action: "contact", subLine: null });
+    { badge: "PRO", pro: true, note: null, daysLeft: null, action: "contact", subLine: null, yearly: false });
 });
 
 test("активный триал: PRO TRIAL и дни с округлением вверх", () => {
   assert.deepStrictEqual(LLPLANVIEW.view({ plan: "pro", trialEndsAt: NOW + 8 * DAY + 1 }, NOW),
-    { badge: "PRO TRIAL", pro: true, note: "trial", daysLeft: 9, action: "contact", subLine: null });
+    { badge: "PRO TRIAL", pro: true, note: "trial", daysLeft: 9, action: "contact", subLine: null, yearly: false });
   assert.strictEqual(LLPLANVIEW.view({ plan: "pro", trialEndsAt: NOW + 1000 }, NOW).daysLeft, 1);
 });
 
 test("триал закончился: FREE и заметка ended", () => {
   assert.deepStrictEqual(LLPLANVIEW.view({ plan: "free", trialEndsAt: NOW - DAY }, NOW),
-    { badge: "FREE", pro: false, note: "ended", daysLeft: null, action: "contact", subLine: null });
+    { badge: "FREE", pro: false, note: "ended", daysLeft: null, action: "contact", subLine: null, yearly: false });
 });
 
 test("Free без триала: FREE и upsell", () => {
   assert.deepStrictEqual(LLPLANVIEW.view({ plan: "free", trialEndsAt: null }, NOW),
-    { badge: "FREE", pro: false, note: "upsell", daysLeft: null, action: "contact", subLine: null });
+    { badge: "FREE", pro: false, note: "upsell", daysLeft: null, action: "contact", subLine: null, yearly: false });
   assert.strictEqual(LLPLANVIEW.view({ plan: "free" }, NOW).note, "upsell");
 });
 
@@ -39,6 +39,14 @@ test("billing выключен — всегда contact (старое повед
 test("billing включён: Free/триал/конец триала — upgrade", () => {
   for (const u of [{ plan: "free" }, { plan: "pro", trialEndsAt: NOW + DAY }, { plan: "free", trialEndsAt: NOW - DAY }])
     assert.strictEqual(LLPLANVIEW.view({ ...u, billing: true }, NOW).action, "upgrade");
+});
+
+test("годовая кнопка — только при upgrade и billingYearly", () => {
+  assert.strictEqual(LLPLANVIEW.view({ plan: "free", billing: true, billingYearly: true }, NOW).yearly, true);
+  assert.strictEqual(LLPLANVIEW.view({ plan: "free", billing: true }, NOW).yearly, false);
+  assert.strictEqual(LLPLANVIEW.view({ plan: "free", billingYearly: true }, NOW).yearly, false);
+  const sub = { status: "active", renewsAt: NOW + DAY, endsAt: null };
+  assert.strictEqual(LLPLANVIEW.view({ plan: "pro", billing: true, billingYearly: true, subscription: sub }, NOW).yearly, false);
 });
 
 test("подписчик — manage и строка продления/окончания", () => {

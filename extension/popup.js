@@ -219,7 +219,8 @@ function planNote(pv, email) {
   if (pv.action === "upgrade") {
     const lead = pv.note === "trial" ? "Pro trial: " + pv.daysLeft + (pv.daysLeft === 1 ? " day" : " days") + " left. "
       : pv.note === "ended" ? "Your Pro trial has ended. " : "";
-    return '<div class="note get-pro">' + lead + '<button id="acc-upgrade" class="primary">Upgrade to Pro — $24/mo</button>' +
+    return '<div class="note get-pro">' + lead + '<button id="acc-upgrade" class="primary">Upgrade to Pro — $29/mo</button>' +
+      (pv.yearly ? '<button id="acc-upgrade-year">$290/yr — 2 months free</button>' : "") +
       '<div id="acc-bill-err" class="err"></div></div>';
   }
   if (pv.note === "trial")
@@ -252,7 +253,9 @@ function accRow(user) {
     catch (x) { if (err) err.textContent = x.message; }
   };
   const up = document.getElementById("acc-upgrade");
-  if (up) up.onclick = openBilling(LLAPI.billingCheckout);
+  if (up) up.onclick = openBilling(() => LLAPI.billingCheckout("month"));
+  const upY = document.getElementById("acc-upgrade-year");
+  if (upY) upY.onclick = openBilling(() => LLAPI.billingCheckout("year"));
   const man = document.getElementById("acc-manage");
   if (man) man.onclick = openBilling(LLAPI.billingPortal);
   document.getElementById("acc-del").onclick = async () => {
@@ -695,7 +698,7 @@ chrome.storage.onChanged.addListener(async (ch) => {
 // аккаунта в другом окне иначе не доходили до Settings. Перерисовываем блоки аккаунта, только когда
 // сменился сам аккаунт (email/план/облако): полная перерисовка стёрла бы недописанное правило или водителя.
 let shownAcct;                    // undefined — ещё не рисовали; null — аноним
-const acctKey = (u) => (u ? [u.email, u.plan, !!u.cloudEnabled, u.trialEndsAt ?? "", !!u.billing,
+const acctKey = (u) => (u ? [u.email, u.plan, !!u.cloudEnabled, u.trialEndsAt ?? "", !!u.billing, !!u.billingYearly,
   u.subscription ? u.subscription.status + ":" + (u.subscription.endsAt ?? u.subscription.renewsAt ?? "") : ""].join("|") : "");
 async function renderAccount(u) {
   shownAcct = acctKey(u);

@@ -338,8 +338,8 @@ const LLAPI = (() => {
   }
 
   // Оплата Pro (Paddle): сервер отдаёт URL оплаты/портала, вкладку открывает Settings.
-  async function billingCall(path) {
-    const res = await authedFetch(path, { method: "POST" });
+  async function billingCall(path, body) {
+    const res = await authedFetch(path, { method: "POST", body: body ? JSON.stringify(body) : undefined });
     if (!res) throw new Error("sign in required");
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(res.status === 502 || res.status === 503
@@ -347,7 +347,8 @@ const LLAPI = (() => {
       : data.message || `error ${res.status}`);
     return data; // { url }
   }
-  const billingCheckout = () => billingCall("/billing/checkout");
+  // interval: "month" | "year" (без него сервер считает месяц).
+  const billingCheckout = (interval) => billingCall("/billing/checkout", { interval: interval || "month" });
   const billingPortal = () => billingCall("/billing/portal");
 
   // Смена своего пароля. Серверное сообщение об ошибке (400 — неверный текущий / новый = старый) пробрасываем как есть.

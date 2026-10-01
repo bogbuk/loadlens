@@ -7,6 +7,7 @@ const LLPLANVIEW = (() => {
   const day = (ms) => new Date(ms).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
   // action: upgrade — кнопка оплаты; manage — портал Paddle; contact — прежние mailto-ссылки.
+  // yearly — вторая кнопка «год»: сервер отдаёт billingYearly, когда задан PADDLE_PRICE_ID_YEARLY.
   // Оплату показываем только при user.billing (сервер решает по BILLING_MODE): до запуска её не видит никто.
   function billingAction(user, base) {
     const sub = user && user.subscription;
@@ -31,7 +32,8 @@ const LLPLANVIEW = (() => {
     else if (end != null && end <= now) base = { badge: "FREE", pro: false, note: "ended", daysLeft: null };
     else if (user && user.plan === "pro") base = { badge: "PRO", pro: true, note: null, daysLeft: null };
     else base = { badge: "FREE", pro: false, note: "upsell", daysLeft: null };
-    return { ...base, ...billingAction(user, base) };
+    const b = billingAction(user, base);
+    return { ...base, ...b, yearly: b.action === "upgrade" && !!user.billingYearly };
   }
 
   return { view };
