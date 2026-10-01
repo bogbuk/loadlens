@@ -8,7 +8,7 @@ import { User } from '../users/user.model';
 import { PaddleClient, PaddleError } from './paddle.client';
 import {
   applySubscriptionEvent, billingConfigured, billingMode, billingVisible, hasLiveSubscription,
-  PaddleSubEvent, priceIdFor, verifySignature,
+  PaddleSubEvent, priceIdFor, syncEventFor, verifySignature,
 } from './billing';
 
 // users.id — UUID: не-UUID в findByPk у Postgres — ошибка запроса (500 и бесконечные повторы Paddle).
@@ -69,6 +69,14 @@ export class BillingService {
       customerId = (await this.gateway(this.paddle.findCustomerByEmail(user.email)))
         ?? (await this.gateway(this.paddle.createCustomer(user.email)));
       await user.update({ paddleCustomerId: customerId });
+    } else {
+      // Покупатель уже есть → мог оплатить, а вебхук ещё в пути (или потерян): вторую подписку не продаём,
+      // живую подтягиваем сами. Новому покупателю подписок быть не может — лишний вызов не делаем.
+      const live = (await this.gateway(this.paddle.listLiveSubscriptions(customerId)))[0];
+      if (live) {
+        await this.applyEvent(user, syncEventFor(live));
+        throw new ConflictException('already subscribed');
+      }
     }
     const url = await this.gateway(this.paddle.createTransaction({
       priceId, customerId, userId: user.id,
@@ -96,17 +104,27 @@ export class BillingService {
       this.logger.warn(`paddle ${ev.event_type} ${ev.data?.id}: user not found`);
       return { ok: true };
     }
+    // Чужая подписка при живой сохранённой: событие не применяем (иначе canceled второй сбросил бы Pro).
+    if (hasLiveSubscription(user) && user.paddleSubscriptionId && user.paddleSubscriptionId !== ev.data.id) {
+      // Двойная покупка до вебхука: вторую отменяем сразу (деньги за неё возвращает админ в Paddle).
+      // Отмена не удалась → 502: Paddle повторит событие, и мы попробуем ещё раз.
+      if (hasLiveSubscription({ subscriptionStatus: ev.data.status })) {
+        this.logger.error(`paddle: user ${user.id} bought a second subscription ${ev.data.id} while ${user.paddleSubscriptionId} is live — canceling ${ev.data.id}, refund it manually`);
+        await this.gateway(this.paddle.cancelSubscription(ev.data.id));
+      }
+      return { ok: true };
+    }
+    await this.applyEvent(user, ev);
+    return { ok: true };
+  }
+
+  private async applyEvent(user: User, ev: PaddleSubEvent): Promise<void> {
     const patch = applySubscriptionEvent(user, ev, Date.now());
-    if (!patch) return { ok: true };
-    // Две живые подписки (двойной checkout до вебхука): храним одну — вторую админ отменяет руками.
-    if (hasLiveSubscription(user) && user.paddleSubscriptionId && user.paddleSubscriptionId !== ev.data.id
-        && hasLiveSubscription({ subscriptionStatus: ev.data.status }))
-      this.logger.error(`paddle: user ${user.id} has two live subscriptions ${user.paddleSubscriptionId} and ${ev.data.id} — cancel one manually`);
+    if (!patch) return;
     // Условный UPDATE: при параллельной доставке старое событие не перетрёт уже записанное новое.
     await this.userModel.update(patch, {
       where: { id: user.id, [Op.or]: [{ paddleEventAt: null }, { paddleEventAt: { [Op.lt]: patch.paddleEventAt } }] },
     });
-    return { ok: true };
   }
 
   private async findUser(ev: PaddleSubEvent): Promise<User | null> {

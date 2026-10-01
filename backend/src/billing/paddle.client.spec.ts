@@ -56,6 +56,14 @@ describe('PaddleClient', () => {
     expect(JSON.parse(opts.body)).toEqual({ effective_from: 'immediately' });
   });
 
+  it('listLiveSubscriptions: GET /subscriptions по customer_id и живым статусам', async () => {
+    fetchMock.mockReturnValue(ok([{ id: 'sub_1', status: 'active' }]));
+    const subs = await client.listLiveSubscriptions('ctm_1');
+    expect(subs).toEqual([{ id: 'sub_1', status: 'active' }]);
+    const [u] = fetchMock.mock.calls[0];
+    expect(u).toBe('https://sandbox-api.paddle.com/subscriptions?customer_id=ctm_1&status=active%2Ctrialing%2Cpast_due%2Cpaused');
+  });
+
   it('не-2xx → PaddleError со статусом и detail', async () => {
     fetchMock.mockReturnValue(fail(400, 'bad price'));
     await expect(client.createCustomer('a@b.co')).rejects.toMatchObject({ status: 400, message: 'bad price' });

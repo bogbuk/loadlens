@@ -236,9 +236,15 @@ with sync_playwright() as p:
     open_settings(page)
     page.wait_for_selector("#acc-upgrade", timeout=10000)
     check("billing: Upgrade to Pro — $24/mo", "Upgrade to Pro" in page.locator("#acc-upgrade").inner_text())
+    # Вкладку открывает chrome.tabs.create — роуты Playwright на неё не действуют, без сети она уходит в
+    # chrome-error и page.url теряет адрес; без permission "tabs" chrome.tabs.query URL не отдаёт.
+    # Поэтому проверяем URL, который панель передала в chrome.tabs.create.
+    page.evaluate("() => { window.__opened = []; const o = chrome.tabs.create.bind(chrome.tabs);"
+                  " chrome.tabs.create = (p) => { window.__opened.push(p.url); return o(p); }; }")
     with ctx.expect_page() as new_tab:
         page.click("#acc-upgrade")
-    check("Upgrade открывает checkout во вкладке", "_ptxn=txn_e2e" in new_tab.value.url, new_tab.value.url)
+    opened = page.evaluate("() => window.__opened")
+    check("Upgrade открывает checkout во вкладке", any("_ptxn=txn_e2e" in u for u in opened), ", ".join(opened))
     new_tab.value.close()
     page.screenshot(path=str(OUT / "09-billing-upgrade.png"), full_page=True)
     me_trial = None  # бэкенд у plan=pro отдаёт trialEndsAt: null

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { paddleApiBase } from './billing';
+import { LIVE_STATUSES, paddleApiBase, PaddleSubscription } from './billing';
 
 export class PaddleError extends Error {
   constructor(public readonly status: number, message: string) { super(message); }
@@ -50,6 +50,12 @@ export class PaddleClient {
       { subscription_ids: subscriptionId ? [subscriptionId] : [] },
     );
     return s.urls.general.overview;
+  }
+
+  // Живые подписки покупателя — страховка от двойной покупки, когда вебхук первой ещё не дошёл (или потерялся).
+  async listLiveSubscriptions(customerId: string): Promise<PaddleSubscription[]> {
+    const q = `customer_id=${encodeURIComponent(customerId)}&status=${encodeURIComponent(LIVE_STATUSES.join(','))}`;
+    return this.call<PaddleSubscription[]>('GET', `/subscriptions?${q}`);
   }
 
   async cancelSubscription(subscriptionId: string): Promise<void> {

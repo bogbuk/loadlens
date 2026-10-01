@@ -52,6 +52,7 @@ describe('BillingService', () => {
       createTransaction: jest.fn(() => Promise.resolve('https://loadlens.krait.studio/checkout.html?_ptxn=txn_1')),
       createPortalSession: jest.fn(() => Promise.resolve('https://portal/x')),
       cancelSubscription: jest.fn(() => Promise.resolve()),
+      listLiveSubscriptions: jest.fn(() => Promise.resolve([])),
     };
     service = new BillingService(userModel, paddle);
   });
@@ -108,6 +109,23 @@ describe('BillingService', () => {
       paddle.createTransaction.mockReturnValue(Promise.reject(new PaddleError(500, 'boom')));
       await expect(service.createCheckout(U1)).rejects.toThrow(BadGatewayException);
     });
+    it('у Paddle уже есть живая подписка (вебхук не дошёл) → применяем её и 409, транзакции нет', async () => {
+      users.u1.paddleCustomerId = 'ctm_saved';
+      paddle.listLiveSubscriptions.mockReturnValue(Promise.resolve([{
+        id: 'sub_live', status: 'active', customer_id: 'ctm_saved', custom_data: { userId: U1 },
+        next_billed_at: '2026-11-01T10:00:00Z', scheduled_change: null, updated_at: '2026-10-01T10:00:00Z',
+      }]));
+      await expect(service.createCheckout(U1)).rejects.toThrow(ConflictException);
+      expect(paddle.listLiveSubscriptions).toHaveBeenCalledWith('ctm_saved');
+      expect(paddle.createTransaction).not.toHaveBeenCalled();
+      expect(users.u1.plan).toBe('pro');
+      expect(users.u1.paddleSubscriptionId).toBe('sub_live');
+      expect(users.u1.subscriptionStatus).toBe('active');
+    });
+    it('новый покупатель — список подписок не спрашиваем', async () => {
+      await service.createCheckout(U1);
+      expect(paddle.listLiveSubscriptions).not.toHaveBeenCalled();
+    });
   });
 
   describe('createPortal', () => {
@@ -162,6 +180,34 @@ describe('BillingService', () => {
     it('пользователь не найден — 200, без исключения', async () => {
       await expect(send(event({ data: { ...event().data, custom_data: { userId: 'ghost' }, customer_id: 'ctm_x', id: 'sub_x' } })))
         .resolves.toEqual({ ok: true });
+    });
+    it('вторая живая подписка при живой сохранённой — отменяем новую, сохранённую не трогаем', async () => {
+      await send(event());
+      await send(event({ data: { ...event().data, id: 'sub_2' }, occurred_at: '2026-10-01T10:05:00Z' }));
+      expect(paddle.cancelSubscription).toHaveBeenCalledWith('sub_2');
+      expect(users.u1.paddleSubscriptionId).toBe('sub_1');
+      expect(users.u1.plan).toBe('pro');
+    });
+    it('canceled чужой (второй) подписки не сбрасывает живую сохранённую', async () => {
+      await send(event());
+      await send(event({ event_type: 'subscription.canceled', data: { ...event().data, id: 'sub_2', status: 'canceled' },
+                         occurred_at: '2026-10-01T10:06:00Z' }));
+      expect(paddle.cancelSubscription).not.toHaveBeenCalled();
+      expect(users.u1.paddleSubscriptionId).toBe('sub_1');
+      expect(users.u1.subscriptionStatus).toBe('active');
+    });
+    it('после отмены сохранённой — новая подписка применяется', async () => {
+      await send(event());
+      await send(event({ data: { ...event().data, status: 'canceled' }, occurred_at: '2026-10-02T10:00:00Z' }));
+      await send(event({ data: { ...event().data, id: 'sub_3' }, occurred_at: '2026-10-03T10:00:00Z' }));
+      expect(users.u1.paddleSubscriptionId).toBe('sub_3');
+      expect(users.u1.plan).toBe('pro');
+    });
+    it('отмена второй подписки упала в Paddle → 502 (Paddle повторит событие), сохранённая цела', async () => {
+      await send(event());
+      paddle.cancelSubscription.mockReturnValue(Promise.reject(new PaddleError(500, 'boom')));
+      await expect(send(event({ data: { ...event().data, id: 'sub_2' }, occurred_at: '2026-10-01T10:05:00Z' }))).rejects.toThrow(BadGatewayException);
+      expect(users.u1.paddleSubscriptionId).toBe('sub_1');
     });
     it('canceled, затем запоздалый updated(active) — остаётся free', async () => {
       await send(event({ data: { ...event().data, status: 'canceled' }, occurred_at: '2026-10-05T10:00:00Z' }));

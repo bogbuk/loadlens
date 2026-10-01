@@ -71,6 +71,7 @@ async function bootstrap() {
   await sequelize.query(
     'CREATE INDEX IF NOT EXISTS users_paddle_subscription_id ON users (paddle_subscription_id)',
   );
+  await sequelize.query('CREATE INDEX IF NOT EXISTS users_paddle_customer_id ON users (paddle_customer_id)');
   // Bootstrap админов из ADMIN_EMAIL (идемпотентно): уже существующие юзеры получают role=admin.
   const adminEmails = parseAdminEmails(process.env.ADMIN_EMAIL);
   if (adminEmails.length)

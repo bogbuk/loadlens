@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Headers, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { BillingService } from './billing.service';
 import { CheckoutDto } from './dto/checkout.dto';
@@ -21,7 +22,9 @@ export class BillingController {
   @UseGuards(JwtAuthGuard)
   portal(@Req() req: { user: { userId: string } }) { return this.service.createPortal(req.user.userId); }
 
+  // Без троттлинга: повторы/всплески доставок Paddle не должны ловить 429 (подпись — своя защита).
   @Post('paddle/webhook')
+  @SkipThrottle()
   @HttpCode(200)
   webhook(@Headers('paddle-signature') sig: string | undefined, @Req() req: { rawBody?: Buffer }, @Body() body: unknown) {
     return this.service.handleWebhook(sig, req.rawBody, body);

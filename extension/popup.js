@@ -245,17 +245,21 @@ function accRow(user) {
     '<button id="acc-del" class="danger">Delete account</button></div>';
   document.getElementById("acc-pwd-btn").onclick = () => pwdForm(document.getElementById("acc-pwd"));
   document.getElementById("acc-out").onclick = async () => { shownAcct = ""; await LLAPI.logout(); accForm(); renderFleet(null); renderTelegram(null); renderCloud(null); };
-  const openBilling = (fn) => async (e) => {
+  const openBilling = (fn, after) => async (e) => {
     e.preventDefault();
     const err = document.getElementById("acc-bill-err");
     if (err) err.textContent = "";
-    try { const r = await fn(); if (r.url) chrome.tabs.create({ url: r.url }); }
-    catch (x) { if (err) err.textContent = x.message; }
+    try { const r = await fn(); if (r.url) chrome.tabs.create({ url: r.url }); if (after) after(); }
+    catch (x) {
+      // 409 — подписка уже есть (оплатил в другом окне / вебхук дошёл): перечитать план → появится Manage.
+      if (x.status === 409) { refreshAccount(true, true); return; }
+      if (err) err.textContent = x.message;
+    }
   };
   const up = document.getElementById("acc-upgrade");
-  if (up) up.onclick = openBilling(() => LLAPI.billingCheckout("month"));
+  if (up) up.onclick = openBilling(() => LLAPI.billingCheckout("month"), watchForSubscription);
   const upY = document.getElementById("acc-upgrade-year");
-  if (upY) upY.onclick = openBilling(() => LLAPI.billingCheckout("year"));
+  if (upY) upY.onclick = openBilling(() => LLAPI.billingCheckout("year"), watchForSubscription);
   const man = document.getElementById("acc-manage");
   if (man) man.onclick = openBilling(LLAPI.billingPortal);
   document.getElementById("acc-del").onclick = async () => {
@@ -708,13 +712,27 @@ async function renderAccount(u) {
   renderFleet(u || null); renderTelegram(u || null); renderCloud(u || null);
 }
 let lastRefresh = 0;
-// force — сходить на сервер за планом (вход во вкладку Settings, не чаще раза в 30 с)
-async function refreshAccount(force) {
-  if (force && Date.now() - lastRefresh < 30000) return;
+// force — сходить на сервер за планом (вход во вкладку Settings, не чаще раза в 30 с; now — без этого ограничения)
+async function refreshAccount(force, now) {
+  if (force && !now && Date.now() - lastRefresh < 30000) return;
   if (force) lastRefresh = Date.now();
   const u = await LLAPI.getMe(!!force).catch(() => null);
   if (acctKey(u) !== shownAcct) renderAccount(u);
   else if (u && u.cloudEnabled && force) renderCloud(u); // статус облака меняется сам (starting → ok)
+  return u;
+}
+// После Upgrade: страница оплаты с расширением говорить не может, а кэш плана живёт сутки —
+// опрашиваем сервер раз в 10 с до 10 мин, пока не появится живая подписка (тогда Settings сам покажет Manage).
+const SUB_POLL_MS = 10000, SUB_POLL_MAX = 60;
+let subPoll = null;
+function watchForSubscription() {
+  if (subPoll) clearInterval(subPoll);
+  let n = 0;
+  subPoll = setInterval(async () => {
+    const u = await refreshAccount(true, true);
+    const live = u && u.subscription && ["active", "trialing", "past_due", "paused"].includes(u.subscription.status);
+    if (live || !u || ++n >= SUB_POLL_MAX) { clearInterval(subPoll); subPoll = null; }
+  }, SUB_POLL_MS);
 }
 LLAPI.getMe().then((u) => renderAccount(u), () => renderAccount(null));
 // вход/выход/смена плана в другом окне (у каждого окна своя панель) приходят через ll_auth

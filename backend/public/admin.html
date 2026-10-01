@@ -159,8 +159,15 @@
         const actions = tr.querySelector('td.row');
         const planBtn = document.createElement('button');
         planBtn.textContent = u.plan === 'pro' ? '→ free' : '→ pro';
-        planBtn.onclick = () => act(() => api('/admin/users/' + encodeURIComponent(u.email) + '/plan',
-          { method: 'PATCH', body: JSON.stringify({ plan: u.plan === 'pro' ? 'free' : 'pro' }) }));
+        const LIVE = ['active', 'trialing', 'past_due', 'paused'];
+        planBtn.onclick = () => {
+          // План платящего ведёт вебхук Paddle: ручной → free откатится следующим событием.
+          if (u.plan === 'pro' && LIVE.includes(u.subscriptionStatus) && !confirm(
+            'У ' + u.email + ' активная подписка Paddle (' + u.subscriptionStatus + '). План вернётся в pro при следующем ' +
+            'вебхуке — чтобы снять Pro, отмените подписку в дашборде Paddle. Всё равно поставить free?')) return;
+          act(() => api('/admin/users/' + encodeURIComponent(u.email) + '/plan',
+            { method: 'PATCH', body: JSON.stringify({ plan: u.plan === 'pro' ? 'free' : 'pro' }) }));
+        };
         actions.appendChild(planBtn);
         const cloudBtn = document.createElement('button');
         cloudBtn.textContent = u.cloudEnabled ? 'cloud off' : 'cloud on';

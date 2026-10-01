@@ -85,6 +85,12 @@ describe('verifySignature', () => {
   it('старше 5 минут — отказ', () => {
     expect(verifySignature(`ts=${ts};h1=${h1}`, body, secret, now + 5 * 60_000 + 1000)).toBe(false);
   });
+  it('ротация секрета: несколько h1 — принимаем, если совпал любой', () => {
+    const other = createHmac('sha256', 'old_secret').update(`${ts}:${body}`).digest('hex');
+    expect(verifySignature(`ts=${ts};h1=${other};h1=${h1}`, body, secret, now)).toBe(true);
+    expect(verifySignature(`ts=${ts};h1=${h1};h1=${other}`, body, secret, now)).toBe(true);
+    expect(verifySignature(`ts=${ts};h1=${other};h1=${other}`, body, secret, now)).toBe(false);
+  });
   it('битый/пустой заголовок и пустой секрет — отказ, без исключений', () => {
     expect(verifySignature(undefined, body, secret, now)).toBe(false);
     expect(verifySignature('garbage', body, secret, now)).toBe(false);

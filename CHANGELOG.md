@@ -5,7 +5,7 @@ All notable user-facing changes to the LoadLens browser extension.
 ## [Unreleased]
 
 ### Added
-- **Upgrade to Pro from Settings** (rolling out gradually). Where available, the Settings tab shows "Upgrade to Pro — $29/mo" and "$290/yr — 2 months free" buttons that open a secure checkout, and subscribers get "Manage subscription" to update the card, see receipts or cancel. Deleting your account also cancels the subscription.
+- **Upgrade to Pro from Settings** (rolling out gradually). Where available, the Settings tab shows "Upgrade to Pro — $29/mo" and "$290/yr — 2 months free" buttons that open a secure checkout, and subscribers get "Manage subscription" to update the card, see receipts or cancel. Deleting your account also cancels the subscription. After you pay, Settings picks up your Pro plan on its own within seconds, and if you already have a subscription it shows "Manage subscription" instead of an error.
 
 ## 0.9.3 — 2026-09-29
 

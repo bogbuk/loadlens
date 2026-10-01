@@ -342,9 +342,13 @@ const LLAPI = (() => {
     const res = await authedFetch(path, { method: "POST", body: body ? JSON.stringify(body) : undefined });
     if (!res) throw new Error("sign in required");
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(res.status === 502 || res.status === 503
-      ? "Payment service is unavailable, try later or email " + (globalThis.LLCONTACT ? LLCONTACT.EMAIL : "us")
-      : data.message || `error ${res.status}`);
+    if (!res.ok) {
+      const err = new Error(res.status === 502 || res.status === 503
+        ? "Payment service is unavailable, try later or email " + (globalThis.LLCONTACT ? LLCONTACT.EMAIL : "us")
+        : data.message || `error ${res.status}`);
+      err.status = res.status; // 409 «already subscribed» — Settings перечитывает план и показывает Manage
+      throw err;
+    }
     return data; // { url }
   }
   // interval: "month" | "year" (без него сервер считает месяц).

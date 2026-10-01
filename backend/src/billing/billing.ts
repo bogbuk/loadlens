@@ -50,16 +50,25 @@ export function paddleApiBase(env: Env): string {
 const SIGNATURE_WINDOW_MS = 5 * 60_000;
 
 // Paddle-Signature: "ts=<unix sec>;h1=<hex>", h1 = HMAC-SHA256(secret, ts + ':' + rawBody).
+// При ротации секрета Paddle шлёт несколько h1 (старый и новый) — подпись верна, если совпал любой.
 export function verifySignature(header: string | undefined, rawBody: Buffer | string, secret: string, nowMs: number): boolean {
   if (!header || !secret) return false;
-  const parts = Object.fromEntries(header.split(';').map((kv) => kv.split('=') as [string, string]));
-  const ts = Number(parts.ts);
-  const h1 = parts.h1;
-  if (!Number.isFinite(ts) || !h1 || !/^[0-9a-f]+$/i.test(h1)) return false;
+  let tsRaw: string | undefined;
+  const h1s: string[] = [];
+  for (const kv of header.split(';')) {
+    const [k, v] = kv.split('=') as [string, string | undefined];
+    if (k === 'ts') tsRaw = v;
+    else if (k === 'h1' && v) h1s.push(v);
+  }
+  const ts = Number(tsRaw);
+  if (!Number.isFinite(ts) || !h1s.length) return false;
   if (Math.abs(nowMs - ts * 1000) > SIGNATURE_WINDOW_MS) return false;
-  const expected = createHmac('sha256', secret).update(`${parts.ts}:`).update(rawBody).digest();
-  const got = Buffer.from(h1, 'hex');
-  return got.length === expected.length && timingSafeEqual(got, expected);
+  const expected = createHmac('sha256', secret).update(`${tsRaw}:`).update(rawBody).digest();
+  return h1s.some((h1) => {
+    if (!/^[0-9a-f]+$/i.test(h1)) return false;
+    const got = Buffer.from(h1, 'hex');
+    return got.length === expected.length && timingSafeEqual(got, expected);
+  });
 }
 
 export interface SubFields {
@@ -68,17 +77,26 @@ export interface SubFields {
   paddleEventAt?: number | string | null;
 }
 
+// Сущность подписки Paddle — одна и та же в вебхуке (data) и в GET /subscriptions.
+export interface PaddleSubscription {
+  id: string;
+  status: string;
+  customer_id: string;
+  custom_data?: Record<string, unknown> | null;
+  next_billed_at?: string | null;
+  scheduled_change?: { action: string; effective_at: string } | null;
+  updated_at?: string;
+}
+
 export interface PaddleSubEvent {
   event_type: string;
   occurred_at: string;
-  data: {
-    id: string;
-    status: string;
-    customer_id: string;
-    custom_data?: Record<string, unknown> | null;
-    next_billed_at?: string | null;
-    scheduled_change?: { action: string; effective_at: string } | null;
-  };
+  data: PaddleSubscription;
+}
+
+// Подписка из GET /subscriptions (вебхук не дошёл) → то же событие, что прислал бы Paddle: время = updated_at.
+export function syncEventFor(sub: PaddleSubscription): PaddleSubEvent {
+  return { event_type: 'subscription.sync', occurred_at: sub.updated_at ?? new Date(0).toISOString(), data: sub };
 }
 
 export interface SubPatch {
