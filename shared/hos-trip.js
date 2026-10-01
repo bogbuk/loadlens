@@ -128,8 +128,10 @@ const LLHOSTRIP = (() => {
         if (days) days = days.map(() => 0);
         advance(RESTART, false);
         driven = 0; shift = 0; since = 0; flatUsed = 0;
-      } else if (shiftOut && (wait == null || wait < RESET)) {
-        // окно почти закрыто — 30-мин перерыв бесполезен, нужен 10h reset (за него может пройти и полночь recap)
+      } else if ((shiftOut && (wait == null || wait < RESET)) ||
+                 (wait != null && wait < RESET && left > Math.min(DRIVE - driven, WINDOW - shift - wait))) {
+        // окно почти закрыто — 30-мин перерыв бесполезен, нужен 10h reset (за него может пройти и полночь recap).
+        // То же, если после короткого ожидания recap остаток рейса в смену не влезет: reset обнулит окно и 11h.
         push("reset", RESET);
         advance(RESET, false);
         driven = 0; shift = 0; since = 0;

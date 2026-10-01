@@ -230,3 +230,11 @@ test("splitPair days: дни цикла сохраняются в эффекти
   assert.deepStrictEqual(pair.state.days, st.days);
   assert.strictEqual(pair.now.recapMin, 300);
 });
+
+test("plan days: короткое ожидание recap не дотянет рейс в смене → сразу 10h reset (полночь внутри)", () => {
+  const st = DAYS8(0, 540, 540, 540, 540, 540, 540, 960);
+  const p = H.plan(st, { miles: 300, mph: 55, clockMin: 15 * 60, ...NO_DOCK });
+  assert.deepStrictEqual(shape(p), ["reset:600", "drive:327"]);
+  // короткий рейс укладывается в смену после ожидания → ждём только до полуночи
+  assert.deepStrictEqual(shape(H.plan(st, { miles: 110, mph: 55, clockMin: 15 * 60, ...NO_DOCK })), ["recap:540", "drive:120"]);
+});
