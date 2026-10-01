@@ -81,7 +81,7 @@
   | `paused`, `canceled` | `free` | `canceled` приходит в конце оплаченного периода; `proUntil` не трогаем |
 
   Patch всегда пишет `paddle_subscription_id`, `paddle_customer_id`, `subscription_status`,
-  `subscription_renews_at` (= `data.next_billed_at`, ms или null), `paddle_event_at`. При `pro` проставляет
+  `subscription_renews_at` (= `data.next_billed_at`, ms или null), `subscription_ends_at` (= `scheduled_change.effective_at` при `action: cancel`), `paddle_event_at`. При `pro` проставляет
   `trial_started_at`, если он пуст (как `setPlan`: оплата = триал использован).
 - **Конфликт с ручным Pro**: если админ выдал постоянный Pro и пользователь при этом купил подписку, то `canceled`
   переведёт его во free. Принято: ручной Pro до запуска — у единиц, админка позволяет вернуть.
@@ -101,7 +101,7 @@
 
 Новые колонки `users` (идемпотентный `ALTER TABLE … ADD COLUMN IF NOT EXISTS` в `main.ts` + поля модели):
 `paddle_customer_id TEXT`, `paddle_subscription_id TEXT`, `subscription_status TEXT`,
-`subscription_renews_at BIGINT`, `paddle_event_at BIGINT`. Индекс по `paddle_subscription_id`.
+`subscription_renews_at BIGINT`, `subscription_ends_at BIGINT` (дата запланированной отмены из `scheduled_change`), `paddle_event_at BIGINT`. Индекс по `paddle_subscription_id`.
 Админка (`/admin.html`, `users/stats`) показывает статус подписки в строке пользователя; число подписчиков в сводке.
 
 ## 6. Модуль и конфиг
