@@ -8,6 +8,7 @@ import { TelegramService } from '../telegram/telegram.service';
 import { genResetCode, sha256 } from './reset-code';
 import { DevicesService } from './devices.service';
 import { effectivePlan, grantTrial, trialDays, trialEndsAt } from '../users/plan';
+import { billingVisible, subscriptionView } from '../billing/billing';
 
 const ACCESS_TTL = '15m';
 const REFRESH_TTL = '7d';
@@ -33,7 +34,11 @@ export class AuthService {
 
   // plan — эффективный (активный триал = 'pro'): старые сборки расширения видят Pro без правок.
   private publicUser(u: User) {
-    return { email: u.email, plan: effectivePlan(u, Date.now()), trialEndsAt: trialEndsAt(u), cloudEnabled: !!u.cloudEnabled };
+    return {
+      email: u.email, plan: effectivePlan(u, Date.now()), trialEndsAt: trialEndsAt(u), cloudEnabled: !!u.cloudEnabled,
+      // Кнопка оплаты в расширении — только при billing:true (BILLING_MODE, спека 2026-10-01).
+      billing: billingVisible(process.env, u), subscription: subscriptionView(u),
+    };
   }
 
   // Триал Pro — один раз на аккаунт: новым при регистрации, существующим Free — при следующем

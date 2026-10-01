@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadGatewayException, BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from './users.service';
 
@@ -7,6 +7,7 @@ describe('UsersService', () => {
   let user: any;
   let userModel: any;
   let cloud: any;
+  let billing: any;
 
   beforeEach(async () => {
     user = {
@@ -20,7 +21,8 @@ describe('UsersService', () => {
       destroy: jest.fn(() => Promise.resolve(1)),
     };
     cloud = { purgeForUser: jest.fn(() => Promise.resolve()) };
-    service = new UsersService(userModel, cloud);
+    billing = { cancelForUser: jest.fn(() => Promise.resolve()) };
+    service = new UsersService(userModel, cloud, billing);
   });
 
   it('changePassword: неверный текущий пароль -> BadRequestException', async () => {
@@ -59,5 +61,17 @@ describe('UsersService', () => {
     expect(cloud.purgeForUser).toHaveBeenCalledWith('u1');
     expect(cloud.purgeForUser.mock.invocationCallOrder[0])
       .toBeLessThan(userModel.destroy.mock.invocationCallOrder[0]);
+  });
+  it('deleteMe: сначала отменяет подписку Paddle, потом удаляет', async () => {
+    await service.deleteMe('u1');
+    expect(billing.cancelForUser).toHaveBeenCalledWith(user);
+    expect(userModel.destroy).toHaveBeenCalled();
+  });
+
+  it('deleteMe: отмена в Paddle упала — аккаунт не удаляется', async () => {
+    billing.cancelForUser.mockReturnValue(Promise.reject(new BadGatewayException('payment service is unavailable')));
+    await expect(service.deleteMe('u1')).rejects.toThrow(BadGatewayException);
+    expect(userModel.destroy).not.toHaveBeenCalled();
+    expect(cloud.purgeForUser).not.toHaveBeenCalled();
   });
 });

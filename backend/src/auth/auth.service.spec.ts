@@ -48,7 +48,7 @@ describe('AuthService', () => {
 
   it('register: хеширует пароль и возвращает токены без hash', async () => {
     const res = await service.register('A@b.MD', 'password1', null);
-    expect(res.user).toEqual({ email: 'a@b.md', plan: 'free', trialEndsAt: null, cloudEnabled: false });
+    expect(res.user).toEqual({ email: 'a@b.md', plan: 'free', trialEndsAt: null, cloudEnabled: false, billing: false, subscription: null });
     expect(res.accessToken).toBeTruthy();
     expect(res.refreshToken).toBeTruthy();
     expect(users['a@b.md'].passwordHash).not.toBe('password1');
@@ -185,7 +185,7 @@ describe('AuthService', () => {
   it('me: отдаёт cloudEnabled', async () => {
     await service.register('a@b.c', 'password123', null);
     users['a@b.c'].cloudEnabled = true;
-    await expect(service.me(users['a@b.c'].id)).resolves.toEqual({ email: 'a@b.c', plan: 'free', trialEndsAt: null, cloudEnabled: true });
+    await expect(service.me(users['a@b.c'].id)).resolves.toEqual({ email: 'a@b.c', plan: 'free', trialEndsAt: null, cloudEnabled: true, billing: false, subscription: null });
   });
 
   describe('Pro trial', () => {
@@ -250,6 +250,29 @@ describe('AuthService', () => {
       const me = await service.me('u-p@b.md');
       expect(me).toMatchObject({ plan: 'pro', trialEndsAt: null });
       expect(users['p@b.md'].trialStartedAt).toBeUndefined();
+    });
+  });
+  describe('publicUser: billing', () => {
+    const KEYS = { PADDLE_API_KEY: 'k', PADDLE_CLIENT_TOKEN: 't', PADDLE_PRICE_ID: 'p' };
+    afterEach(() => { for (const k of ['BILLING_MODE', ...Object.keys(KEYS)]) delete process.env[k]; });
+
+    it('off — billing false, subscription null', async () => {
+      await service.register('b@b.md', 'password1', null);
+      const me = await service.me('u-b@b.md');
+      expect(me.billing).toBe(false);
+      expect(me.subscription).toBeNull();
+    });
+    it('test — true только админу', async () => {
+      Object.assign(process.env, KEYS, { BILLING_MODE: 'test' });
+      await service.register('b@b.md', 'password1', null);
+      expect((await service.me('u-b@b.md')).billing).toBe(false);
+      users['b@b.md'].role = 'admin';
+      expect((await service.me('u-b@b.md')).billing).toBe(true);
+    });
+    it('подписка видна в ответе', async () => {
+      await service.register('b@b.md', 'password1', null);
+      Object.assign(users['b@b.md'], { subscriptionStatus: 'active', subscriptionRenewsAt: '1790000000000', subscriptionEndsAt: null });
+      expect((await service.me('u-b@b.md')).subscription).toEqual({ status: 'active', renewsAt: 1790000000000, endsAt: null });
     });
   });
 });

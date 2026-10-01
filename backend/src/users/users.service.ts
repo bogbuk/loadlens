@@ -3,12 +3,14 @@ import { InjectModel } from '@nestjs/sequelize';
 import * as bcrypt from 'bcryptjs';
 import { User } from './user.model';
 import { CloudService } from '../cloud/cloud.service';
+import { BillingService } from '../billing/billing.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User) private readonly userModel: typeof User,
     private readonly cloud: CloudService,
+    private readonly billing: BillingService,
   ) {}
 
   // Смена своего пароля: нужен текущий пароль (подтверждение владения аккаунтом).
@@ -29,7 +31,11 @@ export class UsersService {
   // loads/broker_reports привязаны к анонимному clientId, не к userId — остаются обезличенными.
   // Облачный браузер сносим ДО удаления юзера: строка cloud_instances уйдёт каскадом, и висящий
   // контейнер с живой сессией DAT уже никто не найдёт (спека §7).
+  // Подписку Paddle отменяем первой: если Paddle недоступен — 502 и аккаунт цел, иначе удалённый
+  // пользователь продолжал бы платить (спека 2026-10-01 §4).
   async deleteMe(userId: string) {
+    const user = await this.userModel.findByPk(userId);
+    if (user) await this.billing.cancelForUser(user);
     await this.cloud.purgeForUser(userId);
     await this.userModel.destroy({ where: { id: userId } });
     return { ok: true };

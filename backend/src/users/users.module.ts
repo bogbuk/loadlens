@@ -6,6 +6,7 @@ import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CloudModule } from '../cloud/cloud.module';
+import { BillingModule } from '../billing/billing.module';
 
 @Module({
   imports: [
@@ -13,6 +14,8 @@ import { CloudModule } from '../cloud/cloud.module';
     JwtModule.register({ secret: process.env.JWT_SECRET || 'dev-secret' }),
     // Удаление аккаунта сносит и облачный браузер (CloudService.purgeForUser).
     CloudModule,
+    // Удаление аккаунта отменяет подписку Paddle (BillingService.cancelForUser).
+    BillingModule,
   ],
   controllers: [UsersController],
   providers: [JwtAuthGuard, UsersService],
