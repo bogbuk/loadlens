@@ -1,7 +1,7 @@
 import { createHmac } from 'crypto';
 import {
   applySubscriptionEvent, billingConfigured, billingMode, billingVisible, hasLiveSubscription,
-  paddleApiBase, subscriptionView, verifySignature, PaddleSubEvent,
+  paddleApiBase, priceIdFor, subscriptionView, verifySignature, PaddleSubEvent,
 } from './billing';
 
 const KEYS = { PADDLE_API_KEY: 'k', PADDLE_CLIENT_TOKEN: 't', PADDLE_PRICE_ID: 'pri_1' };
@@ -42,6 +42,21 @@ describe('billingVisible', () => {
       expect(billingConfigured(env)).toBe(false);
       expect(billingVisible(env, admin)).toBe(false);
     }
+  });
+});
+
+describe('priceIdFor', () => {
+  it('month — PADDLE_PRICE_ID, по умолчанию тоже месяц', () => {
+    expect(priceIdFor({ ...KEYS }, 'month')).toBe('pri_1');
+    expect(priceIdFor({ ...KEYS }, undefined)).toBe('pri_1');
+  });
+  it('year — PADDLE_PRICE_ID_YEARLY; без него null', () => {
+    expect(priceIdFor({ ...KEYS, PADDLE_PRICE_ID_YEARLY: 'pri_y' }, 'year')).toBe('pri_y');
+    expect(priceIdFor({ ...KEYS }, 'year')).toBeNull();
+    expect(priceIdFor({ ...KEYS, PADDLE_PRICE_ID_YEARLY: '  ' }, 'year')).toBeNull();
+  });
+  it('неизвестный период — null', () => {
+    expect(priceIdFor({ ...KEYS, PADDLE_PRICE_ID_YEARLY: 'pri_y' }, 'week')).toBeNull();
   });
 });
 

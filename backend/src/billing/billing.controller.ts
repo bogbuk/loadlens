@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Headers, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { BillingService } from './billing.service';
+import { CheckoutDto } from './dto/checkout.dto';
 
 @Controller('billing')
 export class BillingController {
@@ -12,7 +13,9 @@ export class BillingController {
 
   @Post('checkout')
   @UseGuards(JwtAuthGuard)
-  checkout(@Req() req: { user: { userId: string } }) { return this.service.createCheckout(req.user.userId); }
+  checkout(@Req() req: { user: { userId: string } }, @Body() body: CheckoutDto) {
+    return this.service.createCheckout(req.user.userId, body?.interval);
+  }
 
   @Post('portal')
   @UseGuards(JwtAuthGuard)

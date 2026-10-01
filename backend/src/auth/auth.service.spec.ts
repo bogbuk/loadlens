@@ -48,7 +48,7 @@ describe('AuthService', () => {
 
   it('register: хеширует пароль и возвращает токены без hash', async () => {
     const res = await service.register('A@b.MD', 'password1', null);
-    expect(res.user).toEqual({ email: 'a@b.md', plan: 'free', trialEndsAt: null, cloudEnabled: false, billing: false, subscription: null });
+    expect(res.user).toEqual({ email: 'a@b.md', plan: 'free', trialEndsAt: null, cloudEnabled: false, billing: false, billingYearly: false, subscription: null });
     expect(res.accessToken).toBeTruthy();
     expect(res.refreshToken).toBeTruthy();
     expect(users['a@b.md'].passwordHash).not.toBe('password1');
@@ -185,7 +185,7 @@ describe('AuthService', () => {
   it('me: отдаёт cloudEnabled', async () => {
     await service.register('a@b.c', 'password123', null);
     users['a@b.c'].cloudEnabled = true;
-    await expect(service.me(users['a@b.c'].id)).resolves.toEqual({ email: 'a@b.c', plan: 'free', trialEndsAt: null, cloudEnabled: true, billing: false, subscription: null });
+    await expect(service.me(users['a@b.c'].id)).resolves.toEqual({ email: 'a@b.c', plan: 'free', trialEndsAt: null, cloudEnabled: true, billing: false, billingYearly: false, subscription: null });
   });
 
   describe('Pro trial', () => {
@@ -268,6 +268,17 @@ describe('AuthService', () => {
       expect((await service.me('u-b@b.md')).billing).toBe(false);
       users['b@b.md'].role = 'admin';
       expect((await service.me('u-b@b.md')).billing).toBe(true);
+    });
+    it('billingYearly — только при видимой оплате и заданной годовой цене', async () => {
+      Object.assign(process.env, KEYS, { BILLING_MODE: 'test' });
+      await service.register('b@b.md', 'password1', null);
+      users['b@b.md'].role = 'admin';
+      expect((await service.me('u-b@b.md')).billingYearly).toBe(false);
+      process.env.PADDLE_PRICE_ID_YEARLY = 'py';
+      expect((await service.me('u-b@b.md')).billingYearly).toBe(true);
+      users['b@b.md'].role = 'user';
+      expect((await service.me('u-b@b.md')).billingYearly).toBe(false);
+      delete process.env.PADDLE_PRICE_ID_YEARLY;
     });
     it('подписка видна в ответе', async () => {
       await service.register('b@b.md', 'password1', null);

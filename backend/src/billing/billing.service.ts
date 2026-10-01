@@ -1,5 +1,5 @@
 import {
-  BadGatewayException, ConflictException, ForbiddenException, Injectable, Logger,
+  BadGatewayException, BadRequestException, ConflictException, ForbiddenException, Injectable, Logger,
   ServiceUnavailableException, UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -8,7 +8,7 @@ import { User } from '../users/user.model';
 import { PaddleClient, PaddleError } from './paddle.client';
 import {
   applySubscriptionEvent, billingConfigured, billingMode, billingVisible, hasLiveSubscription,
-  PaddleSubEvent, verifySignature,
+  PaddleSubEvent, priceIdFor, verifySignature,
 } from './billing';
 
 // users.id — UUID: не-UUID в findByPk у Postgres — ошибка запроса (500 и бесконечные повторы Paddle).
@@ -59,8 +59,10 @@ export class BillingService {
     };
   }
 
-  async createCheckout(userId: string): Promise<{ url: string }> {
+  async createCheckout(userId: string, interval?: string): Promise<{ url: string }> {
     const user = await this.visibleUser(userId);
+    const priceId = priceIdFor(process.env, interval);
+    if (!priceId) throw new BadRequestException('this billing interval is not available');
     if (hasLiveSubscription(user)) throw new ConflictException('already subscribed');
     let customerId = user.paddleCustomerId;
     if (!customerId) {
@@ -69,7 +71,7 @@ export class BillingService {
       await user.update({ paddleCustomerId: customerId });
     }
     const url = await this.gateway(this.paddle.createTransaction({
-      priceId: process.env.PADDLE_PRICE_ID as string, customerId, userId: user.id,
+      priceId, customerId, userId: user.id,
     }));
     return { url };
   }

@@ -1,6 +1,6 @@
 import { createHmac } from 'crypto';
 import { Op } from 'sequelize';
-import { ConflictException, ForbiddenException, ServiceUnavailableException, UnauthorizedException, BadGatewayException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, ServiceUnavailableException, UnauthorizedException, BadGatewayException, BadRequestException } from '@nestjs/common';
 import { BillingService } from './billing.service';
 import { PaddleError } from './paddle.client';
 
@@ -27,7 +27,7 @@ describe('BillingService', () => {
   beforeEach(() => {
     Object.assign(process.env, {
       BILLING_MODE: 'test', PADDLE_ENV: 'sandbox', PADDLE_API_KEY: 'k', PADDLE_CLIENT_TOKEN: 'test_tok',
-      PADDLE_PRICE_ID: 'pri_1', PADDLE_WEBHOOK_SECRET: SECRET,
+      PADDLE_PRICE_ID: 'pri_1', PADDLE_PRICE_ID_YEARLY: 'pri_y', PADDLE_WEBHOOK_SECRET: SECRET,
     });
     users = { u1: mkUser() };
     userModel = {
@@ -73,6 +73,16 @@ describe('BillingService', () => {
       expect(paddle.createCustomer).toHaveBeenCalledWith('a@b.co');
       expect(paddle.createTransaction).toHaveBeenCalledWith({ priceId: 'pri_1', customerId: 'ctm_new', userId: U1 });
       expect(users.u1.paddleCustomerId).toBe('ctm_new');
+    });
+    it('interval year — годовая цена', async () => {
+      await service.createCheckout(U1, 'year');
+      expect(paddle.createTransaction).toHaveBeenCalledWith(expect.objectContaining({ priceId: 'pri_y' }));
+    });
+    it('year без PADDLE_PRICE_ID_YEARLY или неизвестный период → 400, транзакции нет', async () => {
+      process.env.PADDLE_PRICE_ID_YEARLY = '';
+      await expect(service.createCheckout(U1, 'year')).rejects.toThrow(BadRequestException);
+      await expect(service.createCheckout(U1, 'week')).rejects.toThrow(BadRequestException);
+      expect(paddle.createTransaction).not.toHaveBeenCalled();
     });
     it('находит существующего покупателя по email', async () => {
       paddle.findCustomerByEmail.mockReturnValue(Promise.resolve('ctm_old'));

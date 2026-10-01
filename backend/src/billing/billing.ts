@@ -31,6 +31,17 @@ export function billingVisible(env: Env, u: { role: string; blocked: boolean }):
   return mode === 'live' || (mode === 'test' && u.role === 'admin');
 }
 
+export type BillingInterval = 'month' | 'year';
+
+// PADDLE_PRICE_ID — месяц (обязателен), PADDLE_PRICE_ID_YEARLY — год (опционален: пусто → годового тарифа нет).
+// null — период недоступен или не распознан: контроллер отвечает 400, а не продаёт не ту цену.
+export function priceIdFor(env: Env, interval: string | undefined): string | null {
+  const pick = (v: string | undefined) => (v && v.trim() ? v.trim() : null);
+  if (interval === undefined || interval === 'month') return pick(env.PADDLE_PRICE_ID);
+  if (interval === 'year') return pick(env.PADDLE_PRICE_ID_YEARLY);
+  return null;
+}
+
 // Боевой API — только явно; по умолчанию sandbox, чтобы недонастроенный env не списывал деньги.
 export function paddleApiBase(env: Env): string {
   return env.PADDLE_ENV === 'production' ? 'https://api.paddle.com' : 'https://sandbox-api.paddle.com';
