@@ -237,3 +237,14 @@ test("модерация Paddle: цена Pro, страницы Terms и Refund 
   assert.match(fs.readFileSync(path.join(PUB, "terms.html"), "utf8"), /US\$24 per month/);
   assert.match(fs.readFileSync(path.join(PUB, "refund.html"), "utf8"), /within 14 days of your first payment/);
 });
+
+test("checkout.html: noindex, вне sitemap, без Метрики, Paddle.js с CDN Paddle", () => {
+  const page = fs.readFileSync(path.join(PUB, "checkout.html"), "utf8");
+  assert.match(page, /<meta name="robots" content="noindex, nofollow"/);
+  assert.match(page, /<script src="https:\/\/cdn\.paddle\.com\/paddle\/v2\/paddle\.js"><\/script>/);
+  assert.match(page, /\/api\/v1\/billing\/client-config/);
+  assert.doesNotMatch(page, /site\.js|mc\.yandex|ym\(/);
+  const sitemap = fs.readFileSync(path.join(PUB, "sitemap.xml"), "utf8");
+  assert.doesNotMatch(sitemap, /checkout/);
+  assert.doesNotMatch(html, /checkout\.html/);
+});
