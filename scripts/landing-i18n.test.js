@@ -224,7 +224,8 @@ test("калькулятор: поля «после перерыва» пуст�
 });
 
 test("модерация Paddle: цена Pro, страницы Terms и Refund в подвале и sitemap", () => {
-  assert.match(html, /<h3>Pro<\/h3>\s*<p class="price"><b>\$24<\/b>/);
+  assert.match(html, /<h3>Pro<\/h3>\s*<p class="price"><b>\$29<\/b>/);
+  assert.match(html, /data-i18n="pr.pro.year">or \$290 per year/);
   const hos = fs.readFileSync(path.join(PUB, "hos-calculator", "index.html"), "utf8");
   const sitemap = fs.readFileSync(path.join(PUB, "sitemap.xml"), "utf8");
   for (const pg of ["terms", "refund"]) {
@@ -234,7 +235,7 @@ test("модерация Paddle: цена Pro, страницы Terms и Refund 
     assert.match(hos, new RegExp(`href="/${pg}\\.html"`));
     assert.match(sitemap, new RegExp(`${BASE}/${pg}\\.html`));
   }
-  assert.match(fs.readFileSync(path.join(PUB, "terms.html"), "utf8"), /US\$24 per month/);
+  assert.match(fs.readFileSync(path.join(PUB, "terms.html"), "utf8"), /US\$29 per month<\/strong> or <strong>US\$290 per year/);
   assert.match(fs.readFileSync(path.join(PUB, "refund.html"), "utf8"), /within 14 days of your first payment/);
 });
 

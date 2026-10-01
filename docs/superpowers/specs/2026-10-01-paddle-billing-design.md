@@ -42,11 +42,13 @@
 
 ## 2. Покупка (checkout)
 
-1. В Settings (`popup.js`, `planNote`) кнопка **Upgrade to Pro — $24/mo** → `LLAPI.billingCheckout()` →
-   `POST /api/v1/billing/checkout` (JwtAuthGuard).
+1. В Settings (`popup.js`, `planNote`) кнопки **Upgrade to Pro — $29/mo** и (при `billingYearly`) **$290/yr** →
+   `LLAPI.billingCheckout(interval)` → `POST /api/v1/billing/checkout { interval: 'month' | 'year' }` (JwtAuthGuard;
+   пустое тело = месяц — старые сборки). Годовая цена добавлена 2026-10-01 (task 0051).
 2. Бэкенд (`BillingService.createCheckout`): гейт `billingVisible`; если у пользователя уже есть активная подписка
    (`subscription_status` ∈ active/past_due) → 409 «already subscribed». Иначе `POST {paddle}/transactions`:
-   `items: [{ price_id: PADDLE_PRICE_ID, quantity: 1 }]`, `custom_data: { userId }`, `customer` по email
+   `items: [{ price_id: priceIdFor(env, interval), quantity: 1 }]` (`PADDLE_PRICE_ID` — месяц,
+   `PADDLE_PRICE_ID_YEARLY` — год; год без env или неизвестный период → 400), `custom_data: { userId }`, `customer` по email
    (существующий `paddle_customer_id` или создание/поиск по email). Ответ — `{ url: transaction.checkout.url }`.
    `custom_data` ставит сервер → подменить получателя Pro нельзя.
 3. `checkout.url` ведёт на **default payment link** аккаунта Paddle = `https://loadlens.krait.studio/checkout.html`
@@ -112,7 +114,8 @@
 Без SDK Paddle — три вызова API, fetch достаточно (как EIA/OSRM).
 
 Env (в Coolify; значения в чат/репо не попадают): `BILLING_MODE`, `PADDLE_ENV`, `PADDLE_API_KEY`,
-`PADDLE_CLIENT_TOKEN`, `PADDLE_PRICE_ID`, `PADDLE_WEBHOOK_SECRET`. `.env.example` — имена с пустыми значениями.
+`PADDLE_CLIENT_TOKEN`, `PADDLE_PRICE_ID`, `PADDLE_PRICE_ID_YEARLY` (опц.), `PADDLE_WEBHOOK_SECRET`.
+`/auth/me` отдаёт `billingYearly` = `billing` && задан `PADDLE_PRICE_ID_YEARLY`. `.env.example` — имена с пустыми значениями.
 
 ## 7. Расширение
 
@@ -121,7 +124,7 @@ Env (в Coolify; значения в чат/репо не попадают): `BI
 - `popup.js` `planNote`: при `upgrade` — кнопка Upgrade, при `manage` — Manage + дата; при `contact` — без изменений.
 - `api.js`: `billingCheckout()`, `billingPortal()`.
 - После возврата во вкладку Settings перечитывает `me` (уже делает при открытии) — план обновится сам.
-- Версия расширения: 0.9.4 (в CWS подаётся отдельно, кнопка всё равно скрыта флагом).
+- Версия расширения: 0.9.4 (в CWS подаётся отдельно, кнопка всё равно скрыта флагом); годовая кнопка — 0.9.5.
 
 ## 8. Ошибки
 
