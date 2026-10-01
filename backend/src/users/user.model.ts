@@ -62,4 +62,25 @@ export class User extends Model {
 
   @Column({ type: DataType.SMALLINT, allowNull: false, defaultValue: 0, field: 'trial_notice' })
   trialNotice: number;
+
+  // Подписка Paddle (спека 2026-10-01-paddle-billing-design): пишет только вебхук. Статус — как у Paddle
+  // (active/trialing/past_due/paused/canceled); метки — epoch ms, pg отдаёт BIGINT строкой.
+  @Column({ type: DataType.TEXT, allowNull: true, field: 'paddle_customer_id' })
+  paddleCustomerId: string | null;
+
+  @Column({ type: DataType.TEXT, allowNull: true, field: 'paddle_subscription_id' })
+  paddleSubscriptionId: string | null;
+
+  @Column({ type: DataType.TEXT, allowNull: true, field: 'subscription_status' })
+  subscriptionStatus: string | null;
+
+  @Column({ type: DataType.BIGINT, allowNull: true, field: 'subscription_renews_at' })
+  subscriptionRenewsAt: number | null;
+
+  @Column({ type: DataType.BIGINT, allowNull: true, field: 'subscription_ends_at' })
+  subscriptionEndsAt: number | null;
+
+  // occurred_at последнего применённого события: старые/повторные вебхуки игнорируются.
+  @Column({ type: DataType.BIGINT, allowNull: true, field: 'paddle_event_at' })
+  paddleEventAt: number | null;
 }

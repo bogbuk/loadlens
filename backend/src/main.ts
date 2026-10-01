@@ -18,7 +18,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   // POST /loads с полным набором полей (200 грузов × ~2КБ) не влезает в дефолтные 100kb → 413.
   // Наш парсер регистрируется раньше дефолтного body-parser'а и перекрывает его лимит.
-  app.use(json({ limit: '2mb' }));
+  // rawBody — для проверки подписи вебхука Paddle (HMAC считается по байтам тела, не по JSON).
+  app.use(json({ limit: '2mb', verify: (req: any, _res, buf) => { req.rawBody = buf; } }));
   const sequelize = app.get<Sequelize>(getConnectionToken());
   await sequelize.query(
     'ALTER TABLE loads ADD COLUMN IF NOT EXISTS seen_count INTEGER NOT NULL DEFAULT 1',
@@ -61,6 +62,15 @@ async function bootstrap() {
   await sequelize.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS pro_until BIGINT');
   await sequelize.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_started_at BIGINT');
   await sequelize.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_notice SMALLINT NOT NULL DEFAULT 0');
+  // Подписка Paddle (2026-10-01).
+  for (const [col, type] of [
+    ['paddle_customer_id', 'TEXT'], ['paddle_subscription_id', 'TEXT'], ['subscription_status', 'TEXT'],
+    ['subscription_renews_at', 'BIGINT'], ['subscription_ends_at', 'BIGINT'], ['paddle_event_at', 'BIGINT'],
+  ])
+    await sequelize.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col} ${type}`);
+  await sequelize.query(
+    'CREATE INDEX IF NOT EXISTS users_paddle_subscription_id ON users (paddle_subscription_id)',
+  );
   // Bootstrap админов из ADMIN_EMAIL (идемпотентно): уже существующие юзеры получают role=admin.
   const adminEmails = parseAdminEmails(process.env.ADMIN_EMAIL);
   if (adminEmails.length)
