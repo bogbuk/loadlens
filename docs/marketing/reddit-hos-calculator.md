@@ -130,33 +130,85 @@
 
 ## Пост 5: r/SideProject (разработчики, история постройки)
 
-Публиковать через 2–3 дня после r/CDL (r/CDL опубликован 30.09). Аудитория — билдеры: даёт фидбек и обратные ссылки, не водителей. Расширение/DAT не упоминать.
+Публиковать 2–3.10 (r/CDL опубликован 30.09). Аудитория — билдеры: даёт фидбек и обратные ссылки, не водителей. Расширение/DAT не упоминать (решение 30.09).
 
-**Title:** I built a free HOS calculator for truck drivers. The federal rules are simple on paper and surprisingly nasty in code
+Структура переписана 02.10 по образцу поста Juniper в r/SideProject (планировщик меню, см. ниже «Почему так»): боль от первого лица в заголовке, ссылка без регистрации в начале, «How it works» в три шага, факт «ранние тестеры уже повлияли» (у нас это реальный тред r/CDL про recap), три конкретных вопроса в конце.
+
+**Title (≤300 симв.):**
+
+I got tired of doing truck driver hours math by hand before every load, so I built a free HOS calculator. The federal rules are simple on paper and surprisingly nasty in code. No sign-up, would love honest feedback
 
 **Body:**
 
-> US truck drivers live by Hours of Service rules: 11 hours of driving, a 14 hour on-duty window, a 30 minute break after 8 hours of driving, and a 70 hour / 8 day cycle. Break them and you get a violation, or you get put out of service at a roadside inspection.
+> US truck drivers live by Hours of Service rules: 11 hours of driving, a 14 hour on-duty window, a 30 minute break after 8 hours of driving, and 70 hours in 8 days. Break them and it's a violation, or the truck gets parked at a roadside inspection.
 >
-> Every ELD shows how many hours you have left right now. What I couldn't find was a simple way to answer the question drivers and dispatchers actually ask before taking a load: "Can I make this delivery legally, and where will the breaks land?"
+> Every ELD shows the hours left right now. What it doesn't answer is the question a dispatcher asks before taking a load: "Can this driver make the delivery legally, and where do the breaks land?" I was doing that math on a notepad several times a day. So I built a page that does it in a few seconds.
 >
-> So I built a free calculator: https://loadlens.krait.studio/hos-calculator/?utm_source=reddit&utm_campaign=hos_calc&utm_content=sideproject
+> Try it free, no sign-up: https://loadlens.krait.studio/hos-calculator/?utm_source=reddit&utm_campaign=hos_calc&utm_content=sideproject
 >
-> You enter your current clocks and the trip miles. It shows what's left on each limit and lays out the trip: drive blocks, the 30, 10 hour breaks, and a warning if the weekly cycle runs out mid-trip.
+> How it works:
+>
+> 1. Enter the driver's clocks: driving this shift, time since the shift started, driving since the last 30 minute break, on-duty hours in the cycle. Or tick "enter hours by day" and type the last 8 days, so it can recap.
+> 2. Enter the trip: loaded miles, average speed, minutes at loading and unloading.
+> 3. It shows what's left on each limit and lays the trip out as a timeline: drive blocks, the 30, 10 hour breaks, and a warning if the weekly cycle runs out mid-trip. When waiting until midnight for recap hours is faster than a full 34 hour reset, it says so.
 >
 > What was harder than expected:
 >
-> - The clocks aren't independent. The 14 hour window keeps running while you wait at a dock, so 4 hours at a shipper can cost you 4 hours of driving even if your 11 is untouched. The planner has to advance every clock on every step, and whichever limit hits first wins.
-> - Split sleeper (7/3 or 8/2) breaks the "one window per day" model. The first rest doesn't count against the 14, and you only know the rest is valid once the second part is done. I shipped it only for the hours-left view. The trip planner still assumes straight 10 hour breaks, and the page says so.
-> - Empty input is not the same as zero. "When did you last take your 30?" left blank has to mean "not today", not "just now". I got this wrong in the first version.
+> - The clocks aren't independent. The 14 hour window keeps running while you wait at a dock, so 4 hours at a shipper can cost 4 hours of driving even if your 11 is untouched. Every step has to advance every clock, and whichever limit hits first wins.
+> - Split sleeper (7/3 or 8/2) breaks the "one window per day" model. The first rest doesn't count against the 14, and you only know it was valid once the second part is done. I shipped it for the hours-left view only. The trip planner still assumes straight 10 hour breaks, and the page says so.
+> - Empty input is not zero. "When did you last take your 30?" left blank has to mean "not today", not "just now". I got this wrong in the first version.
 >
-> Stack: vanilla JS, no framework, no backend. All math runs in the browser, nothing is sent anywhere. The HOS engine is one small pure module with 23 unit tests. The page is in English, Russian and Romanian, since a lot of US dispatchers are Eastern European.
+> Early feedback already changed it. The first comment from a driver was "will it recap?" It didn't. Now it does the day-by-day bookkeeping for the 70/8 cycle, which turned out to be the thing experienced drivers care about and most tools skip.
 >
-> No signup, no ads on the page. It's also the top of the funnel for a paid tool I'm building for people who plan truck loads, which is why it exists.
+> Stack: vanilla JS, no framework, no backend. All the math runs in the browser, nothing is sent anywhere. The HOS engine is one pure module with 38 unit tests. The page is in English, Russian and Romanian, because a lot of US dispatchers are Eastern European.
 >
-> Feedback I'd love:
-> 1. Does the result page make sense if you've never driven a truck?
-> 2. Any HOS edge case you know that I've probably missed?
+> No ads, no sign-up. It's the free top of the funnel for a paid tool I'm building for people who plan truck loads, which is why it exists.
+>
+> Especially curious:
+>
+> 1. Does the result page make sense if you've never been near a truck?
+> 2. Any HOS edge case I've probably missed? Texas intrastate is the one I already know about.
+> 3. Would you keep this a plain page, or make it a PWA that works offline? Drivers don't always have signal.
+
+**Почему так (разбор поста Juniper, r/SideProject, 02.10):**
+- Заголовок = боль от первого лица + «so I built» + «no sign-up» + просьба о фидбеке. Технический крючок («nasty in code») оставлен: для r/SideProject это причина открыть пост.
+- Ссылка стоит до «How it works», как у Juniper: кто не читает дальше, всё равно кликнет.
+- «Early feedback already changed it» — честный аналог «early testers shaped it»: история про recap реальная (тред r/CDL, 01.10). Выдуманных отзывов не добавлять.
+- Три вопроса конкретные, два из трёх — для билдеров, не для водителей (в r/SideProject водителей нет).
+- Юмора и эмодзи нет сознательно: пост технический, аудитория инженерная.
+
+**Что НЕ делать:** не упоминать расширение, DAT, Truckstop, авто-пилот. Ответы на «а что за paid tool?» в комментариях — одной строкой: «a planning tool for dispatchers, not launched yet, happy to DM when it is».
+
+### Вариант B: пост про само расширение (НЕ рекомендован, против решения 30.09)
+
+Записан на случай, если решение пересмотрим. Риски: публичный англоязычный пост «расширение поверх DAT» = внимание DAT (ToS §1.2, первый лид ушёл после предупреждения DAT), а r/SideProject не даёт целевых пользователей: диспетчеров там нет, конверсия будет около нуля при полном риске. Если всё-таки публиковать: без названия борда («the big US load boards»), без авто-пилота, без скриншотов выдачи DAT.
+
+**Title:** I got tired of watching dispatchers do rate per mile on a calculator while the good loads disappear, so I built a Chrome extension that scores every load on the board they already use
+
+**Body:**
+
+> Truck dispatchers spend the day on load boards: thousands of postings, each one "Chicago to Dallas, 920 miles, $2,400". Whether that's a good load depends on things the board doesn't show: how far the truck has to drive empty to pick it up, what fuel costs, whether the driver has the legal hours to make the delivery, and whether the broker actually pays. People do this on a calculator, per load, all day.
+>
+> So I built a Chrome extension that does it on the page. You keep using your load board, it adds a badge to every row.
+>
+> How it works:
+>
+> 1. Set your truck up once: cost per mile, trailer type, the driver's hours left.
+> 2. Search for loads as usual. Every row gets a green, amber or red badge: true rate per mile after deadhead and fuel, against your break-even and your target.
+> 3. A side panel shows the hot loads first, the HOS check (can the driver legally make it), broker credit score and days to pay, and a one-click email draft to the broker with a counter-offer.
+>
+> The extension never calls the board's API. It reads what your own signed-in session already loaded, which is the same line the other tools in this space draw.
+>
+> It's early. The free tier does the badges, the paid tier adds market rates per lane and a planner that looks two or three loads ahead to get a truck out of a dead market.
+>
+> Try it: https://loadlens.krait.studio/?utm_source=reddit&utm_campaign=extension&utm_content=sideproject
+>
+> Especially curious:
+>
+> 1. Would you build this as an extension again, or go for an API partnership first and accept the setup fee and 6 month delay?
+> 2. How would you handle a site that changes its DOM every few weeks? I intercept the app's own JSON responses instead of parsing HTML, curious if others do the same.
+> 3. What would make you trust a crowd-sourced "market rate" number from a tool with a few dozen users?
+
 
 ## Тред r/CDL (пост 4): обмен с NonGMOman_ про recap, 01.10
 
