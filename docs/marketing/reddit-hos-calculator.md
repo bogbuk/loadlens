@@ -210,6 +210,14 @@ I got tired of doing truck driver hours math by hand before every load, so I bui
 > 3. What would make you trust a crowd-sourced "market rate" number from a tool with a few dozen users?
 
 
+## r/SideProject (пост 5): ОПУБЛИКОВАН 02.10, 06:09 UTC
+
+https://www.reddit.com/r/SideProject/comments/1wvm9kc/i_got_tired_of_doing_truck_driver_hours_math_by/
+
+Через 3 часа — 0 комментариев (просмотры/голоса видны только в приложении, дописать). Добавлен свой комментарий
+(~09:30 UTC) про баг «пустое поле ≠ ноль» и вывод «дефолт для пропущенного ввода — тот, что даёт более строгий план».
+Дальше: цифры через 24 ч сюда; ответы на комментарии в первые часы.
+
 ## Тред r/CDL (пост 4): обмен с NonGMOman_ про recap, 01.10
 
 Первый содержательный диалог в комментариях. Собеседник — локальный водитель из Техаса, интрастейт, с большим стажем (hazmat). Ход треда:
