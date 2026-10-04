@@ -257,3 +257,44 @@ https://www.reddit.com/r/SideProject/comments/1wvm9kc/i_got_tired_of_doing_truck
 > If the site is heavy on bot detection, the lightest option is a bookmarklet or a tiny browser extension: you open the page yourself, click a button, it copies the table into a file. No automation for them to detect, and it's about 30 lines of JS.
 
 Зачем: комментарная карма перед постом 5 (r/SideProject) и r/Truckers; позиция по ToS та же, что у нас с DAT; концовка про расширение в своей сессии — наша экспертиза, но без саморекламы.
+
+## r/IMadeThis (репост поста 5): ОПУБЛИКОВАН ~03.10
+
+Репост поста 5 через кнопку Reddit «Repost to another community» — текст и ссылка те же, поэтому
+`utm_content=sideproject` остался; в Метрике трафик из r/IMadeThis не отличить от r/SideProject.
+**На будущее:** перед репостом в новый сабреддит менять `utm_content` (например `imadethis`).
+
+Через 20 ч: 67 просмотров, 1 апвоут, 1 комментарий.
+
+**Opening_Raccoon_410** (20 ч): хвалит взаимозависимость часов («14-hour window is a ticking bomb while
+you're sitting at a dock»), recap называет «the killer app», за PWA («Signal is a myth in half the country»).
+
+**OP (черновик ответа):**
+
+> Thanks. The dock thing is what surprised people most in testing. Your 11 looks fine, your 14 is quietly gone, and the ELD only tells you after the fact. That's why loading and unloading minutes are inputs and not an afterthought.
+>
+> Recap I didn't plan. A driver asked "will it recap?" the day the page went up, I said no, and added it the next day. Someone in that thread called recap "a lost art", which stuck with me.
+>
+> PWA: that's two votes now. The math is already client-side, so it's a manifest, a service worker and remembering the last inputs. I'll put it next. One question: when you're stuck at a shipper with no signal, is it a phone or a laptop in the cab? That decides whether install-to-home-screen matters or a cached page is enough.
+
+**Выводы:** второй независимый голос за PWA/offline (первый — вопрос в самом посте); recap снова первое,
+что отмечают. Кандидат в бэклог: PWA для /hos-calculator/ (manifest + service worker + сохранение последних
+вводов в localStorage).
+
+## Комментарий для кармы в r/SideProject, 04.10 (пост u/YanTsab про лендинг v15 с Claude): ОПУБЛИКОВАН 04.10
+
+Пост: «Landing page v15+ for my product» (sublay.io) — процесс: teardown чужого сайта, PRD → план → задачи,
+токены цветов + lint, папка «facts» для всех цифр/ссылок, типизация сниппетов, агент строит / другой аудирует,
+worktree на секцию. Тема наша (лендинг собран так же, i18n.json + build:landing + тест на устаревание),
+отвечаем без ссылок и без упоминания LoadLens/расширения.
+
+**Черновик комментария:**
+
+> The "facts folder" is the one I'd steal. I did a smaller version of it on my own landing page, but for translations instead of prices: the English page is the only source, every string lives in one JSON file, and a build script generates the Russian and Romanian pages from it. A test fails when the HTML has a string the JSON doesn't know about, which is exactly the "it drifted and I noticed two weeks later" problem you describe.
+>
+> What it doesn't catch is a translation that's wrong in a way only a native speaker sees. The Romanian page has been waiting for a human read for a week now, and no audit agent is going to flag "this sounds like a textbook".
+>
+> One question on the color rule: is that a stylelint check on raw hex values, or something you wrote yourself? I've been tokenizing by hand and would rather have the build yell at me.
+
+Зачем: комментарная карма в r/SideProject (цель — r/Truckers); наш реальный опыт (i18n.json, landing-i18n.test.js,
+невычитанный RO), ничего не выдумано; вопрос про lint — есть шанс получить готовый приём для своего лендинга.
