@@ -5,7 +5,7 @@ sandbox-прогон и защита от двойной покупки прой
 Порядок ниже = порядок выполнения. «Ты» — основатель в дашборде Paddle, «Claude» — код/env.
 
 ## 1. Решения (ты)
-- [ ] **Цена с налогом или без** (`tax_mode` цен). Сейчас `location`-режим: для EU/UK/MD $29 включает НДС (нетто $24.17), для US налог добавляется сверху.
+- [x] **Цена с налогом или без** (05.10: с налогом, `location` как есть) (`tax_mode` цен). Сейчас `location`-режим: для EU/UK/MD $29 включает НДС (нетто $24.17), для US налог добавляется сверху.
       Рекомендация: оставить как есть. Основной рынок — US, там $29 так и остаётся $29 + sales tax; одна цифра на лендинге,
       а потеря на редких EU-клиентах меньше, чем путаница «$29 + VAT».
 - [ ] Подтвердить каталог: LoadLens Pro, $29/мес и $290/год, без Paddle-триала (триал наш, 14 дней через `TRIAL_DAYS`).
@@ -17,8 +17,8 @@ sandbox-прогон и защита от двойной покупки прой
 - [ ] **Default payment link** = `https://loadlens.krait.studio/checkout.html` (в sandbox забыли один раз → 400 на создании транзакции).
 - [ ] **Имя продавца**: исправить опечатку «rait StudioK» → «Krait Studio». Оно печатается в чекауте и в чеках покупателю.
 - [ ] **Выплаты**: счёт в MD-банке (выделенный, под режим antreprenor independent) или Payoneer; налоговая форма внутри Paddle.
-- [ ] **Live-каталог**: продукт LoadLens Pro (tax category: SaaS), цены Monthly $29 и Yearly $290, quantity 1..1.
-      Claude может завести через API live-ключом из `.local_dev.env`, если скажешь; сам в live не трогаю.
+- [x] **Live-каталог** (05.10, через API): продукт `pro_01m45z0t1q34s62z9nzj287hd5` (saas), Monthly $29 `pri_01m45z0tahr05886phsa888r7z`,
+      Yearly $290 `pri_01m45z0tjjy116eerfhsqb89cn`, quantity 1..1, `tax_mode=location`, без trial. id — в `.local_dev.env` (`PADDLE_LIVE_*`).
 - [ ] **Вебхук (Notification destination)**: URL `https://loadlens.krait.studio/api/v1/billing/paddle/webhook`, события `subscription.*`
       (created, activated, trialing, updated, past_due, paused, resumed, canceled). Скопировать secret.
 - [ ] **Client-side token** для live (Developer tools → Authentication) и **API key** live с правами на customers, transactions, subscriptions.
