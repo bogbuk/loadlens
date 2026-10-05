@@ -364,3 +364,56 @@ Comment karma 40 — пост автоматом закроют. Для modmail 
 > [вставить Title и Body поста 1 v2]
 
 Если ответят «нет» — не спорить, не постить в обход, вернуться через карму.
+
+## Комментарии для кармы в r/Truckers, 05.10
+
+Цель: comment karma 40 → 80–100 перед постом 1 v2. Без ссылок, без калькулятора, без слова «dispatcher».
+Найдены по RSS `r/Truckers/new` и `r/CDL/new` 05.10. Посты 1–3 дня — пик апвоутов прошёл, карма будет скромной;
+дальше ловить посты <1–2 ч в New ежедневно. В r/CDL за неделю HOS-вопросов не было (последний — наш пост 4).
+
+### 1. 30 min break и забитая стоянка (04.10)
+
+https://www.reddit.com/r/Truckers/comments/1wxevym/
+
+> They were being assholes, yeah. 8am is checkout time, not camping time.
+>
+> One thing that might save you the next extra hour though: since the 2020 rule change, the 30 doesn't have to be off duty. Any 30 minutes in a row of not driving counts, including on duty not driving. Fueling, a pre-trip, waiting at a shipper, all of it works if it's 30 straight minutes. So if you're coming up on 8 hours of driving and there's a fuel stop before the rest area, you can knock it out there.
+>
+> Took me a while to figure out a lot of guys plan the 30 around the fuel stop instead of hunting for parking.
+
+«Took me a while to figure out» — от первого лица; если не про вас, заменить на «A lot of guys plan the 30 around the fuel stop instead of hunting for parking.»
+
+### 2. Поломка → смена 18 ч, отдых 8ч12м (02.10)
+
+https://www.reddit.com/r/Truckers/comments/1ww09vj/
+
+Off duty в 6:18, снова на смене в 14:30 — меньше обязательных 10 ч.
+
+> Rough first one. Worth double checking the restart math though: 6:18 to 14:30 is 8h12m. You need 10 hours off in a row before you can drive again, so you can clock in at 14:30 and do on-duty stuff, but no wheels until 16:18. And the 14 that starts at 14:30 still ends at 4:30, the extra time doesn't move it.
+>
+> Also a breakdown doesn't count as adverse conditions, so it doesn't buy you extra hours. If dispatch pushes you to roll at 14:30, the ELD will flag it and it's on you, not them.
+
+### 3. 5 ч на разгрузке 2 паллет в Target FDC, 16hr exception (03.10)
+
+https://www.reddit.com/r/Truckers/comments/1ww9z4x/
+
+Условия 16-часового исключения написаны по памяти — перед публикацией сверить с 49 CFR 395.1(o); при сомнении не публиковать.
+
+> 5 hours for 2 pallets and then they put 4 back on. Peak Target.
+>
+> On the 16 hour exception, in case anyone reading this hasn't used it: you still only get 11 hours of driving, it just stretches the window from 14 to 16. You have to start and end at your normal reporting location, you need to have been released within 14 hours for your previous 5 shifts, and you can only use it once every 6 days unless you've taken a 34 since. Burning it on a Target dock hurts.
+
+### 4. Новичок, ночные смены, засыпает через 5–6 ч (03.10)
+
+https://www.reddit.com/r/Truckers/comments/1wwzuvj/
+
+> First week on nights is always the worst, it got better for me around week 3 or 4. What helped:
+>
+> - Same sleep time every day, days off included. Flipping back to days on the weekend resets the whole thing.
+> - Blackout curtains and the phone in another room. Sleeping in daylight is the hard part, not staying up at night.
+> - Use your 30 for a 20 minute nap instead of scrolling. Short nap, not long, or you wake up groggier.
+> - Caffeine early in the shift, nothing in the last 4 to 5 hours before you plan to sleep.
+>
+> And tapping out to your trainer when you're fading is exactly the right call. Plenty of guys with 10 years in still don't do that.
+
+«It got better for me around week 3 or 4» — от первого лица; публиковать только если правда, иначе заменить на «For most people it gets better around week 3 or 4».
