@@ -24,6 +24,46 @@
 
 Почему так: польза + просьба о фидбеке, честно про ограничения, вопрос провоцирует обсуждение. DAT не упоминается.
 
+### Пост 1 v2 (05.10): актуальная версия для r/Truckers
+
+Переписан после r/CDL и r/SideProject: добавлены recap (реальный запрос из треда r/CDL), время на погрузке
+против 14 (то, что отмечают все комментаторы), раскрытие авторства в первой строке, вопрос про офлайн (два
+голоса за PWA). Пример с конкретными блоками «drive 6:40…» убран — не сверен с реальным выводом калькулятора.
+
+**Title (основной):** Free HOS trip planner: put in your clocks and the miles, it tells you if the load is legal and where the 30, the 10s and recap land
+
+**Альтернативы:**
+- A: I built a free HOS calculator that plans the whole trip, not just your next 11. It does recap now. Looking for drivers to break it (просьба «сломать» зовёт проверять математику в комментариях)
+- B: Can you make the delivery legally? Free trip planner for the 11, the 14, the 30 and your 70 (вопрос-боль в заголовке, короче)
+
+**Body:**
+
+> Disclosure: I built this. It's free, no signup, nothing to buy on the page.
+>
+> You put in your clocks: how long you've driven today, when your 14 started, driving since your last 30, and your hours for the week. It shows what's left on the 11, the 14, the break and your 70 (or 60).
+>
+> Then put in the loaded miles, your average speed, and how long you'll sit at the shipper and the receiver. It lays out the trip as drive blocks, the 30 and the 10 hour breaks, and tells you up front if your cycle runs out on the road. Dock time counts against the 14, so 4 hours at a shipper shows up as 4 hours of window gone, even if your 11 looks fine.
+>
+> Recap: last week a driver in r/CDL asked "will it recap?" It didn't. Now it does. Tick "Enter hours by day", put in your on-duty hours for the last 8 days, and when you run out of hours on the trip, the plan waits for hours to come back at midnight instead of a full 34 if that's quicker.
+>
+> https://loadlens.krait.studio/hos-calculator/?utm_source=reddit&utm_campaign=hos_calc&utm_content=truckers
+>
+> What it doesn't do yet: split sleeper works for the hours-left part, but the trip plan still assumes straight 10s. No adverse driving, no short haul, no intrastate rules (Texas came up, it's not in). It's a planning estimate. Your ELD is what counts at a scale.
+>
+> Two questions for you:
+>
+> 1. Do you run splits enough that a trip plan built on 7/3 or 8/2 would matter, or is it straight 10s for most of you?
+> 2. When you're sitting at a shipper with no signal, are you on a phone or a tablet? I'm thinking about making it work offline.
+>
+> And if the math looks wrong anywhere, post your numbers here. I'd rather fix it in public than have someone plan a load on a bad number.
+
+**Чеклист перед публикацией:**
+1. Comment karma: 40 на 05.10 (всего 46), 30.09 пост закрыли при ~38. Публиковать при ~80–100 comment karma (сверка ~12.10), иначе снова закроют.
+2. Перечитать правила r/Truckers (сайдбар): самопромо может быть только в отдельной ветке/дне — тогда пост туда, а не отдельным постом. При сомнении — modmail заранее с текстом поста.
+3. Не в один день с другим постом со ссылкой; `utm_content=truckers` не менять.
+4. Первые 2 часа онлайн. Ответы — из раздела «Ответы в комментариях» ниже; на «are you a dispatcher?» не отвечать «dispatch»-формулировками (правило 2 r/OwnerOperators банит за упоминание себя как диспетчера где угодно на Reddit).
+5. Расширение, DAT, авто-пилот не упоминать.
+
 ## Пост 2: r/OwnerOperators (деньги)
 
 **Title:** Quick way to check if a load is even legal before you book it
@@ -298,3 +338,29 @@ worktree на секцию. Тема наша (лендинг собран та�
 
 Зачем: комментарная карма в r/SideProject (цель — r/Truckers); наш реальный опыт (i18n.json, landing-i18n.test.js,
 невычитанный RO), ничего не выдумано; вопрос про lint — есть шанс получить готовый приём для своего лендинга.
+
+## Modmail в r/Truckers (05.10): просьба одобрить пост 1 v2 вручную
+
+Comment karma 40 — пост автоматом закроют. Для modmail карма не нужна. Отправить через «Message the mods» в сайдбаре r/Truckers.
+
+**Subject:** Free HOS trip calculator: OK to post? (no signup, nothing for sale)
+
+**Message:**
+
+> Hi mods,
+>
+> I built a free HOS calculator for drivers and wanted to share it in r/Truckers, but my account doesn't have enough comment karma yet, so the post got auto-removed last week. Before I try again, I'd rather ask than break a rule.
+>
+> What it is: you enter your clocks (11, 14, 30, 70/60) and the trip miles, and it lays out the drive blocks, the 30, the 10 hour breaks and recap. Free, no signup, no ads, nothing to buy on the page. It's a planning estimate, not a replacement for the ELD.
+>
+> Link: https://loadlens.krait.studio/hos-calculator/
+>
+> The full post text is below. Could you approve it, or tell me if there's a self-promo thread or day where it fits better? Happy to change anything.
+>
+> Thanks.
+>
+> ---
+>
+> [вставить Title и Body поста 1 v2]
+
+Если ответят «нет» — не спорить, не постить в обход, вернуться через карму.
