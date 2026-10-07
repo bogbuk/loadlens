@@ -365,6 +365,8 @@ Comment karma 40 — пост автоматом закроют. Для modmail 
 
 Если ответят «нет» — не спорить, не постить в обход, вернуться через карму.
 
+**Статус:** modmail ОТПРАВЛЕН пользователем (подтверждено 06.10). Ждём ответа модов; пост 1 v2 не публиковать, пока не ответят.
+
 ## Комментарии для кармы в r/Truckers, 05.10
 
 Цель: comment karma 40 → 80–100 перед постом 1 v2. Без ссылок, без калькулятора, без слова «dispatcher».
@@ -417,3 +419,35 @@ https://www.reddit.com/r/Truckers/comments/1wwzuvj/
 > And tapping out to your trainer when you're fading is exactly the right call. Plenty of guys with 10 years in still don't do that.
 
 «It got better for me around week 3 or 4» — от первого лица; публиковать только если правда, иначе заменить на «For most people it gets better around week 3 or 4».
+
+## Комментарий для кармы в r/Truckers, 06.10: ОПУБЛИКОВАН 06.10
+
+Пост: «Is Prime Inc.'s 72% of load pay (reefer division) enough for a new owner operator in 2026?»
+https://www.reddit.com/r/Truckers/comments/1wyzyq4/ (11:18 UTC, тело пустое, в ветке уже перепалка).
+Без опыта от первого лица, без ссылок; факты о Prime не утверждаем — просим цифры у них.
+
+> 72% of what, after what, is the whole question. Before signing I'd get three numbers from them in writing: the weekly truck payment, everything else that comes out of the settlement (fuel, insurance, plates, IFTA, trailer, maintenance escrow), and what their reefer lease operators actually grossed per week last quarter on average, not the best guy.
+>
+> Then run it per mile. Say 2,500 miles a week at $2.60: $6,500 gross, 72% is $4,680. Fuel at 6.5 mpg and $3.90 is about $1,500, truck payment $500 to $700, insurance and the rest a few hundred. That leaves somewhere around $2,000 to $2,300 before taxes and before anything breaks. ATRI puts the non-fuel cost of running a truck at about $1.78 a mile, so if the escrow they hold back is thin, the first big repair comes out of that.
+>
+> Then compare it to what a company reefer seat pays for the same miles. If the difference is a few hundred a week, you're taking on all the risk for not much.
+
+## Комментарии для кармы в r/Truckers, 07.10: A и B ОПУБЛИКОВАНЫ 07.10
+
+### A. «Got wrote up for moving truck while off duty» (1wzkyux, 02:17 UTC, 42 комм.)
+https://www.reddit.com/r/Truckers/comments/1wzkyux/
+В ветке спорят «технически прав / все так делают»; про yard move и PC никто не сказал.
+
+> Your company is right on paper, but there's a legal way to do exactly what you did without touching your 11: yard move. Most ELDs have it, though some carriers have to switch it on. It logs as on-duty not driving, so it doesn't touch your 11, just adds a few minutes to your 70, and you're covered if you clip something.
+>
+> FMCSA's guidance allows it on private property that isn't open to public traffic, which a shipper's lot usually is. Personal conveyance doesn't fit here, because the move was for the load, not for you.
+>
+> The catch: if you're in the middle of your 10, a yard move counts as on-duty and breaks it. If they wake you up to re-dock, that's worth sorting out with your carrier before you move, not after.
+
+### B. «Fair pay advice» (1wzoeng, 05:29 UTC, 33 комм.) — box truck 30 ft, ночные смены, $120/день
+https://www.reddit.com/r/Truckers/comments/1wzoeng/
+Про оплату уже ответили; про HOS для box truck никто.
+
+> One thing nobody's mentioned: a 30 ft box truck is almost always over 10,001 lbs GVWR (the sticker is on the driver's door frame). If it is and you cross state lines, you're under the same hours rules as semi drivers: 11 hours driving, a 14 hour window, 10 hours off, a 30 minute break after 8 hours of driving, 60 or 70 for the week. You also need a DOT medical card and logs. Driving through the night with two decent nights of sleep a week doesn't fit inside that, and if something happens it's your name on the log, not theirs.
+>
+> On the money: $120 for what sounds like 12 to 14 hours is under $10 an hour. Ask to see what the loads pay, then ask for a percentage.
