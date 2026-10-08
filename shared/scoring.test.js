@@ -130,6 +130,64 @@ test("redFlags: чистый груз → нет флагов", () => {
   assert.strictEqual(LLSCORE.redFlagLevel(f), "none");
 });
 
+// ---------- Fraud Shield (FMCSA + перепосты) ----------
+const SH = (authority, repost = null) => ({ mc: "1", authority, repost });
+const A = (over = {}) => ({ status: "active", allowedToOperate: true, grantedAt: "2015-01-01", ageDays: 4000, incidents12m: 0, ...over });
+const codes = (shield) => LLSCORE.redFlags({ brokerMc: "1", estimatedRatePerMile: 2.3, creditScore: 95 }, { laneMedian: 2.2, shield });
+const pick = (b) => ({ level: b.level, text: b.text });
+
+test("redFlags shield: активный старый брокер без перепостов → нет флагов", () => {
+  assert.deepStrictEqual(codes(SH(A(), { count: 2, days: 2, windowDays: 14 })), []);
+});
+
+test("redFlags shield: статусы FMCSA → high", () => {
+  const f1 = codes(SH(A({ status: "inactive" })));
+  assert.ok(f1.some((x) => x.code === "authority_inactive" && x.sev === "high"));
+  const f2 = codes(SH(A({ status: "carrier_only" })));
+  assert.ok(f2.some((x) => x.code === "carrier_brokering" && x.sev === "high"));
+  const f3 = codes(SH(A({ status: "not_found", ageDays: null })));
+  assert.ok(f3.some((x) => x.code === "authority_not_found" && x.sev === "high"));
+});
+
+test("redFlags shield: status=null (нет ключа) — статусных флагов нет", () => {
+  assert.deepStrictEqual(codes(SH(A({ status: null }))), []);
+});
+
+test("redFlags shield: молодая лицензия — med <180д, high <90д, null — без флага", () => {
+  assert.ok(codes(SH(A({ ageDays: 120 }))).some((x) => x.code === "new_authority" && x.sev === "med" && /120 days/.test(x.label)));
+  assert.ok(codes(SH(A({ ageDays: 45 }))).some((x) => x.code === "new_authority" && x.sev === "high"));
+  assert.deepStrictEqual(codes(SH(A({ ageDays: null, grantedAt: null }))), []);
+});
+
+test("redFlags shield: инциденты за 12 мес → med", () => {
+  const f = codes(SH(A({ incidents12m: 2 })));
+  assert.ok(f.some((x) => x.code === "authority_incidents" && x.sev === "med" && /2 /.test(x.label)));
+});
+
+test("redFlags shield: перепосты — порог count>=4 и days>=3", () => {
+  assert.ok(codes(SH(A(), { count: 6, days: 4, windowDays: 14 })).some((x) => x.code === "reposted" && x.label === "reposted 6× over 4 days"));
+  assert.deepStrictEqual(codes(SH(A(), { count: 6, days: 2, windowDays: 14 })), []);
+  assert.deepStrictEqual(codes(SH(A(), { count: 3, days: 3, windowDays: 14 })), []);
+});
+
+test("redFlags shield: authority=null (DOT лёг) и shield отсутствует — как раньше", () => {
+  assert.deepStrictEqual(codes(SH(null)), []);
+  assert.deepStrictEqual(codes(undefined), []);
+});
+
+test("shieldBadge: уровни и текст", () => {
+  assert.deepStrictEqual(pick(LLSCORE.shieldBadge(SH(A({ ageDays: 800 })))), { level: "good", text: "🛡 2y ✓" });
+  assert.deepStrictEqual(pick(LLSCORE.shieldBadge(SH(A({ ageDays: 45 })))), { level: "risk", text: "🛡 45d" });
+  assert.deepStrictEqual(pick(LLSCORE.shieldBadge(SH(A({ ageDays: 200 })))), { level: "warn", text: "🛡 6mo" });
+  assert.deepStrictEqual(pick(LLSCORE.shieldBadge(SH(A({ status: "inactive" })))), { level: "risk", text: "🛡 ✗" });
+  assert.deepStrictEqual(pick(LLSCORE.shieldBadge(SH(A({ status: null, ageDays: 4000 })))), { level: "good", text: "🛡 10y" });
+  assert.deepStrictEqual(pick(LLSCORE.shieldBadge(SH(A({ incidents12m: 1 })))), { level: "warn", text: "🛡 10y" });
+  assert.deepStrictEqual(pick(LLSCORE.shieldBadge(SH(A({ ageDays: null, grantedAt: null })))), { level: "good", text: "🛡 ✓" });
+  assert.deepStrictEqual(pick(LLSCORE.shieldBadge(SH(null))), { level: "unknown", text: "🛡 ?" });
+  assert.deepStrictEqual(pick(LLSCORE.shieldBadge(undefined)), { level: "unknown", text: "🛡 ?" });
+  assert.ok(/FMCSA/.test(LLSCORE.shieldBadge(SH(A())).title));
+});
+
 // ---------- counterOffer (контр-оффер: сумма запроса + строка-скрипт) ----------
 
 test("counterOffer: без медианы просит минимум на 10% выше постинга, округляя до $25", () => {

@@ -95,7 +95,8 @@ const LLSCORE = (() => {
   // ctx = { laneMedian, reputation } (медиана RPM рынка по lane + crowd-репутация брокера).
   // -> [{ code, sev: 'high'|'med', label }]
   function redFlags(load, ctx = {}, opts = {}) {
-    const o = { aboveMarketX: 1.5, creditRisk: 75, ...opts };
+    const o = { aboveMarketX: 1.5, creditRisk: 75, newAuthMedDays: 180, newAuthHighDays: 90,
+      repostMinCount: 4, repostMinDays: 3, ...opts };
     const flags = [];
     const rpm = load.estimatedRatePerMile != null
       ? Number(load.estimatedRatePerMile)
@@ -111,11 +112,46 @@ const LLSCORE = (() => {
       label: `bait: rate above market + low credit (${load.creditScore})` });
     if (ctx.reputation && ctx.reputation.level === "bad") flags.push({ code: "crowd_bad", sev: "high",
       label: ctx.reputation.doubleBrokered ? "crowd: double-brokered" : "crowd: flaked" });
+    // Fraud Shield: лицензия FMCSA (status — только из QCMobile; null = нет данных → молчим)
+    const a = ctx.shield && ctx.shield.authority;
+    if (a) {
+      if (a.status === "inactive") flags.push({ code: "authority_inactive", sev: "high", label: "FMCSA: broker authority inactive" });
+      if (a.status === "carrier_only") flags.push({ code: "carrier_brokering", sev: "high",
+        label: "FMCSA: carrier authority only — possible double-brokering" });
+      if (a.status === "not_found") flags.push({ code: "authority_not_found", sev: "high", label: "FMCSA: MC not found" });
+      if (a.ageDays != null && a.ageDays < o.newAuthMedDays) flags.push({ code: "new_authority",
+        sev: a.ageDays < o.newAuthHighDays ? "high" : "med", label: `new broker authority: ${a.ageDays} days` });
+      if (a.incidents12m > 0) flags.push({ code: "authority_incidents", sev: "med",
+        label: `FMCSA: ${a.incidents12m} suspension/revocation event${a.incidents12m > 1 ? "s" : ""} in 12 mo` });
+    }
+    const rp = ctx.shield && ctx.shield.repost;
+    if (rp && rp.count >= o.repostMinCount && rp.days >= o.repostMinDays) flags.push({ code: "reposted", sev: "med",
+      label: `reposted ${rp.count}× over ${rp.days} days` });
     return flags;
   }
 
   function redFlagLevel(flags) {
     return flags.some((f) => f.sev === "high") ? "high" : flags.length ? "med" : "none";
+  }
+
+  // Чип 🛡 в полосе брокера: сводка Fraud Shield одним словом. risk — любой high-сигнал лицензии;
+  // warn — лицензии < 1 года или были инциденты; good — есть возраст/статус и всё чисто.
+  function shieldBadge(shield) {
+    const a = shield && shield.authority;
+    if (!a || (a.status == null && a.ageDays == null)) return { level: "unknown", text: "🛡 ?", title: "FMCSA data unavailable" };
+    const age = a.ageDays == null ? null
+      : a.ageDays >= 365 ? Math.floor(a.ageDays / 365) + "y"
+      : a.ageDays >= 90 ? Math.floor(a.ageDays / 30) + "mo" : a.ageDays + "d";
+    const bad = a.status === "inactive" || a.status === "carrier_only" || a.status === "not_found";
+    const title = [
+      a.status ? "FMCSA status: " + a.status.replace("_", " ") : "FMCSA status: n/a",
+      a.grantedAt ? "broker authority since " + a.grantedAt : null,
+      a.incidents12m ? `${a.incidents12m} suspension/revocation event(s) in 12 mo` : null,
+    ].filter(Boolean).join("\n");
+    if (bad) return { level: "risk", text: "🛡 ✗", title };
+    if (a.ageDays != null && a.ageDays < 90) return { level: "risk", text: "🛡 " + age, title };
+    if ((a.ageDays != null && a.ageDays < 365) || a.incidents12m > 0) return { level: "warn", text: "🛡 " + (age || "?"), title };
+    return { level: "good", text: ["🛡", age, a.status === "active" ? "✓" : null].filter(Boolean).join(" "), title };
   }
 
   const usd = (n) => "$" + Math.round(n).toLocaleString("en-US");
@@ -149,7 +185,7 @@ const LLSCORE = (() => {
     return { ask, script: `Offered ${usd(rate)} — I can do ${usd(ask)}${tail}.` };
   }
 
-  return { DEFAULTS, fuelCost, tollsCost, trueRpm, netRpm, targetForMiles, profitBadge, brokerBadge, redFlags, redFlagLevel, counterOffer };
+  return { DEFAULTS, fuelCost, tollsCost, trueRpm, netRpm, targetForMiles, profitBadge, brokerBadge, redFlags, redFlagLevel, shieldBadge, counterOffer };
 })();
 
 if (typeof module !== "undefined" && module.exports) module.exports = LLSCORE;
