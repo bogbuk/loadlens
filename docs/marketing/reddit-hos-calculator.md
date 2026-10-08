@@ -367,7 +367,7 @@ Comment karma 40 — пост автоматом закроют. Для modmail 
 
 **Статус:** modmail ОТПРАВЛЕН пользователем (подтверждено 06.10). Ждём ответа модов; пост 1 v2 не публиковать, пока не ответят.
 
-## Комментарии для кармы в r/Truckers, 05.10
+## Комментарии для кармы в r/Truckers, 05.10: №1 НЕ опубликован; №2, №3, №4 ОПУБЛИКОВАНЫ 05.10 (по RSS профиля)
 
 Цель: comment karma 40 → 80–100 перед постом 1 v2. Без ссылок, без калькулятора, без слова «dispatcher».
 Найдены по RSS `r/Truckers/new` и `r/CDL/new` 05.10. Посты 1–3 дня — пик апвоутов прошёл, карма будет скромной;
@@ -452,7 +452,7 @@ https://www.reddit.com/r/Truckers/comments/1wzoeng/
 >
 > On the money: $120 for what sounds like 12 to 14 hours is under $10 an hour. Ask to see what the loads pay, then ask for a percentage.
 
-## Комментарии для кармы в r/Truckers, 08.10: черновики
+## Комментарии для кармы в r/Truckers, 08.10: C и D ОПУБЛИКОВАНЫ 08.10 (~11:00 UTC; C — pem3wk4, D — pem48ur)
 
 Найдены по RSS `r/Truckers/new` 08.10 (r/CDL, r/Trucking, r/FreightBrokers отдали пусто). Без ссылок, без опыта от первого лица.
 
