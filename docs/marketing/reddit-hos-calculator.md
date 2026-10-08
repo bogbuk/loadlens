@@ -451,3 +451,77 @@ https://www.reddit.com/r/Truckers/comments/1wzoeng/
 > One thing nobody's mentioned: a 30 ft box truck is almost always over 10,001 lbs GVWR (the sticker is on the driver's door frame). If it is and you cross state lines, you're under the same hours rules as semi drivers: 11 hours driving, a 14 hour window, 10 hours off, a 30 minute break after 8 hours of driving, 60 or 70 for the week. You also need a DOT medical card and logs. Driving through the night with two decent nights of sleep a week doesn't fit inside that, and if something happens it's your name on the log, not theirs.
 >
 > On the money: $120 for what sounds like 12 to 14 hours is under $10 an hour. Ask to see what the loads pay, then ask for a percentage.
+
+## Комментарии для кармы в r/Truckers, 08.10: черновики
+
+Найдены по RSS `r/Truckers/new` 08.10 (r/CDL, r/Trucking, r/FreightBrokers отдали пусто). Без ссылок, без опыта от первого лица.
+
+### C. «Keep hearing about truckers grossing six figures» (1x085b0, 20:58 UTC 07.10), водитель из Европы
+https://www.reddit.com/r/Truckers/comments/1x085b0/
+
+> Both are true, they're just different people.
+>
+> The six-figure reels are almost always gross, and often owner-operators. An owner-op can gross $200k+ a year, but fuel, the truck payment, insurance and repairs eat most of it. ATRI puts the all-in cost of running a truck at about $2.26 a mile, so at 100k+ miles a year most of that gross is gone before the driver pays himself.
+>
+> Company drivers who actually clear six figures exist, but it's usually niche work: fuel tankers, hazmat, livestock, some dedicated accounts, and usually 60 to 70 hour weeks. The BLS median for heavy truck drivers is somewhere in the mid-50s.
+>
+> The "rates are dying" part is mostly the spot market. After the 2021-22 boom a lot of new trucks came in, rates fell, and small owner-ops paying their own costs got squeezed the hardest. Company drivers on per-mile or hourly pay felt it a lot less.
+>
+> On bull haulers specifically: livestock falls under the ag exemption, so the hours rules don't apply within 150 air miles of where the cattle are loaded. That's part of how some of them run the hours behind those numbers.
+
+### D. Курьерка хочет box truck для паллет (1x07sdt, 20:45 UTC 07.10), смотрит Fuso FE180
+https://www.reddit.com/r/Truckers/comments/1x07sdt/
+
+GVWR FE180 (~18k lbs) — по памяти, в тексте оставлено «check the spec».
+
+> One thing to check before you pick the truck: GVWR, because it decides how much paperwork comes with it.
+>
+> - Under 10,001 lbs: basically a big van, no DOT requirements.
+> - 10,001 to 26,000 lbs (the FE180 is right around 18k, check the spec): no CDL, but if it ever crosses a state line you need a USDOT number, the driver needs a DOT medical card, and the hours rules apply. For city work the short-haul exception covers you: stay within 150 air miles, back at the yard within 14 hours, and you keep simple time records instead of logs or an ELD. A lot of states copy these rules for intrastate too.
+> - 26,001 and up: CDL, a drug and alcohol testing program, and a much smaller pool of drivers you can hire.
+>
+> For a courier business that last point matters more than the truck itself. Under 26k, anyone with a regular license can drive it, same as your vans. And get a liftgate, half the pallet stops in a city won't have a dock.
+
+## Пост 6: r/SideProject, «неделя спустя»: ОПУБЛИКОВАН 08.10
+
+Ссылка: [дописать]. Кнопку «Repost to other communities» НЕ использовали (та же UTM). r/sideprojects (33K/нед) — отдельным постом через 1–2 дня с `utm_content=sideprojects`; r/IMadeThis и r/WebApps — пропустить.
+
+Продолжение поста 5. Только реальные цифры из этого файла; `[…]` заполнить из приложения Reddit / Метрики перед публикацией,
+если цифры нет — вычеркнуть предложение целиком, не округлять «на глаз». Расширение/DAT не упоминать (решение 30.09).
+`utm_content=sideproject_week1`, чтобы отличить от поста 5.
+
+**Title:**
+
+I posted a free tool for truck drivers on Reddit last week. One comment did more than all the views, and one subreddit never saw it. Numbers inside
+
+**Body:**
+
+> Last week I shared a free Hours of Service calculator here: you enter a truck driver's clocks and a trip, and it lays out where the drive blocks, the 30 minute break and the 10 hour rest land. No sign-up, all the math runs in the browser. Here's what a week of posting it around looked like, since I always want these numbers from other people's posts.
+>
+> Where it went:
+>
+> - r/CDL (student and new drivers): about 960 views in the first 3 hours, 3 upvotes, 0 comments for most of the day.
+> - r/SideProject (this one): [views], [upvotes], [comments].
+> - r/IMadeThis (repost): 67 views and 1 upvote in 20 hours, 1 comment.
+> - r/Truckers, the biggest driver sub: auto-removed. My account didn't have enough comment karma. I messaged the mods instead of reposting and I'm still waiting.
+>
+> What actually mattered:
+>
+> 1. One comment beat all the views. The first real reply in r/CDL was four words: "Will it recap?" It didn't. Recap is the day-by-day way to get hours back on the weekly 70 hour limit, instead of sitting out a full 34 hour reset. I shipped it the next day and replied. The same driver called recap "a lost art in most operations", and it's now the feature people mention first.
+> 2. Two separate people asked for offline. Drivers sit at docks with no signal. The math is already client-side, so it's a manifest and a service worker. Not done yet, it's next.
+> 3. Karma gates are real. The audience I built it for is the one place I couldn't post. If you're planning to launch into a niche sub, start commenting there weeks before, not the day of. I'm doing it backwards now: answering hours questions in r/Truckers with no links.
+> 4. I wasted the repost. I used Reddit's "repost to another community" button, so both posts carry the same tracking tag and I can't tell which one sent traffic. Change the UTM before you crosspost.
+>
+> Still free, no sign-up: https://loadlens.krait.studio/hos-calculator/?utm_source=reddit&utm_campaign=hos_calc&utm_content=sideproject_week1
+>
+> Two questions for people who've launched into niche communities:
+>
+> 1. Did a mod-approved post ever work out for you, or is it better to wait for the karma?
+> 2. For a tool people use once a day at most, is a PWA worth it, or does "add to home screen" never actually happen?
+
+**Почему так:** r/SideProject любит пост-отчёты с цифрами и уроками (цифры = доверие); ссылка одна и в середине,
+пост читается и без клика. Пункты 3–4 — уроки для билдеров, не для водителей. Ничего не выдумано: recap, PWA ×2,
+автоудаление в r/Truckers, ошибка с UTM — всё из записей выше.
+
+**Перед публикацией:** проверить, что modmail r/Truckers всё ещё без ответа (иначе поправить пункт в списке);
+вписать цифры r/SideProject; не раньше 9–10.10 (неделя после поста 5).
