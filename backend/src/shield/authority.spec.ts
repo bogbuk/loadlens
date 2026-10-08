@@ -16,6 +16,10 @@ describe('deriveStatus (QCMobile)', () => {
     expect(deriveStatus({ brokerAuthorityStatus: 'N', commonAuthorityStatus: 'A' })).toBe('carrier_only');
     expect(deriveStatus({ brokerAuthorityStatus: 'I', contractAuthorityStatus: 'A' })).toBe('carrier_only');
   });
+  it('нет явного brokerAuthorityStatus (A/I/N) → null, а не флаг', () => {
+    expect(deriveStatus({ allowedToOperate: 'Y', commonAuthorityStatus: 'A' })).toBeNull();
+    expect(deriveStatus({ brokerAuthorityStatus: 'X' })).toBeNull();
+  });
   it('inactive, когда ничего не активно', () => {
     expect(deriveStatus({ brokerAuthorityStatus: 'I', commonAuthorityStatus: 'N' })).toBe('inactive');
   });

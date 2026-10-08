@@ -118,20 +118,25 @@ const LLSCORE = (() => {
       if (a.status === "inactive") flags.push({ code: "authority_inactive", sev: "high", label: "FMCSA: broker authority inactive" });
       if (a.status === "carrier_only") flags.push({ code: "carrier_brokering", sev: "high",
         label: "FMCSA: carrier authority only — possible double-brokering" });
-      if (a.status === "not_found") flags.push({ code: "authority_not_found", sev: "high", label: "FMCSA: MC not found" });
+      // not_found при найденной публичной истории выдачи — скорее пробел в QCMobile, чем фрод
+      if (a.status === "not_found") flags.push(a.grantedAt
+        ? { code: "authority_not_found", sev: "med", label: "FMCSA lookup mismatch: MC not in registry, but has broker history" }
+        : { code: "authority_not_found", sev: "high", label: "FMCSA: MC not found" });
       if (a.ageDays != null && a.ageDays < o.newAuthMedDays) flags.push({ code: "new_authority",
         sev: a.ageDays < o.newAuthHighDays ? "high" : "med", label: `new broker authority: ${a.ageDays} days` });
       if (a.incidents12m > 0) flags.push({ code: "authority_incidents", sev: "med",
         label: `FMCSA: ${a.incidents12m} suspension/revocation event${a.incidents12m > 1 ? "s" : ""} in 12 mo` });
     }
     const rp = ctx.shield && ctx.shield.repost;
-    if (rp && rp.count >= o.repostMinCount && rp.days >= o.repostMinDays) flags.push({ code: "reposted", sev: "med",
+    // info: крупные брокеры честно постят один lane ежедневно — сигнал показываем, но 🚩 не поднимаем
+    // (пороги не откалиброваны на живом крауде)
+    if (rp && rp.count >= o.repostMinCount && rp.days >= o.repostMinDays) flags.push({ code: "reposted", sev: "info",
       label: `reposted ${rp.count}× over ${rp.days} days` });
     return flags;
   }
 
   function redFlagLevel(flags) {
-    return flags.some((f) => f.sev === "high") ? "high" : flags.length ? "med" : "none";
+    return flags.some((f) => f.sev === "high") ? "high" : flags.some((f) => f.sev === "med") ? "med" : "none";
   }
 
   // Чип 🛡 в полосе брокера: сводка Fraud Shield одним словом. risk — любой high-сигнал лицензии;

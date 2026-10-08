@@ -145,7 +145,7 @@ test("redFlags shield: статусы FMCSA → high", () => {
   assert.ok(f1.some((x) => x.code === "authority_inactive" && x.sev === "high"));
   const f2 = codes(SH(A({ status: "carrier_only" })));
   assert.ok(f2.some((x) => x.code === "carrier_brokering" && x.sev === "high"));
-  const f3 = codes(SH(A({ status: "not_found", ageDays: null })));
+  const f3 = codes(SH(A({ status: "not_found", ageDays: null, grantedAt: null })));
   assert.ok(f3.some((x) => x.code === "authority_not_found" && x.sev === "high"));
 });
 
@@ -162,6 +162,19 @@ test("redFlags shield: молодая лицензия — med <180д, high <90�
 test("redFlags shield: инциденты за 12 мес → med", () => {
   const f = codes(SH(A({ incidents12m: 2 })));
   assert.ok(f.some((x) => x.code === "authority_incidents" && x.sev === "med" && /2 /.test(x.label)));
+});
+
+test("redFlags shield: not_found при найденной истории — med «lookup mismatch», без истории — high", () => {
+  const f = codes(SH(A({ status: "not_found", grantedAt: "2015-01-01" })));
+  assert.ok(f.some((x) => x.code === "authority_not_found" && x.sev === "med" && /mismatch/.test(x.label)));
+  const g = codes(SH(A({ status: "not_found", grantedAt: null, ageDays: null })));
+  assert.ok(g.some((x) => x.code === "authority_not_found" && x.sev === "high"));
+});
+
+test("redFlags shield: перепосты — информационный сигнал, не поднимает уровень 🚩", () => {
+  const f = codes(SH(A(), { count: 6, days: 4, windowDays: 14 }));
+  assert.ok(f.some((x) => x.code === "reposted" && x.sev === "info"));
+  assert.strictEqual(LLSCORE.redFlagLevel(f), "none");
 });
 
 test("redFlags shield: перепосты — порог count>=4 и days>=3", () => {

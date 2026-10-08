@@ -37,8 +37,10 @@ const isMotusBroker = (t?: string) => /^Broker of Property/i.test(t || '');
 const BAD_ORIG = /REVOCATION|REVOKED|SUSPENSION/i;
 const BAD_DISP = /REVOKED|INACTIVATION|SUSPENSION/i;
 
-export function deriveStatus(c: QcCarrier | null): AuthorityStatus {
+// null — запись есть, но статус брокерской лицензии не A/I/N (дрейф схемы QCMobile): молчим, а не флагуем
+export function deriveStatus(c: QcCarrier | null): AuthorityStatus | null {
   if (!c) return 'not_found';
+  if (!['A', 'I', 'N'].includes(c.brokerAuthorityStatus || '')) return null;
   if (c.brokerAuthorityStatus === 'A') return c.allowedToOperate === 'N' ? 'inactive' : 'active';
   if (c.commonAuthorityStatus === 'A' || c.contractAuthorityStatus === 'A') return 'carrier_only';
   return 'inactive';

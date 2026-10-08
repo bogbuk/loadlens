@@ -191,6 +191,14 @@ test("detail: без laneCount — прежний формат «market $X»", (
   assert.ok(rpm.includes("market $2.41") && !rpm.includes("reports"), rpm);
 });
 
+test("detail: только информационные флаги — без 🚩 в Score, но в списке флагов", () => {
+  const l = load();
+  const flags = [{ code: "reposted", sev: "info", label: "reposted 6× over 4 days" }];
+  const d = LLVIEW.build(input({ loads: [l], detailLoad: l, detailFacts: facts({ flags, flagLevel: "none" }) })).detail;
+  assert.ok(!d.rows.find((r) => r.k === "Score").v.includes("🚩"));
+  assert.deepStrictEqual(d.flags, ["reposted 6× over 4 days"]);
+});
+
 test("detail: сводка Fraud Shield в строке Broker", () => {
   const l = load();
   const shield = { mc: "123456", authority: { status: "active", ageDays: 800, incidents12m: 0, grantedAt: "2024-08-01" }, repost: null };

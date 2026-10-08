@@ -59,11 +59,26 @@ describe('ShieldService', () => {
     const { svc } = setup({ qc: boom, authHist: boom, motus: boom });
     expect(await svc.authority('1', NOW)).toBeNull();
   });
-  it('частичный сбой (QCMobile упал) — отдаём, но не кэшируем', async () => {
-    const { svc, model } = setup({ qc: jest.fn().mockRejectedValue(new Error('x')) });
+  it('частичный сбой (QCMobile упал) — кэшируется на 30 мин, а не на сутки', async () => {
+    const qc = jest.fn().mockRejectedValue(new Error('FMCSA HTTP 401'));
+    const { svc, fmcsa } = setup({ qc });
     const a = await svc.authority('384859', NOW);
     expect(a).toMatchObject({ status: null, grantedAt: '2000-07-12' });
-    expect(model.upsert).not.toHaveBeenCalled();
+    await svc.authority('384859', new Date(NOW.getTime() + 20 * 60_000));
+    expect(fmcsa.authHist).toHaveBeenCalledTimes(1);   // постоянный сбой ключа не даёт веер запросов
+    await svc.authority('384859', new Date(NOW.getTime() + 31 * 60_000));
+    expect(fmcsa.authHist).toHaveBeenCalledTimes(2);
+  });
+  it('бюджет внешних запросов исчерпан → без похода в FMCSA: протухший кэш или null', async () => {
+    const cached = { mc: '7', data: { status: 'active' }, fetchedAt: new Date(NOW.getTime() - 48 * HOUR) };
+    const { svc, fmcsa } = setup({}, cached);
+    (svc as any).fetchLimit = 2;
+    await svc.authority('1', NOW);
+    await svc.authority('2', NOW);
+    expect(await svc.authority('3', NOW)).toBeNull();
+    expect(await svc.authority('7', NOW)).toEqual({ status: 'active' });
+    expect(fmcsa.authHist).toHaveBeenCalledTimes(2);
+    expect(await svc.authority('4', new Date(NOW.getTime() + 61_000))).not.toBeNull(); // окно сдвинулось
   });
   it('параллельные запросы одного MC дедупятся', async () => {
     const { svc, fmcsa } = setup();

@@ -152,6 +152,7 @@
     repRequested.delete(mc);
     if (typeof LLAPI !== "undefined") LLAPI.getBrokerReputation(mc).then((r) => { if (r) { repCache.set(String(mc), r); schedule(); } }).catch(() => {});
   }
+  const SHIELD_RETRY_MS = 60000;
   function shieldKeyOf(l) { return `${l.brokerMc}|${laneKeyOf(l)}`; }
   // Fraud Shield по паре брокер+lane; без MC/lane — не спрашиваем
   function fetchShields(loads) {
@@ -162,7 +163,10 @@
       if (shieldRequested.has(k)) return;
       shieldRequested.add(k);
       LLAPI.getShield(l.brokerMc, l.originMarket, l.destMarket, l.equipment)
-        .then((s) => { if (s) { shieldCache.set(k, s); schedule(); } }).catch(() => {});
+        .then((s) => {
+          if (s) { shieldCache.set(k, s); schedule(); }
+          else setTimeout(() => shieldRequested.delete(k), SHIELD_RETRY_MS); // 429/сеть — повторим на следующем render
+        }).catch(() => {});
     });
   }
   // подтянуть neighborhood грузов из рынков назначения (рынок + соседи) — origin'ы следующих плеч.
@@ -220,8 +224,8 @@
     // red-flag чип (фрод/double-broker) — первым, как самый важный сигнал
     const shield = shieldCache.get(shieldKeyOf(load)) || null;
     const flags = LLSCORE.redFlags(load, { laneMedian, reputation: repCache.get(String(load.brokerMc)), shield });
-    if (flags.length) {
-      const lvl = LLSCORE.redFlagLevel(flags);
+    const lvl = LLSCORE.redFlagLevel(flags);
+    if (lvl !== "none") {
       const fc = chip(lvl === "high" ? "🚩 risk" : "🚩 verify", "ll-flag " + (lvl === "high" ? "ll-red" : "ll-amber"));
       fc.title = flags.map((f) => f.label).join("\n");
       host.appendChild(fc);

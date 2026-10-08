@@ -59,7 +59,7 @@ backend/src/                NestJS, synchronize:true (миграций нет)
   brokers/                  POST /brokers/reports (crowd-отзыв, upsert client_id+mc) + GET /brokers/:mc/reputation (read — Premium-гард)
   shield/                   GET /brokers/:mc/shield — Fraud Shield (ОТКРЫТ всем, свой throttle 600/мин): лицензия FMCSA
                             (статус — QCMobile под FMCSA_WEBKEY; возраст/инциденты — SODA AuthHist+Motus) с кэшем
-                            fmcsa_authority (24ч / not_found 6ч / частичный не кэшируется) + перепосты брокера по lane из loads
+                            fmcsa_authority (24ч / not_found 6ч / частичный 30 мин) + бюджет 300 походов в FMCSA/мин + перепосты брокера по lane из loads
   drivers/                  GET/POST/PATCH/DELETE /drivers — парк водителей диспетчера (JwtAuthGuard, скоуп userId, каскад от users)
   telegram/                 link/status/unlink (Jwt — без Pro, нужно для сброса пароля) + alerts/notify (Jwt+Pro, релей green-грузов→Telegram DM) + webhook/:secret (/start привязка chat_id). alert_sends — дедуп(TTL)+soft-cap. Фича-флаг = TELEGRAM_BOT_TOKEN
   rates/                    GET /rates — дизель EIA (фолбэк $3.95 без EIA_API_KEY; read — Premium-гард)
@@ -219,7 +219,10 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   под строкой. Это carrier-сторона фрод-защиты (дифференциатор из исследования).
 - **Fraud Shield** (с 2026-10-07, `backend/src/shield/` + `LLSCORE.redFlags(ctx.shield)`/`shieldBadge`): чип `🛡` +
   флаги `authority_inactive`/`carrier_brokering`/`authority_not_found` (high, ТОЛЬКО из QCMobile — без `FMCSA_WEBKEY`
-  их нет), `new_authority` (<180д med, <90д high), `authority_incidents`, `reposted` (≥4 постинга за ≥3 дня / 14д).
+  их нет; `not_found` при найденной истории выдачи → med «lookup mismatch»; статус брокерской не A/I/N → `null`),
+  `new_authority` (<180д med, <90д high), `authority_incidents` (med), `reposted` (≥4 постинга за ≥3 дня / 14д) —
+  **sev `info`**: в списке флагов есть, но 🚩 не поднимает (крупные брокеры честно постят lane ежедневно; пороги
+  не откалиброваны). Троттлинг считается по `CF-Connecting-IP` (`ClientIpThrottlerGuard`) — иначе за Cloudflare все делили один бакет.
   **История FMCSA — журнал событий, не реестр:** нет брокерской записи ≠ нет лицензии → `null`, флага нет
   (у крупных брокеров в AuthHist бывают только перевозочные события). Docket в SODA — `MC`+6 цифр с нулями;
   `broker_mc` в `loads` сырой → перепосты сравнивают по цифрам. Бесплатно всем (acquisition); «N reports» — Pro.

@@ -10,6 +10,8 @@ import { repostStats, RepostStats } from './repost';
 const HOUR = 3_600_000;
 const TTL_FOUND = 24 * HOUR;
 const TTL_NOT_FOUND = 6 * HOUR;
+const TTL_PARTIAL = 30 * 60_000;   // какой-то источник упал (протухший ключ, SODA лежит) — повторим скоро, но не на каждый запрос
+const BUDGET_WINDOW_MS = 60_000;
 
 export interface ShieldResponse { mc: string; authority: Authority | null; repost: RepostStats | null }
 
@@ -17,6 +19,10 @@ export interface ShieldResponse { mc: string; authority: Authority | null; repos
 export class ShieldService {
   private readonly log = new Logger('ShieldService');
   private readonly inflight = new Map<string, Promise<Authority | null>>();
+  // Бюджет походов в FMCSA: эндпоинт открыт, перебор MC не должен превращаться в веер внешних запросов
+  // (риск отзыва webKey/троттлинга SODA). Сверх бюджета — протухший кэш или null.
+  private fetchLimit = 300;
+  private fetchTimes: number[] = [];
 
   constructor(
     @InjectModel(FmcsaAuthority) private readonly model: typeof FmcsaAuthority,
@@ -46,15 +52,17 @@ export class ShieldService {
   private async load(mc: string, now: Date): Promise<Authority | null> {
     const row = await this.model.findByPk(mc);
     if (row) {
-      const ttl = (row.data as Authority).status === 'not_found' ? TTL_NOT_FOUND : TTL_FOUND;
-      if (now.getTime() - new Date(row.fetchedAt).getTime() < ttl) return row.data as Authority;
+      const data = row.data as Authority & { partial?: boolean };
+      const ttl = data.partial ? TTL_PARTIAL : data.status === 'not_found' ? TTL_NOT_FOUND : TTL_FOUND;
+      if (now.getTime() - new Date(row.fetchedAt).getTime() < ttl) return stripPartial(data);
     }
+    if (!this.takeBudget(now)) return row ? stripPartial(row.data as Authority) : null;
     const [qc, hist, motus] = await Promise.allSettled([
       this.fmcsa.qc(mc), this.fmcsa.authHist(mc), this.fmcsa.motus(mc),
     ]);
     const failed = [qc, hist, motus].filter((r) => r.status === 'rejected') as PromiseRejectedResult[];
     if (failed.length) this.log.warn(`FMCSA ${mc}: ${failed.map((f) => String(f.reason?.message || f.reason)).join('; ')}`);
-    if (failed.length === 3) return row ? (row.data as Authority) : null;
+    if (failed.length === 3) return row ? stripPartial(row.data as Authority) : null;
 
     const carrier = qc.status === 'fulfilled' ? qc.value : undefined;
     const history = deriveHistory(
@@ -68,8 +76,22 @@ export class ShieldService {
       ...history,
       checkedAt: now.toISOString(),
     };
-    // частичный результат не кэшируем — иначе сутки показывали бы «нет статуса» из-за одного таймаута
-    if (!failed.length) await this.model.upsert({ mc, data: authority, fetchedAt: now } as any);
+    // частичный результат кэшируем коротко (TTL_PARTIAL): не сутки «нет статуса» из-за одного таймаута,
+    // но и не повторный поход на каждый запрос при постоянном сбое источника
+    await this.model.upsert({ mc, data: failed.length ? { ...authority, partial: true } : authority, fetchedAt: now } as any);
     return authority;
   }
+
+  private takeBudget(now: Date): boolean {
+    const t = now.getTime();
+    this.fetchTimes = this.fetchTimes.filter((x) => t - x < BUDGET_WINDOW_MS);
+    if (this.fetchTimes.length >= this.fetchLimit) return false;
+    this.fetchTimes.push(t);
+    return true;
+  }
+}
+
+function stripPartial(a: Authority & { partial?: boolean }): Authority {
+  const { partial, ...rest } = a;
+  return rest;
 }

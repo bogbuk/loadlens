@@ -168,7 +168,7 @@ const LLVIEW = (() => {
     add("Miles", `${load.loadedMiles ?? "—"} loaded · ${dhText} DH`);
     if (load.weight) add("Weight", `${load.weight.toLocaleString("en-US")} lbs`);
     if (load.availability) add("Available", fmtWindow(load.availability));
-    const flagTag = f.flags.length ? " · 🚩 " + (f.flagLevel === "high" ? "risk" : "verify") : "";
+    const flagTag = f.flagLevel === "high" || f.flagLevel === "med" ? " · 🚩 " + (f.flagLevel === "high" ? "risk" : "verify") : "";
     add("Score", `${profitText(f.profit)} · HOS ${hosIcon(f.hos)}${flagTag}`);
     if (f.offer && f.offer.ask != null) add("Ask", f.offer.script);
     const b = f.broker || {};
