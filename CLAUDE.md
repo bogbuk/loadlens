@@ -59,7 +59,7 @@ backend/src/                NestJS, synchronize:true (миграций нет)
   brokers/                  POST /brokers/reports (crowd-отзыв, upsert client_id+mc) + GET /brokers/:mc/reputation (read — Premium-гард)
   shield/                   GET /brokers/:mc/shield — Fraud Shield (ОТКРЫТ всем, свой throttle 600/мин): лицензия FMCSA
                             (статус — реестр L&I `6eyk-hxee`; возраст/инциденты — AuthHist+Motus; всё SODA, без ключа) с кэшем
-                            fmcsa_authority (24ч / not_found 6ч / частичный 30 мин) + бюджет 300 походов в FMCSA/мин + перепосты брокера по lane из loads
+                            fmcsa_authority (12ч / not_found 6ч / частичный 30 мин) + бюджет 300 походов в FMCSA/мин + перепосты брокера по lane из loads
   drivers/                  GET/POST/PATCH/DELETE /drivers — парк водителей диспетчера (JwtAuthGuard, скоуп userId, каскад от users)
   telegram/                 link/status/unlink (Jwt — без Pro, нужно для сброса пароля) + alerts/notify (Jwt+Pro, релей green-грузов→Telegram DM) + webhook/:secret (/start привязка chat_id). alert_sends — дедуп(TTL)+soft-cap. Фича-флаг = TELEGRAM_BOT_TOKEN
   rates/                    GET /rates — дизель EIA (фолбэк $3.95 без EIA_API_KEY; read — Premium-гард)

@@ -36,7 +36,16 @@ describe('ShieldService', () => {
     expect(await svc.authority('1', NOW)).toEqual({ status: 'active' });
     expect(fmcsa.authHist).not.toHaveBeenCalled();
   });
-  it('not_found живёт в кэше 6ч, а не 24ч', async () => {
+  it('найденный брокер живёт в кэше 12ч: 11ч — из кэша, 13ч — перезапрос', async () => {
+    const at = (h: number) => ({ mc: '1', data: { status: 'active' }, fetchedAt: new Date(NOW.getTime() - h * HOUR) });
+    const fresh = setup({}, at(11));
+    await fresh.svc.authority('1', NOW);
+    expect(fresh.fmcsa.authHist).not.toHaveBeenCalled();
+    const stale = setup({}, at(13));
+    await stale.svc.authority('1', NOW);
+    expect(stale.fmcsa.authHist).toHaveBeenCalled();
+  });
+  it('not_found живёт в кэше 6ч', async () => {
     const cached = { mc: '1', data: { status: 'not_found' }, fetchedAt: new Date(NOW.getTime() - 7 * HOUR) };
     const { svc, fmcsa } = setup({}, cached);
     await svc.authority('1', NOW);

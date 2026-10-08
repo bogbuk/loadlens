@@ -8,7 +8,7 @@ import { FmcsaAuthority } from './fmcsa-authority.model';
 import { repostStats, RepostStats } from './repost';
 
 const HOUR = 3_600_000;
-const TTL_FOUND = 24 * HOUR;
+const TTL_FOUND = 12 * HOUR;   // реестр DOT обновляется раз в сутки — 12ч вдвое режут отставание
 const TTL_NOT_FOUND = 6 * HOUR;
 const TTL_PARTIAL = 30 * 60_000;   // какой-то источник упал (протухший ключ, SODA лежит) — повторим скоро, но не на каждый запрос
 const BUDGET_WINDOW_MS = 60_000;
