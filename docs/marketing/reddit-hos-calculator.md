@@ -472,12 +472,12 @@ https://www.reddit.com/r/Truckers/comments/1x085b0/
 ### D. Курьерка хочет box truck для паллет (1x07sdt, 20:45 UTC 07.10), смотрит Fuso FE180
 https://www.reddit.com/r/Truckers/comments/1x07sdt/
 
-GVWR FE180 (~18k lbs) — по памяти, в тексте оставлено «check the spec».
+GVWR FE180 = 17,995 lbs (дизель и газ) — сверено 08.10 по datasheet Fuso: mitfuso.com/files/FUSO-FE180-DataSheet-EN-US.pdf.
 
 > One thing to check before you pick the truck: GVWR, because it decides how much paperwork comes with it.
 >
 > - Under 10,001 lbs: basically a big van, no DOT requirements.
-> - 10,001 to 26,000 lbs (the FE180 is right around 18k, check the spec): no CDL, but if it ever crosses a state line you need a USDOT number, the driver needs a DOT medical card, and the hours rules apply. For city work the short-haul exception covers you: stay within 150 air miles, back at the yard within 14 hours, and you keep simple time records instead of logs or an ELD. A lot of states copy these rules for intrastate too.
+> - 10,001 to 26,000 lbs (the FE180 is rated 17,995 lbs): no CDL, but if it ever crosses a state line you need a USDOT number, the driver needs a DOT medical card, and the hours rules apply. For city work the short-haul exception covers you: stay within 150 air miles, back at the yard within 14 hours, and you keep simple time records instead of logs or an ELD. A lot of states copy these rules for intrastate too.
 > - 26,001 and up: CDL, a drug and alcohol testing program, and a much smaller pool of drivers you can hire.
 >
 > For a courier business that last point matters more than the truck itself. Under 26k, anyone with a regular license can drive it, same as your vans. And get a liftgate, half the pallet stops in a city won't have a dock.
