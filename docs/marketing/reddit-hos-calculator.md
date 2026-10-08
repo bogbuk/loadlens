@@ -525,3 +525,30 @@ I posted a free tool for truck drivers on Reddit last week. One comment did more
 
 **Перед публикацией:** проверить, что modmail r/Truckers всё ещё без ответа (иначе поправить пункт в списке);
 вписать цифры r/SideProject; не раньше 9–10.10 (неделя после поста 5).
+
+## Комментарии для кармы в r/Truckers, 08.10 (вечер): черновики E и F
+
+RSS r/Truckers/new в 17:56 UTC. Без ссылок, без опыта от первого лица.
+
+### E. «UPS Hiring process» (1x0w25f, 16:49 UTC) — что значит «register with the FMCSA»
+https://www.reddit.com/r/Truckers/comments/1x0w25f/
+Автор просит говорить, уверен ты или предполагаешь, — поэтому оговорка в первой строке.
+
+> Not UPS specifically, so take this as "pretty sure", not "sure": it's the Clearinghouse. There's nothing else on the FMCSA side a driver registers for before a background check.
+>
+> Any carrier hiring a CDL driver has to run a full Clearinghouse query, and a full query needs your consent, which you can only give inside the Clearinghouse. So you need an account there before they can send the request. Make a Login.gov account, register as a driver at clearinghouse.fmcsa.dot.gov, and when UPS's request shows up in your account, approve it. If you already registered for another job, you're done, it's the same account.
+>
+> Until you approve it the background check just sits, so it's worth doing today.
+
+### F. «What are everyone's honest thoughts on freight brokers?» (1x0v6uo, 16:16 UTC)
+https://www.reddit.com/r/Truckers/comments/1x0v6uo/
+Тема рядом с Fraud Shield, но без упоминаний. Без «я диспетчер».
+
+> Somewhere between necessary and annoying. The good ones keep a small carrier moving, the bad ones take a big cut and disappear when there's a problem. The rate they post is rarely their final number either.
+>
+> What matters more than opinion is checking the one you're about to haul for:
+>
+> - Look up the MC on FMCSA. Authority active, and how old. A broker with authority from three months ago paying way above market is the classic double-brokering setup.
+> - Credit score and days to pay, if your board shows them. Slow pay kills small carriers faster than low rates.
+> - Call the phone number listed on FMCSA, not the one in the email. Most of the fraud now is someone pretending to be a real broker with a lookalike email.
+> - No rate con, no wheels.
