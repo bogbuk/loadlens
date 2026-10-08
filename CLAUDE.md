@@ -222,7 +222,8 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   их нет; `not_found` при найденной истории выдачи → med «lookup mismatch»; статус брокерской не A/I/N → `null`),
   `new_authority` (<180д med, <90д high), `authority_incidents` (med), `reposted` (≥4 постинга за ≥3 дня / 14д) —
   **sev `info`**: в списке флагов есть, но 🚩 не поднимает (крупные брокеры честно постят lane ежедневно; пороги
-  не откалиброваны). Троттлинг считается по `CF-Connecting-IP` (`ClientIpThrottlerGuard`) — иначе за Cloudflare все делили один бакет.
+  не откалиброваны). Троттлинг считается по `CF-Connecting-IP` (`ClientIpThrottlerGuard`) — иначе за Cloudflare все делили один бакет;
+  заголовку верим, ТОЛЬКО если правая запись `X-Forwarded-For` (её пишет Traefik) — IP Cloudflare: origin открыт и напрямую.
   **История FMCSA — журнал событий, не реестр:** нет брокерской записи ≠ нет лицензии → `null`, флага нет
   (у крупных брокеров в AuthHist бывают только перевозочные события). Docket в SODA — `MC`+6 цифр с нулями;
   `broker_mc` в `loads` сырой → перепосты сравнивают по цифрам. Бесплатно всем (acquisition); «N reports» — Pro.
