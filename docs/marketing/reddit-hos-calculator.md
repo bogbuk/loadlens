@@ -526,7 +526,7 @@ I posted a free tool for truck drivers on Reddit last week. One comment did more
 **Перед публикацией:** проверить, что modmail r/Truckers всё ещё без ответа (иначе поправить пункт в списке);
 вписать цифры r/SideProject; не раньше 9–10.10 (неделя после поста 5).
 
-## Комментарии для кармы в r/Truckers, 08.10 (вечер): черновики E и F
+## Комментарии для кармы в r/Truckers, 08.10 (вечер): E и F ОПУБЛИКОВАНЫ 08.10 (~18:00 UTC; E — peood4v, F — peoogd1)
 
 RSS r/Truckers/new в 17:56 UTC. Без ссылок, без опыта от первого лица.
 
