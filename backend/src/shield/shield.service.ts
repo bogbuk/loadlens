@@ -57,22 +57,21 @@ export class ShieldService {
       if (now.getTime() - new Date(row.fetchedAt).getTime() < ttl) return stripPartial(data);
     }
     if (!this.takeBudget(now)) return row ? stripPartial(row.data as Authority) : null;
-    const [qc, hist, motus] = await Promise.allSettled([
-      this.fmcsa.qc(mc), this.fmcsa.authHist(mc), this.fmcsa.motus(mc),
+    const [reg, hist, motus] = await Promise.allSettled([
+      this.fmcsa.registry(mc), this.fmcsa.authHist(mc), this.fmcsa.motus(mc),
     ]);
-    const failed = [qc, hist, motus].filter((r) => r.status === 'rejected') as PromiseRejectedResult[];
+    const failed = [reg, hist, motus].filter((r) => r.status === 'rejected') as PromiseRejectedResult[];
     if (failed.length) this.log.warn(`FMCSA ${mc}: ${failed.map((f) => String(f.reason?.message || f.reason)).join('; ')}`);
     if (failed.length === 3) return row ? stripPartial(row.data as Authority) : null;
 
-    const carrier = qc.status === 'fulfilled' ? qc.value : undefined;
+    const record = reg.status === 'fulfilled' ? reg.value : undefined;
     const history = deriveHistory(
       hist.status === 'fulfilled' ? hist.value : [],
       motus.status === 'fulfilled' ? motus.value : [],
       now,
     );
     const authority: Authority = {
-      status: carrier === undefined ? null : deriveStatus(carrier),
-      allowedToOperate: carrier ? (carrier.allowedToOperate === 'Y' ? true : carrier.allowedToOperate === 'N' ? false : null) : null,
+      status: record === undefined ? null : deriveStatus(record),
       ...history,
       checkedAt: now.toISOString(),
     };

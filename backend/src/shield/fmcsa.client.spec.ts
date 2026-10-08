@@ -11,11 +11,7 @@ describe('docketOf', () => {
 
 describe('FmcsaClient', () => {
   const orig = global.fetch;
-  const env = process.env.FMCSA_WEBKEY;
-  afterEach(() => {
-    global.fetch = orig;
-    if (env === undefined) delete process.env.FMCSA_WEBKEY; else process.env.FMCSA_WEBKEY = env;
-  });
+  afterEach(() => { global.fetch = orig; });
   const reply = (status: number, body: unknown) =>
     (global.fetch = jest.fn().mockResolvedValue({ ok: status < 300, status, json: async () => body }) as any);
 
@@ -36,22 +32,19 @@ describe('FmcsaClient', () => {
     reply(503, {});
     await expect(new FmcsaClient().motus('1')).rejects.toThrow('503');
   });
-  it('qc без ключа → undefined, без запроса', async () => {
-    delete process.env.FMCSA_WEBKEY;
-    global.fetch = jest.fn() as any;
-    expect(await new FmcsaClient().qc('384859')).toBeUndefined();
-    expect(global.fetch).not.toHaveBeenCalled();
+  it('registry: текущие статусы из реестра L&I 6eyk-hxee (без ключа)', async () => {
+    reply(200, [{ docket_number: 'MC384859', broker_stat: 'A', common_stat: 'I', contract_stat: 'I' }]);
+    expect(await new FmcsaClient().registry('384859'))
+      .toEqual({ brokerAuthorityStatus: 'A', commonAuthorityStatus: 'I', contractAuthorityStatus: 'I' });
+    expect((global.fetch as jest.Mock).mock.calls[0][0]).toBe(
+      'https://data.transportation.gov/resource/6eyk-hxee.json?docket_number=MC384859&$select=broker_stat,common_stat,contract_stat&$limit=1');
   });
-  it('qc: первый carrier из content, номер без нулей', async () => {
-    process.env.FMCSA_WEBKEY = 'k';
-    reply(200, { content: [{ carrier: { brokerAuthorityStatus: 'A', allowedToOperate: 'Y' } }] });
-    expect(await new FmcsaClient().qc('055000')).toEqual({ brokerAuthorityStatus: 'A', allowedToOperate: 'Y' });
-    expect((global.fetch as jest.Mock).mock.calls[0][0])
-      .toBe('https://mobile.fmcsa.dot.gov/qc/services/carriers/docket-number/55000?webKey=k');
+  it('registry: нет строки → null (не найден в реестре)', async () => {
+    reply(200, []);
+    expect(await new FmcsaClient().registry('9999999')).toBeNull();
   });
-  it('qc: пустой content → null (не найден)', async () => {
-    process.env.FMCSA_WEBKEY = 'k';
-    reply(200, { content: [] });
-    expect(await new FmcsaClient().qc('9999999')).toBeNull();
+  it('registry: 5xx → reject', async () => {
+    reply(502, {});
+    await expect(new FmcsaClient().registry('1')).rejects.toThrow('502');
   });
 });

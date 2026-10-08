@@ -1,11 +1,10 @@
 // Чистый вывод «лицензии брокера» из ответов FMCSA (спека 2026-10-07-fraud-shield-design).
-// Статус — ТОЛЬКО из QCMobile; история (AuthHist/Motus) — журнал событий, не реестр:
+// Статус — ТОЛЬКО из реестра L&I (6eyk-hxee); история (AuthHist/Motus) — журнал событий, не реестр:
 // отсутствие брокерской записи не значит отсутствие лицензии → null, а не флаг.
 
 export type AuthorityStatus = 'active' | 'inactive' | 'carrier_only' | 'not_found';
 
-export interface QcCarrier {
-  allowedToOperate?: string;
+export interface RegistryRecord {
   brokerAuthorityStatus?: string;
   commonAuthorityStatus?: string;
   contractAuthorityStatus?: string;
@@ -25,8 +24,7 @@ export interface MotusRow {
 }
 export interface AuthorityHistory { grantedAt: string | null; ageDays: number | null; incidents12m: number | null }
 export interface Authority extends AuthorityHistory {
-  status: AuthorityStatus | null;   // null — нет FMCSA_WEBKEY или QCMobile недоступен
-  allowedToOperate: boolean | null;
+  status: AuthorityStatus | null;   // null — реестр недоступен или статус не A/I/N
   checkedAt: string;
 }
 
@@ -37,11 +35,11 @@ const isMotusBroker = (t?: string) => /^Broker of Property/i.test(t || '');
 const BAD_ORIG = /REVOCATION|REVOKED|SUSPENSION/i;
 const BAD_DISP = /REVOKED|INACTIVATION|SUSPENSION/i;
 
-// null — запись есть, но статус брокерской лицензии не A/I/N (дрейф схемы QCMobile): молчим, а не флагуем
-export function deriveStatus(c: QcCarrier | null): AuthorityStatus | null {
+// null — запись есть, но статус брокерской лицензии не A/I/N (дрейф схемы реестра): молчим, а не флагуем
+export function deriveStatus(c: RegistryRecord | null): AuthorityStatus | null {
   if (!c) return 'not_found';
   if (!['A', 'I', 'N'].includes(c.brokerAuthorityStatus || '')) return null;
-  if (c.brokerAuthorityStatus === 'A') return c.allowedToOperate === 'N' ? 'inactive' : 'active';
+  if (c.brokerAuthorityStatus === 'A') return 'active';
   if (c.commonAuthorityStatus === 'A' || c.contractAuthorityStatus === 'A') return 'carrier_only';
   return 'inactive';
 }

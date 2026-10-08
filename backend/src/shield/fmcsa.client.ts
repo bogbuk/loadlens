@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import type { AuthHistRow, MotusRow, QcCarrier } from './authority';
+import type { AuthHistRow, MotusRow, RegistryRecord } from './authority';
 
 const SODA = 'https://data.transportation.gov/resource';
-const QC = 'https://mobile.fmcsa.dot.gov/qc/services';
 const TIMEOUT_MS = 5000;
 
 // docket в SODA: 'MC' + цифры, дополненные нулями до 6 (FF000031, MC384859, MC1819236)
@@ -34,12 +33,18 @@ export class FmcsaClient {
     return Array.isArray(rows) ? rows : [];
   }
 
-  // Текущий статус. undefined — нет ключа (фича выключена), null — docket не найден.
-  async qc(mc: string): Promise<QcCarrier | null | undefined> {
-    const key = process.env.FMCSA_WEBKEY;
-    if (!key) return undefined;
-    const body = await getJson(`${QC}/carriers/docket-number/${Number(mc)}?webKey=${encodeURIComponent(key)}`);
-    const first = Array.isArray(body?.content) ? body.content[0] : null;
-    return first?.carrier ?? null;
+  // Текущий статус — реестр лицензий L&I «Carrier – All With History» (обновляется ежедневно, без ключа).
+  // QCMobile не используем: FMCSA режет mobile.fmcsa.dot.gov для не-US IP (403 из MD и с DE-сервера, 08.10).
+  // null — docket нет в реестре (реестр полный: ~25k активных брокеров).
+  async registry(mc: string): Promise<RegistryRecord | null> {
+    const rows = await getJson(
+      `${SODA}/6eyk-hxee.json?docket_number=${docketOf(mc)}&$select=broker_stat,common_stat,contract_stat&$limit=1`);
+    const r = Array.isArray(rows) ? rows[0] : null;
+    if (!r) return null;
+    return {
+      brokerAuthorityStatus: r.broker_stat,
+      commonAuthorityStatus: r.common_stat,
+      contractAuthorityStatus: r.contract_stat,
+    };
   }
 }

@@ -58,7 +58,7 @@ backend/src/                NestJS, synchronize:true (миграций нет)
   geo/                      GET /geo/distance — OSRM-прокси + кэш lane_distances + haversine (read — Premium-гард)
   brokers/                  POST /brokers/reports (crowd-отзыв, upsert client_id+mc) + GET /brokers/:mc/reputation (read — Premium-гард)
   shield/                   GET /brokers/:mc/shield — Fraud Shield (ОТКРЫТ всем, свой throttle 600/мин): лицензия FMCSA
-                            (статус — QCMobile под FMCSA_WEBKEY; возраст/инциденты — SODA AuthHist+Motus) с кэшем
+                            (статус — реестр L&I `6eyk-hxee`; возраст/инциденты — AuthHist+Motus; всё SODA, без ключа) с кэшем
                             fmcsa_authority (24ч / not_found 6ч / частичный 30 мин) + бюджет 300 походов в FMCSA/мин + перепосты брокера по lane из loads
   drivers/                  GET/POST/PATCH/DELETE /drivers — парк водителей диспетчера (JwtAuthGuard, скоуп userId, каскад от users)
   telegram/                 link/status/unlink (Jwt — без Pro, нужно для сброса пароля) + alerts/notify (Jwt+Pro, релей green-грузов→Telegram DM) + webhook/:secret (/start привязка chat_id). alert_sends — дедуп(TTL)+soft-cap. Фича-флаг = TELEGRAM_BOT_TOKEN
@@ -218,14 +218,14 @@ cd backend && docker compose -p loadlens up -d && cp .env.example .env && npm in
   + `daysToPay` (≤30 ok, >40 risk). Данные из GraphQL-перехвата DAT (CS/DTP). Третий чип в полосе
   под строкой. Это carrier-сторона фрод-защиты (дифференциатор из исследования).
 - **Fraud Shield** (с 2026-10-07, `backend/src/shield/` + `LLSCORE.redFlags(ctx.shield)`/`shieldBadge`): чип `🛡` +
-  флаги `authority_inactive`/`carrier_brokering`/`authority_not_found` (high, ТОЛЬКО из QCMobile — без `FMCSA_WEBKEY`
-  их нет; `not_found` при найденной истории выдачи → med «lookup mismatch»; статус брокерской не A/I/N → `null`),
+  флаги `authority_inactive`/`carrier_brokering`/`authority_not_found` (high, ТОЛЬКО из реестра L&I `6eyk-hxee`
+  `broker_stat/common_stat/contract_stat`; QCMobile НЕ годится — FMCSA режет его для не-US IP, 403 и с DE-сервера; `not_found` при найденной истории выдачи → med «lookup mismatch»; статус брокерской не A/I/N → `null`),
   `new_authority` (<180д med, <90д high), `authority_incidents` (med), `reposted` (≥4 постинга за ≥3 дня / 14д) —
   **sev `info`**: в списке флагов есть, но 🚩 не поднимает (крупные брокеры честно постят lane ежедневно; пороги
   не откалиброваны). Троттлинг считается по `CF-Connecting-IP` (`ClientIpThrottlerGuard`) — иначе за Cloudflare все делили один бакет;
   заголовку верим, ТОЛЬКО если правая запись `X-Forwarded-For` (её пишет Traefik) — IP Cloudflare: origin открыт и напрямую.
   **История FMCSA — журнал событий, не реестр:** нет брокерской записи ≠ нет лицензии → `null`, флага нет
-  (у крупных брокеров в AuthHist бывают только перевозочные события). Docket в SODA — `MC`+6 цифр с нулями;
+  (статус берётся из реестра, а не выводится из журнала). Docket в SODA — `MC`+6 цифр с нулями;
   `broker_mc` в `loads` сырой → перепосты сравнивают по цифрам. Бесплатно всем (acquisition); «N reports» — Pro.
   Спека — `docs/superpowers/specs/2026-10-07-fraud-shield-design.md`.
 - **Crowd-репутация брокеров** (`backend/brokers`): отзывы пользователей по MC (paid/no_issue/slow/
@@ -332,7 +332,7 @@ coolify --context yoolip999 app deployments list hiooby9kgzj8i79ycl33drec
 # env (новый деплой подхватывает только свежий): app env sync <uuid> --file .env --is-literal ; затем push
 ```
 
-Env в Coolify: `DATABASE_URL`, `JWT_SECRET`, `ADMIN_EMAIL` (список email админов через запятую), `PORT`. Опц. `FMCSA_WEBKEY` (без него у Fraud Shield нет текущего статуса лицензии брокера), `EIA_API_KEY` (без него дизель =
+Env в Coolify: `DATABASE_URL`, `JWT_SECRET`, `ADMIN_EMAIL` (список email админов через запятую), `PORT`. `EIA_API_KEY` (без него дизель =
 фолбэк $3.95), `OSRM_URL` (дефолт публичный OSRM), `API_KEYS` (список валидных X-API-Key через запятую
 для Premium-чтения; пусто → читает только Pro-JWT), `TRIAL_DAYS` (дней Pro-триала на аккаунт; пусто → 14, `0` → новые не выдаются). Оплата: `BILLING_MODE`, `PADDLE_ENV`, `PADDLE_API_KEY`, `PADDLE_CLIENT_TOKEN`, `PADDLE_PRICE_ID`,
 `PADDLE_WEBHOOK_SECRET` (без `BILLING_MODE` оплата скрыта). Для Telegram-алертов: `TELEGRAM_BOT_TOKEN` +

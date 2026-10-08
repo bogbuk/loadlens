@@ -2,22 +2,19 @@ import { deriveHistory, deriveStatus } from './authority';
 
 const NOW = new Date('2026-10-07T00:00:00Z');
 
-describe('deriveStatus (QCMobile)', () => {
+describe('deriveStatus (реестр L&I)', () => {
   it('not_found, когда docket не найден', () => {
     expect(deriveStatus(null)).toBe('not_found');
   });
   it('active при брокерской A', () => {
-    expect(deriveStatus({ brokerAuthorityStatus: 'A', allowedToOperate: 'Y' })).toBe('active');
-  });
-  it('inactive при брокерской A, но allowedToOperate=N', () => {
-    expect(deriveStatus({ brokerAuthorityStatus: 'A', allowedToOperate: 'N' })).toBe('inactive');
+    expect(deriveStatus({ brokerAuthorityStatus: 'A', commonAuthorityStatus: 'I' })).toBe('active');
   });
   it('carrier_only, когда активна только перевозочная', () => {
     expect(deriveStatus({ brokerAuthorityStatus: 'N', commonAuthorityStatus: 'A' })).toBe('carrier_only');
     expect(deriveStatus({ brokerAuthorityStatus: 'I', contractAuthorityStatus: 'A' })).toBe('carrier_only');
   });
   it('нет явного brokerAuthorityStatus (A/I/N) → null, а не флаг', () => {
-    expect(deriveStatus({ allowedToOperate: 'Y', commonAuthorityStatus: 'A' })).toBeNull();
+    expect(deriveStatus({ commonAuthorityStatus: 'A' })).toBeNull();
     expect(deriveStatus({ brokerAuthorityStatus: 'X' })).toBeNull();
   });
   it('inactive, когда ничего не активно', () => {

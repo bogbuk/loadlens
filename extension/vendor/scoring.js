@@ -113,13 +113,13 @@ const LLSCORE = (() => {
       label: `bait: rate above market + low credit (${load.creditScore})` });
     if (ctx.reputation && ctx.reputation.level === "bad") flags.push({ code: "crowd_bad", sev: "high",
       label: ctx.reputation.doubleBrokered ? "crowd: double-brokered" : "crowd: flaked" });
-    // Fraud Shield: лицензия FMCSA (status — только из QCMobile; null = нет данных → молчим)
+    // Fraud Shield: лицензия FMCSA (status — только из реестра L&I; null = нет данных → молчим)
     const a = ctx.shield && ctx.shield.authority;
     if (a) {
       if (a.status === "inactive") flags.push({ code: "authority_inactive", sev: "high", label: "FMCSA: broker authority inactive" });
       if (a.status === "carrier_only") flags.push({ code: "carrier_brokering", sev: "high",
         label: "FMCSA: carrier authority only — possible double-brokering" });
-      // not_found при найденной публичной истории выдачи — скорее пробел в QCMobile, чем фрод
+      // not_found при найденной публичной истории выдачи — скорее расхождение датасетов DOT, чем фрод
       if (a.status === "not_found") flags.push(a.grantedAt
         ? { code: "authority_not_found", sev: "med", label: "FMCSA lookup mismatch: MC not in registry, but has broker history" }
         : { code: "authority_not_found", sev: "high", label: "FMCSA: MC not found" });

@@ -4,14 +4,14 @@ import { ShieldService } from './shield.service';
 const NOW = new Date('2026-10-07T12:00:00Z');
 const HOUR = 3_600_000;
 
-function setup(over: Partial<Record<'qc' | 'authHist' | 'motus', jest.Mock>> = {}, cached: any = null) {
+function setup(over: Partial<Record<'registry' | 'authHist' | 'motus', jest.Mock>> = {}, cached: any = null) {
   const store = new Map<string, any>(cached ? [[cached.mc, cached]] : []);
   const model = {
     findByPk: jest.fn(async (mc: string) => store.get(mc) ?? null),
     upsert: jest.fn(async (row: any) => { store.set(row.mc, row); }),
   };
   const fmcsa = {
-    qc: over.qc ?? jest.fn().mockResolvedValue({ brokerAuthorityStatus: 'A', allowedToOperate: 'Y' }),
+    registry: over.registry ?? jest.fn().mockResolvedValue({ brokerAuthorityStatus: 'A', commonAuthorityStatus: 'I' }),
     authHist: over.authHist ?? jest.fn().mockResolvedValue([{ mod_col_1: 'PROPERTY BROKER', original_action_desc: 'GRANTED', orig_served_date: '07/12/2000' }]),
     motus: over.motus ?? jest.fn().mockResolvedValue([]),
   };
@@ -23,17 +23,11 @@ describe('ShieldService', () => {
   it('собирает статус + историю и кэширует полный результат', async () => {
     const { svc, model } = setup();
     const a = await svc.authority('384859', NOW);
-    expect(a).toMatchObject({ status: 'active', allowedToOperate: true, grantedAt: '2000-07-12', incidents12m: 0 });
+    expect(a).toMatchObject({ status: 'active', grantedAt: '2000-07-12', incidents12m: 0 });
     expect(model.upsert).toHaveBeenCalledTimes(1);
   });
-  it('без ключа status=null, история есть, кэшируется', async () => {
-    const { svc, model } = setup({ qc: jest.fn().mockResolvedValue(undefined) });
-    const a = await svc.authority('384859', NOW);
-    expect(a).toMatchObject({ status: null, allowedToOperate: null, grantedAt: '2000-07-12' });
-    expect(model.upsert).toHaveBeenCalled();
-  });
-  it('docket не найден → not_found', async () => {
-    const { svc } = setup({ qc: jest.fn().mockResolvedValue(null), authHist: jest.fn().mockResolvedValue([]) });
+    it('docket не найден → not_found', async () => {
+    const { svc } = setup({ registry: jest.fn().mockResolvedValue(null), authHist: jest.fn().mockResolvedValue([]) });
     expect((await svc.authority('9999999', NOW))!.status).toBe('not_found');
   });
   it('свежий кэш — без сетевых запросов', async () => {
@@ -51,17 +45,17 @@ describe('ShieldService', () => {
   it('все источники упали → протухший кэш', async () => {
     const boom = jest.fn().mockRejectedValue(new Error('FMCSA HTTP 503'));
     const cached = { mc: '1', data: { status: 'active', grantedAt: '2000-07-12' }, fetchedAt: new Date(NOW.getTime() - 48 * HOUR) };
-    const { svc } = setup({ qc: boom, authHist: boom, motus: boom }, cached);
+    const { svc } = setup({ registry: boom, authHist: boom, motus: boom }, cached);
     expect(await svc.authority('1', NOW)).toEqual({ status: 'active', grantedAt: '2000-07-12' });
   });
   it('все источники упали и кэша нет → null', async () => {
     const boom = jest.fn().mockRejectedValue(new Error('timeout'));
-    const { svc } = setup({ qc: boom, authHist: boom, motus: boom });
+    const { svc } = setup({ registry: boom, authHist: boom, motus: boom });
     expect(await svc.authority('1', NOW)).toBeNull();
   });
-  it('частичный сбой (QCMobile упал) — кэшируется на 30 мин, а не на сутки', async () => {
-    const qc = jest.fn().mockRejectedValue(new Error('FMCSA HTTP 401'));
-    const { svc, fmcsa } = setup({ qc });
+  it('частичный сбой (реестр упал) — кэшируется на 30 мин, а не на сутки', async () => {
+    const registry = jest.fn().mockRejectedValue(new Error('FMCSA HTTP 503'));
+    const { svc, fmcsa } = setup({ registry });
     const a = await svc.authority('384859', NOW);
     expect(a).toMatchObject({ status: null, grantedAt: '2000-07-12' });
     await svc.authority('384859', new Date(NOW.getTime() + 20 * 60_000));
