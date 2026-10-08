@@ -177,3 +177,16 @@ test("getMe: кэш отдаёт billing и подписку (кнопка Upgra
   assert.strictEqual(me.billing, true);
   assert.deepStrictEqual(me.subscription, sub);
 });
+
+test("getShield: открытый GET с lane-параметрами, null при ошибке", async () => {
+  const origFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url) => { calls.push(String(url)); return { ok: true, json: async () => ({ mc: "555000", authority: null, repost: null }) }; };
+  try {
+    const r = await LLAPI.getShield("MC-555000", "CHICAGO_IL", "DALLAS_TX", "R");
+    assert.deepStrictEqual(r, { mc: "555000", authority: null, repost: null });
+    assert.ok(calls[0].endsWith("/brokers/MC-555000/shield?o=CHICAGO_IL&d=DALLAS_TX&e=R"), calls[0]);
+    globalThis.fetch = async () => { throw new Error("offline"); };
+    assert.strictEqual(await LLAPI.getShield("1", "A", "B", "V"), null);
+  } finally { globalThis.fetch = origFetch; }
+});

@@ -59,6 +59,8 @@
   const laneCache = new Map();    // "O>D|E" -> {medianRpm|null}  (из backend)
   const marketCache = new Map();  // market -> strength 0..1
   const repCache = new Map();     // brokerMc -> reputation (crowd)
+  const laneCountCache = new Map(); // "O>D|E" -> n грузов за медианой (размер крауда, Pro)
+  const shieldCache = new Map();    // "mc|O>D|E" -> Fraud Shield (FMCSA + перепосты), открыт всем
   const crowdCache = new Map();   // market -> CrowdLoad[] (onward-плечи из бэкенда)
   const goneIds = new Set();      // loadId, помеченные сервером likelyGone — исключаем из цепочек
   const crowdSince = new Map();   // market -> серверный ts последнего near-ответа (для delta-poll)
@@ -67,6 +69,7 @@
   const laneRequested = new Set();
   const marketRequested = new Set();
   const repRequested = new Set();
+  const shieldRequested = new Set();
   const crowdRequested = new Set();
 
   // ---------- сбор строк ----------
@@ -119,6 +122,7 @@
       laneRequested.add(k);
       LLAPI.getLane(l.originMarket, l.destMarket, l.equipment).then((s) => {
         laneCache.set(k, s && s.level === "lane" ? s.medianRpm : null);
+        laneCountCache.set(k, s && s.level === "lane" ? s.n : null);
         schedule();
       }).catch(() => {});
     });
@@ -147,6 +151,19 @@
   function refreshRep(mc) {              // после отправки отзыва — перезапросить
     repRequested.delete(mc);
     if (typeof LLAPI !== "undefined") LLAPI.getBrokerReputation(mc).then((r) => { if (r) { repCache.set(String(mc), r); schedule(); } }).catch(() => {});
+  }
+  function shieldKeyOf(l) { return `${l.brokerMc}|${laneKeyOf(l)}`; }
+  // Fraud Shield по паре брокер+lane; без MC/lane — не спрашиваем
+  function fetchShields(loads) {
+    if (typeof LLAPI === "undefined") return;
+    loads.forEach((l) => {
+      if (!l.brokerMc || !l.originMarket || !l.destMarket || !l.equipment) return;
+      const k = shieldKeyOf(l);
+      if (shieldRequested.has(k)) return;
+      shieldRequested.add(k);
+      LLAPI.getShield(l.brokerMc, l.originMarket, l.destMarket, l.equipment)
+        .then((s) => { if (s) { shieldCache.set(k, s); schedule(); } }).catch(() => {});
+    });
   }
   // подтянуть neighborhood грузов из рынков назначения (рынок + соседи) — origin'ы следующих плеч.
   // opts.poll=true: живой delta-poll (игнорируем crowdRequested, шлём since); иначе разовый снимок.
@@ -190,6 +207,7 @@
   // ---------- бейджи ----------
   function clearBadges() { document.querySelectorAll(".ll-badge").forEach((b) => b.remove()); }
 
+  const SHIELD_CLS = { good: "ll-good", warn: "ll-ok", risk: "ll-risk", unknown: "ll-thin" };
   function badgeRow(anchorEl, load) {
     if (!anchorEl) return;
     const laneMedian = laneCache.has(laneKeyOf(load)) ? laneCache.get(laneKeyOf(load)) : null;
@@ -200,7 +218,8 @@
     const host = document.createElement("div");
     host.className = "ll-badge ll-rowstrip ll-" + profit.level;
     // red-flag чип (фрод/double-broker) — первым, как самый важный сигнал
-    const flags = LLSCORE.redFlags(load, { laneMedian, reputation: repCache.get(String(load.brokerMc)) });
+    const shield = shieldCache.get(shieldKeyOf(load)) || null;
+    const flags = LLSCORE.redFlags(load, { laneMedian, reputation: repCache.get(String(load.brokerMc)), shield });
     if (flags.length) {
       const lvl = LLSCORE.redFlagLevel(flags);
       const fc = chip(lvl === "high" ? "🚩 risk" : "🚩 verify", "ll-flag " + (lvl === "high" ? "ll-red" : "ll-amber"));
@@ -211,6 +230,12 @@
     host.appendChild(chip("HOS " + hosIcon(hos), "ll-hos ll-" + hos));
     const broker = LLSCORE.brokerBadge(load);
     if (broker.level !== "unknown") host.appendChild(chip(brokerText(broker), "ll-broker ll-" + broker.level));
+    if (load.brokerMc && shield) {
+      const sb = LLSCORE.shieldBadge(shield);
+      const sc = chip(sb.text, "ll-broker ll-shield " + SHIELD_CLS[sb.level]);
+      sc.title = sb.title;
+      host.appendChild(sc);
+    }
     // crowd-репутация: кликабельный чип (показывает агрегат + открывает меню отзыва)
     if (load.brokerMc) host.appendChild(crowdChip(load.brokerMc));
     if (drivers.length && typeof LLFLEET !== "undefined") host.appendChild(fleetChip(load));
@@ -443,6 +468,8 @@
   const look = {
     laneMedianOf: (o, d, e) => { const v = laneCache.get(laneKeyOf({ originMarket: o, destMarket: d, equipment: e })); return v == null ? null : v; },
     rep: (mc) => repCache.get(String(mc)) || null,
+    laneCountOf: (o, d, e) => { const v = laneCountCache.get(laneKeyOf({ originMarket: o, destMarket: d, equipment: e })); return v == null ? null : v; },
+    shield: (l) => shieldCache.get(shieldKeyOf(l)) || null,
     strength: strengthOf,
     density: (m) => (crowdCache.get(m) || []).length,
     age: ageOf,
@@ -452,7 +479,8 @@
   function detailFacts(load) {
     const laneMedian = look.laneMedianOf(load.originMarket, load.destMarket, load.equipment);
     const rep = load.brokerMc ? look.rep(load.brokerMc) : null;
-    const flags = LLSCORE.redFlags(load, { laneMedian, reputation: rep });
+    const shield = load.brokerMc ? look.shield(load) : null;
+    const flags = LLSCORE.redFlags(load, { laneMedian, reputation: rep, shield });
     const offer = LLSCORE.counterOffer(load, { laneMedian, costPerMile });
     let mail = null;
     if (load.contactEmail && typeof LLMAIL !== "undefined") {
@@ -461,7 +489,8 @@
       mail = { url: LLMAIL.gmailComposeUrl(load.contactEmail, subject, body), text: subject + "\n\n" + body };
     }
     return {
-      laneMedian, rep, flags, offer, mail,
+      laneMedian, rep, flags, offer, mail, shield,
+      laneCount: look.laneCountOf(load.originMarket, load.destMarket, load.equipment),
       profit: LLSCORE.profitBadge(load, { costPerMile, dieselPrice, laneMedian, targetRpm: targetFor(load) }),
       hos: hosBadge(load),
       broker: LLSCORE.brokerBadge(load),
@@ -545,6 +574,7 @@
     fetchLanes(loads);
     fetchMarkets(uniqueMarkets(loads));
     fetchBrokerReps(loads);
+    fetchShields(loads);
     fetchCrowdLoads([...new Set(loads.map((l) => l.destMarket))]); // origin'ы следующих плеч
 
     // Сначала применяем контекст водителя: мутирует hosState/costPerMile/activeEquipment,

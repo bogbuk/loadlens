@@ -111,6 +111,15 @@ const LLAPI = (() => {
     } catch { return null; }
   }
 
+  // Fraud Shield: лицензия FMCSA + перепосты брокера по lane. Открыт всем планам (Bearer — если есть).
+  async function getShield(mc, origin, dest, equipment) {
+    try {
+      const q = new URLSearchParams({ o: origin, d: dest, e: equipment });
+      const res = await fetch(`${BASE}/brokers/${encodeURIComponent(mc)}/shield?${q.toString()}`, { headers: await authHeader() });
+      return res.ok ? res.json() : null;
+    } catch { return null; }
+  }
+
   async function reportBroker(brokerMc, outcome, note) {
     try {
       const cid = await clientId();
@@ -416,7 +425,7 @@ const LLAPI = (() => {
   }
 
   return { sanitizeLoad, clientId, sendLoads, getLane, getMarket, getDistance, getDiesel,
-           getLoadsByOrigin, getLoadsNear, getBrokerReputation, reportBroker, register, login, logout, getMe,
+           getLoadsByOrigin, getLoadsNear, getBrokerReputation, getShield, reportBroker, register, login, logout, getMe,
            takeSignoutMessage,
            getDrivers, createDriver, updateDriver, deleteDriver, deleteAccount, changePassword, forgotPassword, resetPassword,
            telegramStatus, telegramLink, telegramAlerts, telegramUnlink, notifyAlerts,

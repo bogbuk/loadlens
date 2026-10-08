@@ -162,7 +162,7 @@ const LLVIEW = (() => {
       f.trueRpm != null ? `true $${f.trueRpm.toFixed(2)}` : null,
       f.profit && f.profit.netRpm != null ? `net $${f.profit.netRpm.toFixed(2)}` : null,
       load.estimatedRatePerMile != null ? `DAT est $${Number(load.estimatedRatePerMile).toFixed(2)}` : null,
-      f.laneMedian != null ? `market $${f.laneMedian.toFixed(2)}` : null,
+      f.laneMedian != null ? `market $${f.laneMedian.toFixed(2)}${f.laneCount ? ` · ${f.laneCount} reports` : ""}` : null,
       short ? `short run, scored as ${minMi} mi` : null,
     ].filter(Boolean).join(" · ") || "—");
     add("Miles", `${load.loadedMiles ?? "—"} loaded · ${dhText} DH`);
@@ -174,7 +174,9 @@ const LLVIEW = (() => {
     const b = f.broker || {};
     add("Broker", [load.brokerName, load.brokerMc ? "MC " + load.brokerMc : null,
       b.creditScore != null ? b.creditScore + " CS" : null, b.daysToPay != null ? b.daysToPay + " DTP" : null,
-      f.rep && f.rep.n ? "crowd: " + crowdText(f.rep).replace("👥 ", "") : null].filter(Boolean).join(" · ") || "—");
+      f.rep && f.rep.n ? "crowd: " + crowdText(f.rep).replace("👥 ", "") : null,
+      f.shield && f.shield.authority && typeof LLSCORE !== "undefined" ? LLSCORE.shieldBadge(f.shield).text : null,
+    ].filter(Boolean).join(" · ") || "—");
     if (load.contactPhone) add("Phone", load.contactPhone, "tel:" + load.contactPhone);
     if (load.contactEmail) add("Email", load.contactEmail, "mailto:" + load.contactEmail);
 

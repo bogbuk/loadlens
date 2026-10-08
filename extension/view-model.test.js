@@ -176,3 +176,24 @@ test("detail: известный deadhead и длинный рейс — без 
   assert.strictEqual(row("Miles"), "780 loaded · 0 DH");
   assert.doesNotMatch(row("RPM"), /short run/);
 });
+
+test("detail: размер крауда рядом с медианой рынка", () => {
+  const l = load();
+  const d = LLVIEW.build(input({ loads: [l], detailLoad: l, detailFacts: facts({ laneMedian: 2.41, laneCount: 37 }) })).detail;
+  const rpm = d.rows.find((r) => r.k === "RPM").v;
+  assert.ok(rpm.includes("market $2.41 · 37 reports"), rpm);
+});
+
+test("detail: без laneCount — прежний формат «market $X»", () => {
+  const l = load();
+  const d = LLVIEW.build(input({ loads: [l], detailLoad: l, detailFacts: facts({ laneMedian: 2.41 }) })).detail;
+  const rpm = d.rows.find((r) => r.k === "RPM").v;
+  assert.ok(rpm.includes("market $2.41") && !rpm.includes("reports"), rpm);
+});
+
+test("detail: сводка Fraud Shield в строке Broker", () => {
+  const l = load();
+  const shield = { mc: "123456", authority: { status: "active", ageDays: 800, incidents12m: 0, grantedAt: "2024-08-01" }, repost: null };
+  const d = LLVIEW.build(input({ loads: [l], detailLoad: l, detailFacts: facts({ shield }) })).detail;
+  assert.ok(d.rows.find((r) => r.k === "Broker").v.includes("🛡 2y ✓"));
+});
