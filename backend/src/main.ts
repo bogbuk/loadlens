@@ -72,6 +72,10 @@ async function bootstrap() {
     'CREATE INDEX IF NOT EXISTS users_paddle_subscription_id ON users (paddle_subscription_id)',
   );
   await sequelize.query('CREATE INDEX IF NOT EXISTS users_paddle_customer_id ON users (paddle_customer_id)');
+  // Fraud Shield: перепосты ищутся по цифрам MC брокера + first_seen (repost.ts)
+  await sequelize.query(
+    "CREATE INDEX IF NOT EXISTS loads_broker_mc_digits_first_seen ON loads ((regexp_replace(broker_mc, '\\D', '', 'g')), first_seen)",
+  );
   // Bootstrap админов из ADMIN_EMAIL (идемпотентно): уже существующие юзеры получают role=admin.
   const adminEmails = parseAdminEmails(process.env.ADMIN_EMAIL);
   if (adminEmails.length)
