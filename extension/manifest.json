@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LoadLens: Rate per Mile, HOS & Broker Check for DAT One",
-  "version": "0.9.5",
+  "version": "0.9.6",
   "description": "True rate per mile after deadhead and fuel, HOS check and broker credit on every DAT One load. For dispatchers and owner-operators.",
   "minimum_chrome_version": "116",
   "homepage_url": "https://loadlens.krait.studio/",
