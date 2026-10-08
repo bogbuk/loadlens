@@ -4,6 +4,9 @@ All notable user-facing changes to the LoadLens browser extension.
 
 ## [Unreleased]
 
+### Added
+- **Fraud Shield — free broker check on every load.** A 🛡 chip next to the broker shows how old their FMCSA broker authority is and whether it was suspended or revoked in the last year. Loads get a red flag when the broker's authority is brand new, inactive, or missing, when a carrier without broker authority posts the load (a common double-brokering sign), and when the same broker keeps reposting the same lane day after day. Pro also shows how many reports the market rate is based on ("market $2.41 · 37 reports").
+
 ## 0.9.5 — 2026-10-02
 
 ### Added
