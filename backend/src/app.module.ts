@@ -26,13 +26,15 @@ import { CloudInstance } from './cloud/cloud-instance.model';
 import { CloudModule } from './cloud/cloud.module';
 import { TrialModule } from './trial/trial.module';
 import { BillingModule } from './billing/billing.module';
+import { FmcsaAuthority } from './shield/fmcsa-authority.model';
+import { ShieldModule } from './shield/shield.module';
 
 @Module({
   imports: [
     SequelizeModule.forRoot({
       dialect: 'postgres',
       uri: process.env.DATABASE_URL,
-      models: [Load, LaneDistance, BrokerReport, User, Driver, AlertSend, CloudInstance],
+      models: [Load, LaneDistance, BrokerReport, User, Driver, AlertSend, CloudInstance, FmcsaAuthority],
       autoLoadModels: true,
       synchronize: true,
       logging: false,
@@ -51,6 +53,7 @@ import { BillingModule } from './billing/billing.module';
     MarketsModule,
     GeoModule,
     BrokersModule,
+    ShieldModule,
     RatesModule,
     UsersModule,
     AuthModule,
