@@ -42,8 +42,8 @@
 - Запоминание ввода: на каждый `update()` состояние формы → `localStorage['ll_hos_form']` (JSON, версия схемы `v:1`);
   при загрузке — восстановление до первого `update()`. Ссылка «Reset» очищает ключ и форму. Все обращения к
   хранилищу в try/catch: недоступно → поведение как сейчас. Чистые `serializeForm/restoreForm`.
-- На мобильной ширине блоки «Split sleeper» и «Enter hours by day (recap)» оборачиваются в свёрнутый по умолчанию
-  `<details>` (на десктопе открыты). Если сохранённое состояние их использует — открываем.
+- ~~`<details>` для «Split sleeper» и «recap»~~ — снято при планировании (08.10): эти блоки уже свёрнуты
+  своими галками (`#split`, `#byday`), поля видны только при включённой галке; `<details>` ничего не сокращает.
 
 ### 1.3 Офлайн и иконка на экране
 - `backend/public/sw.js` (scope `/`): precache `/hos-calculator/`, `/ru/hos-calculator/`, `/ro/hos-calculator/`,
@@ -72,8 +72,9 @@ Inline-скрипт в `<head>` всех публичных страниц (до
 - **«Send me the link»** (основная): `navigator.share({title, text, url})`, url = лендинг языка страницы
   `?utm_source=share`. Нет `navigator.share` или ошибка, кроме отмены пользователем → `mailto:?subject=…&body=…`
   (без адресата; тело — ссылка + «Open on your computer in Chrome»). Цель `share_link`.
-- **«Get it in Telegram»** (вторая): `https://t.me/<BOT>?start=install_<lang>`. Имя бота — константа в
-  `js/site.js`. Цель `tg_install`.
+- **«Get it in Telegram»** (вторая): ссылка на `/api/v1/telegram/install?lang=<lang>` — бэкенд отвечает 302 на
+  `https://t.me/<TELEGRAM_BOT_USERNAME>?start=install_<lang>` (имя бота из env, на сайте его нет; без env → 302 на
+  лендинг). Цель `tg_install`.
 - Под кнопками строка: «LoadLens is a Chrome extension for your laptop or desktop.»
 - В hero дополнительно текстовая ссылка «Try the free HOS calculator →» (видна только на телефоне).
 
@@ -98,7 +99,7 @@ Inline-скрипт в `<head>` всех публичных страниц (до
 
 ### 3.3 Хранение
 Модель `install_leads`: `chat_id` (PK, string), `lang`, `created_at`, `reminded_at` (nullable). Таблица новая —
-создаётся `synchronize`. Только id чата и язык. `privacy.html` (+ RU/RO): абзац — храним id чата и язык, чтобы
+создаётся `synchronize`. Только id чата и язык. `privacy.html` (только EN — страница одноязычная): строка — храним id чата и язык, чтобы
 прислать одно напоминание, удаляем через 30 дней.
 
 ### 3.4 Напоминание
@@ -122,6 +123,6 @@ Inline-скрипт в `<head>` всех публичных страниц (до
 
 ## Открытые вопросы
 
-- Имя бота (`TELEGRAM_BOT_USERNAME`) для константы в `site.js` — взять у основателя (из CLI Coolify не прочиталось).
+- ~~Имя бота~~ — снято: редирект через бэкенд берёт его из env.
 - Иконки 192/512: `icon.png` и иконки расширения есть только 128px. Логотип простой (зелёный квадрат + три
   столбика) — перерисовываем его SVG и экспортируем 192/512 (+ maskable с полями); при апскейле 128px будет мыло.
