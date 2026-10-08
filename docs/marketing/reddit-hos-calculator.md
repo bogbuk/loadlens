@@ -484,7 +484,7 @@ GVWR FE180 (~18k lbs) — по памяти, в тексте оставлено 
 
 ## Пост 6: r/SideProject, «неделя спустя»: ОПУБЛИКОВАН 08.10
 
-Ссылка: [дописать]. Кнопку «Repost to other communities» НЕ использовали (та же UTM). r/sideprojects (33K/нед) — отдельным постом через 1–2 дня с `utm_content=sideprojects`; r/IMadeThis и r/WebApps — пропустить.
+Ссылка: https://www.reddit.com/r/SideProject/comments/1x0nt7g/ Кнопку «Repost to other communities» НЕ использовали (та же UTM). r/sideprojects (33K/нед) — отдельным постом через 1–2 дня с `utm_content=sideprojects`; r/IMadeThis и r/WebApps — пропустить.
 
 Продолжение поста 5. Только реальные цифры из этого файла; `[…]` заполнить из приложения Reddit / Метрики перед публикацией,
 если цифры нет — вычеркнуть предложение целиком, не округлять «на глаз». Расширение/DAT не упоминать (решение 30.09).
