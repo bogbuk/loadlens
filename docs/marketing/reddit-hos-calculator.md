@@ -634,6 +634,20 @@ https://www.reddit.com/r/Truckers/comments/1x1h6ok/
 >
 > A few more CB terms that haven't come up yet: "chicken coop" for the weigh station, "alligator" for a tire tread on the road, "hammer down" for going fast, "plain wrapper" for an unmarked cop car, and "back door" for whoever's behind you.
 
+### J2. Ответ на комментарий OP (lullaylee) в нитке J про ночного радиоведущего (09.10) — ОПУБЛИКОВАН 09.10
+Ветка через ~3ч: J — 3 голоса, прямых ответов нет. Новое в ветке: OP хочет, чтобы героиня ночью спорила с ведущим
+радио, которого не выносит; рефрижератор/тело (пропускаем, как в J), COE и ремонтная мастерская (u/fiddintotellya),
+холодильник в кабине 90-х, туалет. Про радио в 90-х — никто. Сверено: ночное шоу Bill Mack на WBAP (Fort Worth);
+Coast to Coast AM с Art Bell (с 1988, всю ночь, паранормальное); дальний ночной приём AM. Dave Nemo / Road Gang не берём —
+не уверены в годах ведущих.
+
+> The late-night radio idea is spot on, that was a real part of the job. Two shows truckers actually listened to in the 90s:
+>
+> - Bill Mack's overnight show on WBAP out of Fort Worth, country music and truckers calling in from the road. He was basically the voice of the night shift.
+> - Art Bell's Coast to Coast AM, which ran all night: UFOs, ghosts, Area 51, callers with stories nobody could check. Huge with drivers. For a horror writer that one's almost too perfect, she could hate the host and still not be able to turn it off at 3am in the middle of Nevada.
+>
+> Small detail that helps the atmosphere: AM signals carry hundreds of miles after dark, so at night she'd pick up stations from states away, fading in and out between static and preachers, then gone as soon as the sun comes up.
+
 ### K. «New Trucker, quick question» (1x1b5m9, 03:42 UTC) — Swift отменил ориентацию за пару дней, «better candidates»
 https://www.reddit.com/r/Truckers/comments/1x1b5m9/
 **Ветка сверена (10 комм., повторно 09.10 ~10:45 UTC — про FCRA/отчёты по-прежнему никто):** «может, что-то в проверке» (u/shocktard, u/Particular_Tutor_658), Swift известен этим
