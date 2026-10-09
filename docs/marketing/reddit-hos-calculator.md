@@ -614,3 +614,31 @@ G набрал 2 голоса за 25 мин. Discodoggyy: «12 лет вожу 
 Без морали: признать, дать одну цифру, о которой он может не знать. Опционально — ветка и так живая.
 
 > Respect for 12 years clean in the truck, that's the part that actually matters. The only thing I'd keep in mind is the math, not the morals: two serious ones in 3 years where the car tickets cost you your license is 60 days parked, and insurance reads a 15+ over the same whether you were in the truck or the Honda. Steady Eddie in the daily too might be cheaper than the lawyer.
+
+## Комментарии для кармы, 09.10 (утро): J, K — НЕ ОПУБЛИКОВАНЫ
+
+RSS r/Truckers/new в ~10:00 UTC 09.10. Утро в США — свежих постов мало. Без ссылок, без опыта от первого лица.
+
+### J. «Questions for a Book I'm Writing!» (1x1h6ok, 09:50 UTC) — писатель, герой-дальнобойщик, 90-е
+https://www.reddit.com/r/Truckers/comments/1x1h6ok/
+Комментарии не сверены (пост свежий, Reddit резал запрос). Комментарий верхнего уровня. Наш угол — HOS 90-х:
+правила тогда другие, и это реальная деталь сюжета, которую писатели путают. Сверено: до 2004 — 10 ч вождения
+после 8 ч отдыха, 15 ч on-duty (не подряд — перерывы растягивали день); 14-часовое окно — с января 2004; ELD — 2017.
+
+> One thing that gets missed a lot in fiction set in the 90s: the hours rules were different from today. Back then it was 10 hours of driving after 8 off, and 15 hours on duty, but those 15 weren't a straight window like today's 14. Breaks stopped the clock, so a driver could stretch a day way out. The 14-hour window only came in 2004.
+>
+> And it was all paper logs. Drivers called them the "comic book" or "swindle sheet," and it was an open secret that a lot of guys kept them creatively. Electronic logs weren't required until 2017, so your character's log book is a great source of tension: a DOT officer at a scale reading it, a dispatcher pushing a load that only works if the book gets fudged.
+>
+> Other period details: calling dispatch from a pay phone at the truck stop, CB as the real news feed (weigh stations open or closed, "bear" sightings, "chicken coop" for the scale, "four-wheeler" for cars, "alligator" for a tire tread on the road), and Comchek codes for cash advances on the road. Some big fleets had a Qualcomm satellite unit for text messages, but most small outfits didn't.
+
+### K. «New Trucker, quick question» (1x1b5m9, 03:42 UTC) — Swift отменил ориентацию за пару дней, «better candidates»
+https://www.reddit.com/r/Truckers/comments/1x1b5m9/
+**Ветка сверена:** «может, что-то в проверке» (u/shocktard, u/Particular_Tutor_658), Swift известен этим
+(u/jmzstl), объём/топливо — уже сказано. OP: «у меня чистая история и хорошие рекомендации». Нового нет одного:
+как это проверить. → **ответ на комментарий OP про clean record**. Сверено: FCRA 15 U.S.C. 1681b(b)(3) —
+pre-adverse action notice с копией отчёта; PSP для водителя $10; бесплатная копия DAC (HireRight) раз в 12 мес.
+
+> If it bugs you, you can actually check whether it was the background check instead of guessing:
+>
+> - If they turned you down because of something in a background report, federal law (FCRA) says they have to send you a notice with a copy of that report before the decision is final. If nothing shows up in your mail or email, it probably was just numbers on their side.
+> - Pull your own reports anyway before the next application: your DAC report from HireRight (free once a year), your PSP from FMCSA ($10), and log into the Clearinghouse to make sure nothing's sitting there. Takes an evening, and if there's an error you'd want to fix it before it costs you a second job.
