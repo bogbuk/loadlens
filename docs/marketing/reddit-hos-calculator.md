@@ -609,7 +609,7 @@ https://www.reddit.com/r/Truckers/comments/1x0v6uo/ — Reply под комме�
 >
 > You can actually check. Under 49 CFR 371.3 a broker has to keep a record of each load, including what the shipper paid, and the carrier on that load has the right to review it. The catch: a lot of broker-carrier agreements have a line where you waive that right, so read the packet before you sign it.
 
-### G2. Ответ u/Discodoggyy в нитке G (petbmdp), 09.10 — НЕ ОПУБЛИКОВАН
+### G2. Ответ u/Discodoggyy в нитке G (petbmdp), 09.10 — ОПУБЛИКОВАН ~09:55 UTC (peteyw0)
 G набрал 2 голоса за 25 мин. Discodoggyy: «12 лет вожу фуру, в своей машине люблю гнать, в траке — steady Eddie».
 Без морали: признать, дать одну цифру, о которой он может не знать. Опционально — ветка и так живая.
 
