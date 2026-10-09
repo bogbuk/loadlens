@@ -593,3 +593,12 @@ u/JohnClark303) — уже сказано. Новое только одно: с�
 > Before you commit to the McLane trainee program, ask the recruiter straight up: "I have one 15+ over from [month/year], does that disqualify me?" They can answer in a minute, and you want that answer before you sign anything with a training payback, not after they pull your MVR.
 >
 > The OD dock route people mentioned is the safer bet if they say no. You're getting paid while the 3 years run out, and you're already inside when a driver spot opens.
+
+### F2. Ответ OP на вопрос под F: «Isn't the normal cut for a broker somewhere between 20% and 50%?» (09.10)
+https://www.reddit.com/r/Truckers/comments/1x0v6uo/ — Reply под комментарием u/Mantoku (OP) в нитке peoogd1. НЕ ОПУБЛИКОВАН.
+Цифры осторожно: «большие публичные брокеры — в основном 10–20%» без названий и точных процентов; 371.3 — право
+перевозчика видеть запись о сделке брокера, часто отказ от него зашит в договор с брокером.
+
+> Not usually that high. The big public brokers report margins mostly in the 10–20% range on average. 30–50% happens on individual loads (hot spot freight, a carrier who took the first number, a broker who reposts to the board), but it's not the norm across the board.
+>
+> You can actually check. Under 49 CFR 371.3 a broker has to keep a record of each load, including what the shipper paid, and the carrier on that load has the right to review it. The catch: a lot of broker-carrier agreements have a line where you waive that right, so read the packet before you sign it.
