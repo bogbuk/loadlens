@@ -615,7 +615,7 @@ G набрал 2 голоса за 25 мин. Discodoggyy: «12 лет вожу 
 
 > Respect for 12 years clean in the truck, that's the part that actually matters. The only thing I'd keep in mind is the math, not the morals: two serious ones in 3 years where the car tickets cost you your license is 60 days parked, and insurance reads a 15+ over the same whether you were in the truck or the Honda. Steady Eddie in the daily too might be cheaper than the lawyer.
 
-## Комментарии для кармы, 09.10 (утро): J, K — НЕ ОПУБЛИКОВАНЫ
+## Комментарии для кармы, 09.10 (утро): J, K — ОПУБЛИКОВАНЫ 09.10 (~10:46 UTC; J — petm0lj, K — petm30q)
 
 RSS r/Truckers/new в ~10:00 UTC 09.10. Утро в США — свежих постов мало. Без ссылок, без опыта от первого лица.
 
