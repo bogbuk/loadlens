@@ -552,3 +552,40 @@ https://www.reddit.com/r/Truckers/comments/1x0v6uo/
 > - Credit score and days to pay, if your board shows them. Slow pay kills small carriers faster than low rates.
 > - Call the phone number listed on FMCSA, not the one in the email. Most of the fraud now is someone pretending to be a real broker with a lookalike email.
 > - No rate con, no wheels.
+
+## Комментарии для кармы, 09.10: G, H, I — НЕ ОПУБЛИКОВАНЫ
+
+RSS r/Truckers/new и r/CDL/new в ~07:00 UTC 09.10. Без ссылок, без опыта от первого лица.
+Чужие комментарии под постами не сверены (Reddit резал запросы) — перед публикацией пролистать ветку и не повторять уже сказанное.
+
+### G. «Do I need to tell my company about a speeding ticket… personal vehicle» (1x17xqj, 00:57 UTC 09.10), 99 в зоне 70
+https://www.reddit.com/r/Truckers/comments/1x17xqj/
+Сверено с 49 CFR 383.31, 383.51(c), 384.226, 391.27.
+
+> Yes. With a CDL, any moving violation counts, even in your own car. 383.31 says you have to tell your employer within 30 days of being *convicted* (not of getting the ticket), and it shows up on your annual violations list and MVR anyway, so hiding it just adds a second problem.
+>
+> Definitely fight it, or at least get a traffic lawyer. 29 over is "excessive speeding" (15+ over) on the FMCSA serious violations list, and a lot of states will write 99 as reckless driving. In your personal vehicle it only counts toward a CDL disqualification if the conviction also costs you your license, but two serious violations in 3 years is a 60-day disqualification, and most carriers' insurance won't take a 15+ over in the last 3 years regardless.
+>
+> Also don't count on traffic school or deferral. Courts aren't allowed to mask a conviction for a CDL holder, even in a personal vehicle. What a lawyer can often get you is a reduction to a lower speed or a non-moving violation, and that's the outcome you want.
+
+### H. «Is there a speed limit that if you climb a hill below that your truck is illegal?» (1x17h9r, 00:34 UTC 09.10)
+https://www.reddit.com/r/Truckers/comments/1x17h9r/
+
+> Short version: going slow on a grade is legal, going slow for no reason isn't.
+>
+> Most states use the standard "impeding traffic" law: you can't drive so slowly that you block normal traffic, *except when the lower speed is necessary for safe operation*. A loaded truck crawling up a 6% grade is the textbook case of that exception. Some interstates have a posted minimum (often 40 or 45), but grades are why climbing lanes exist. Stay in the right lane or the truck lane, flashers on, and you're fine. A few states actually require flashers below a certain speed, so it's a good habit anyway.
+>
+> Where it gets you in trouble is pulling out to pass at 15 mph on the hill, or doing that speed on flat ground.
+>
+> On the mechanical side: what's normal is how your truck usually climbs that hill at that weight. If a hill you normally take in 8th at 35 suddenly drops you to 15 with the pedal down, or you see low boost, a derate light or high EGT, that's a problem (DPF/EGR, turbo, fuel filter), not just the grade.
+
+### I. «MVR for CDL class A» (r/CDL, 1x09u8t, 22:06 UTC 07.10), 92 в зоне 65 год назад, Колумбус, OH
+https://www.reddit.com/r/CDL/comments/1x09u8t/
+Пост двухдневной давности — голосов будет меньше, публиковать после G и H.
+
+> Honest answer: the 92 in a 65 is the one that matters. That's 27 over, and most carriers count 15+ over as a "major" or "serious" violation. Their insurance usually wants none of those in the last 3 years, and LTL companies that pay for school tend to be stricter, not looser, because they're betting money on you.
+>
+> Things that help:
+> - Pull your own Ohio MVR (cheap through the BMV) so you know exactly what a recruiter will see. Dismissed tickets usually don't show as convictions.
+> - Ask the recruiter directly before you sign anything: "I have one 15+ over from [month/year], is that disqualifying for you?" They'll tell you, and it saves you from a payback contract with a company that rejects you later.
+> - If they say no, the clock is your friend. Each month since the conviction opens more doors, and once it's past 3 years, most companies stop caring.
