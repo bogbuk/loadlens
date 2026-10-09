@@ -560,14 +560,15 @@ RSS r/Truckers/new и r/CDL/new в ~07:00 UTC 09.10. Без ссылок, без
 
 ### G. «Do I need to tell my company about a speeding ticket… personal vehicle» (1x17xqj, 00:57 UTC 09.10), 99 в зоне 70
 https://www.reddit.com/r/Truckers/comments/1x17xqj/
-Сверено с 49 CFR 383.31, 383.51(c), 384.226, 391.27.
+**Ветка сверена 09.10 (~78 комментариев, пост 8ч):** правило 30 дней после осуждения (383.31), порог 15+ миль/ч,
+запрет masking, совет нанять местного юриста — уже сказали (u/TemporalAmbassador, u/ChipDouglas3, u/nosjitbro).
+Отдельный комментарий верхнего уровня был бы повтором и утонул бы внизу → вместо него **ответ на u/Discodoggyy**
+(«тупо, что личная машина влияет на CDL, федералы думают, что я вожу Honda как фуру?»). Этого нюанса 383.51(c)
+в ветке никто не упомянул.
 
-> Yes. With a CDL, any moving violation counts, even in your own car. 383.31 says you have to tell your employer within 30 days of being *convicted* (not of getting the ticket), and it shows up on your annual violations list and MVR anyway, so hiding it just adds a second problem.
+> Partly agree, and the rule actually does make that distinction. A serious violation in your personal car only counts toward a CDL disqualification if that conviction also gets your license suspended or revoked (49 CFR 383.51(c)). Same ticket in a CMV counts no matter what.
 >
-> Definitely fight it, or at least get a traffic lawyer. 29 over is "excessive speeding" (15+ over) on the FMCSA serious violations list, and a lot of states will write 99 as reckless driving. In your personal vehicle it only counts toward a CDL disqualification if the conviction also costs you your license, but two serious violations in 3 years is a 60-day disqualification, and most carriers' insurance won't take a 15+ over in the last 3 years regardless.
->
-> Also don't count on traffic school or deferral. Courts aren't allowed to mask a conviction for a CDL holder, even in a personal vehicle. What a lawyer can often get you is a reduction to a lower speed or a non-moving violation, and that's the outcome you want.
-
+> Where it still hurts is the MVR. Disqualification is federal, but hiring is insurance, and insurers look at 15+ over without caring what you were driving. That's why for OP the realistic goal with a lawyer is getting it under 15 over or non-moving, not just a smaller fine.
 ### H. «Is there a speed limit that if you climb a hill below that your truck is illegal?» (1x17h9r, 00:34 UTC 09.10)
 https://www.reddit.com/r/Truckers/comments/1x17h9r/
 
