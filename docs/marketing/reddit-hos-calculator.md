@@ -595,7 +595,7 @@ u/JohnClark303) — уже сказано. Новое только одно: с�
 > The OD dock route people mentioned is the safer bet if they say no. You're getting paid while the 3 years run out, and you're already inside when a driver spot opens.
 
 ### F2. Ответ OP на вопрос под F: «Isn't the normal cut for a broker somewhere between 20% and 50%?» (09.10)
-https://www.reddit.com/r/Truckers/comments/1x0v6uo/ — Reply под комментарием u/Mantoku (OP) в нитке peoogd1. НЕ ОПУБЛИКОВАН.
+https://www.reddit.com/r/Truckers/comments/1x0v6uo/ — Reply под комментарием u/Mantoku (OP) в нитке peoogd1. ОПУБЛИКОВАН 09.10 ~09:34 UTC (petcaml).
 Цифры осторожно: «большие публичные брокеры — в основном 10–20%» без названий и точных процентов; 371.3 — право
 перевозчика видеть запись о сделке брокера, часто отказ от него зашит в договор с брокером.
 
