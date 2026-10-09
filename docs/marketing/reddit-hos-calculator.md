@@ -613,4 +613,4 @@ https://www.reddit.com/r/Truckers/comments/1x0v6uo/ — Reply под комме�
 G набрал 2 голоса за 25 мин. Discodoggyy: «12 лет вожу фуру, в своей машине люблю гнать, в траке — steady Eddie».
 Без морали: признать, дать одну цифру, о которой он может не знать. Опционально — ветка и так живая.
 
-> Respect for 12 years clean in the truck, that's the part that actually matters. The only thing I'd keep in mind is the math, not the morals: two serious ones in 3 years where the car tickets cost you your license is 60 days parked, and insurance reads a 15+ over the same whether you were in the Pete or the Honda. Steady Eddie in the daily too might be cheaper than the lawyer.
+> Respect for 12 years clean in the truck, that's the part that actually matters. The only thing I'd keep in mind is the math, not the morals: two serious ones in 3 years where the car tickets cost you your license is 60 days parked, and insurance reads a 15+ over the same whether you were in the truck or the Honda. Steady Eddie in the daily too might be cheaper than the lawyer.
