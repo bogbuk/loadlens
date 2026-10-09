@@ -553,7 +553,7 @@ https://www.reddit.com/r/Truckers/comments/1x0v6uo/
 > - Call the phone number listed on FMCSA, not the one in the email. Most of the fraud now is someone pretending to be a real broker with a lookalike email.
 > - No rate con, no wheels.
 
-## Комментарии для кармы, 09.10: G, H, I — НЕ ОПУБЛИКОВАНЫ
+## Комментарии для кармы, 09.10: G, H, I — ОПУБЛИКОВАНЫ 09.10 (~09:30 UTC; G — petbmdp, H — petbpxw, I — petbwsn)
 
 RSS r/Truckers/new и r/CDL/new в ~07:00 UTC 09.10. Без ссылок, без опыта от первого лица.
 Чужие комментарии под постами не сверены (Reddit резал запросы) — перед публикацией пролистать ветку и не повторять уже сказанное.
