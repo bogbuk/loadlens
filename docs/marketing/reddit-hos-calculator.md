@@ -571,22 +571,25 @@ https://www.reddit.com/r/Truckers/comments/1x17xqj/
 > Where it still hurts is the MVR. Disqualification is federal, but hiring is insurance, and insurers look at 15+ over without caring what you were driving. That's why for OP the realistic goal with a lawyer is getting it under 15 over or non-moving, not just a smaller fine.
 ### H. «Is there a speed limit that if you climb a hill below that your truck is illegal?» (1x17h9r, 00:34 UTC 09.10)
 https://www.reddit.com/r/Truckers/comments/1x17h9r/
+**Ветка сверена 09.10 (37 комментариев):** минимальная скорость и исключение для подъёма (u/HowlingWolven),
+аварийка + правая полоса, датчики boost/EGT/температур (u/e0240, 18 голосов), «сравни с обычным поведением
+грузовика» (u/TemporalAmbassador) — всё уже сказано. Без ответа по сути остался **уточняющий вопрос OP**:
+кто виноват, если в него на 10 миль/ч с аварийкой въедет легковушка, летящая 90 (ответ один — «Nope» от
+u/musicalmadness1). → **ответ на комментарий OP**, без юридических гарантий.
 
-> Short version: going slow on a grade is legal, going slow for no reason isn't.
+> Usually the driver who hits you from behind is presumed at fault, because they're required to keep a safe following distance and adjust to what's ahead. Being slow on a grade doesn't change that by itself.
 >
-> Most states use the standard "impeding traffic" law: you can't drive so slowly that you block normal traffic, *except when the lower speed is necessary for safe operation*. A loaded truck crawling up a 6% grade is the textbook case of that exception. Some interstates have a posted minimum (often 40 or 45), but grades are why climbing lanes exist. Stay in the right lane or the truck lane, flashers on, and you're fine. A few states actually require flashers below a certain speed, so it's a good habit anyway.
+> Where it can come back on you is shared fault. Most states split fault by percentage, and a lawyer will go looking for anything you did wrong: flashers off, left lane, slow on flat ground, or dropping to 10 because of a problem you already knew about. Right lane or climbing lane plus flashers is exactly what takes those arguments away.
 >
-> Where it gets you in trouble is pulling out to pass at 15 mph on the hill, or doing that speed on flat ground.
->
-> On the mechanical side: what's normal is how your truck usually climbs that hill at that weight. If a hill you normally take in 8th at 35 suddenly drops you to 15 with the pedal down, or you see low boost, a derate light or high EGT, that's a problem (DPF/EGR, turbo, fuel filter), not just the grade.
+> The other thing that helps a lot: a dashcam that records both ways. A rear camera showing a car coming up at 90 with your flashers going ends that argument fast.
 
 ### I. «MVR for CDL class A» (r/CDL, 1x09u8t, 22:06 UTC 07.10), 92 в зоне 65 год назад, Колумбус, OH
 https://www.reddit.com/r/CDL/comments/1x09u8t/
-Пост двухдневной давности — голосов будет меньше, публиковать после G и H.
+**Ветка сверена 09.10 (10 комментариев, пост 1 день):** «запроси свой MVR в DMV» (u/kickniteasy,
+u/just_kinda_here_blah), «LTL требуют чистый MVR, иди на склад и жди 3 года» (u/Silence_Farmer,
+u/JohnClark303) — уже сказано. Новое только одно: спросить рекрутера ДО подписания договора с отработкой.
+→ **короткий ответ на комментарий OP** про McLane trainee / Old Dominion. Низкий приоритет: ветка тихая.
 
-> Honest answer: the 92 in a 65 is the one that matters. That's 27 over, and most carriers count 15+ over as a "major" or "serious" violation. Their insurance usually wants none of those in the last 3 years, and LTL companies that pay for school tend to be stricter, not looser, because they're betting money on you.
+> Before you commit to the McLane trainee program, ask the recruiter straight up: "I have one 15+ over from [month/year], does that disqualify me?" They can answer in a minute, and you want that answer before you sign anything with a training payback, not after they pull your MVR.
 >
-> Things that help:
-> - Pull your own Ohio MVR (cheap through the BMV) so you know exactly what a recruiter will see. Dismissed tickets usually don't show as convictions.
-> - Ask the recruiter directly before you sign anything: "I have one 15+ over from [month/year], is that disqualifying for you?" They'll tell you, and it saves you from a payback contract with a company that rejects you later.
-> - If they say no, the clock is your friend. Each month since the conviction opens more doors, and once it's past 3 years, most companies stop caring.
+> The OD dock route people mentioned is the safer bet if they say no. You're getting paid while the 3 years run out, and you're already inside when a driver spot opens.
