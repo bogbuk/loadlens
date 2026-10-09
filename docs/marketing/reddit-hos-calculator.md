@@ -608,3 +608,9 @@ https://www.reddit.com/r/Truckers/comments/1x0v6uo/ — Reply под комме�
 > Not usually that high. The big public brokers report margins mostly in the 10–20% range on average. 30–50% happens on individual loads (hot spot freight, a carrier who took the first number, a broker who reposts to the board), but it's not the norm across the board.
 >
 > You can actually check. Under 49 CFR 371.3 a broker has to keep a record of each load, including what the shipper paid, and the carrier on that load has the right to review it. The catch: a lot of broker-carrier agreements have a line where you waive that right, so read the packet before you sign it.
+
+### G2. Ответ u/Discodoggyy в нитке G (petbmdp), 09.10 — НЕ ОПУБЛИКОВАН
+G набрал 2 голоса за 25 мин. Discodoggyy: «12 лет вожу фуру, в своей машине люблю гнать, в траке — steady Eddie».
+Без морали: признать, дать одну цифру, о которой он может не знать. Опционально — ветка и так живая.
+
+> Respect for 12 years clean in the truck, that's the part that actually matters. The only thing I'd keep in mind is the math, not the morals: two serious ones in 3 years where the car tickets cost you your license is 60 days parked, and insurance reads a 15+ over the same whether you were in the Pete or the Honda. Steady Eddie in the daily too might be cheaper than the lawyer.
