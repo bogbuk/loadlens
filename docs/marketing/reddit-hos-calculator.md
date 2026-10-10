@@ -648,6 +648,10 @@ Coast to Coast AM с Art Bell (с 1988, всю ночь, паранормаль�
 >
 > Small detail that helps the atmosphere: AM signals carry hundreds of miles after dark, so at night she'd pick up stations from states away, fading in and out between static and preachers, then gone as soon as the sun comes up.
 
+**Итог J (10.10, ~24ч):** J — 5 голосов (лучший из J/K), прямых ответов нет. Ниже u/Civil-Fix-672 — общий список
+CB-сленга (пересекается с тредом, не с J; «deadhead = empty trailer» неточно). Решили НЕ отвечать: ничего нового,
+третий комментарий в ветке после J2 — перебор. Ветку закрываем.
+
 ### K. «New Trucker, quick question» (1x1b5m9, 03:42 UTC) — Swift отменил ориентацию за пару дней, «better candidates»
 https://www.reddit.com/r/Truckers/comments/1x1b5m9/
 **Ветка сверена (10 комм., повторно 09.10 ~10:45 UTC — про FCRA/отчёты по-прежнему никто):** «может, что-то в проверке» (u/shocktard, u/Particular_Tutor_658), Swift известен этим
@@ -659,3 +663,39 @@ pre-adverse action notice с копией отчёта; PSP для водите�
 >
 > - If they turned you down because of something in a background report, federal law (FCRA) says they have to send you a notice with a copy of that report before the decision is final. If nothing shows up in your mail or email, it probably was just numbers on their side.
 > - Pull your own reports anyway before the next application: your DAC report from HireRight (free once a year), your PSP from FMCSA ($10), and log into the Clearinghouse to make sure nothing's sitting there. Takes an evening, and if there's an error you'd want to fix it before it costs you a second job.
+
+## Комментарии для кармы, 10.10: L, M — черновики (НЕ опубликованы)
+
+RSS r/Truckers/new ~10:00 UTC 10.10. Карма профиля 10.10: **66** (09.10 — 54). Ветки сверены по comments-RSS.
+Пропущены: «scam calls» (1x1su3c, 56 комм., насыщено, OP отвечает всем подряд похоже на фарм), «overweight Texas»,
+«left lane ticket» (юр. совет), DOT-тест (не трогаем).
+
+### L. «What do y'all think of my new work schedule?» (1x25t8e, 04:15 UTC) — 3 дня по 13–14 ч, ночь, «набрать 40 часов»
+https://www.reddit.com/r/Truckers/comments/1x25t8e/
+**Ветка сверена (10 комм.):** сон/режим (u/Busy_Temporary_1001, u/911coldiesel), «похоже на Amazon Freight Partner»
+(u/jmzstl, u/Upbeat_Feature_2032), u/CycleCaverns: «если почасовая — с овертаймом». Про освобождение водителей от
+федерального овертайма и про 10 ч отдыха между Tue/Wed — никто. Верхний уровень (или ответ CycleCaverns).
+Сверено: FLSA 29 U.S.C. 213(b)(1) — Motor Carrier Act exemption (водители CMV под юрисдикцией DOT в межштатных
+перевозках); 395.3(a)(1) — 10 ч off перед сменой; 14-часовое окно не продлевается.
+
+> Not a bad setup, but two things worth checking before you count on it:
+>
+> - Overtime. Truck drivers are usually exempt from federal overtime (the Motor Carrier Act exemption), so hitting 40 in three days doesn't automatically mean time and a half after that. Some companies and a few states pay it anyway, so just ask how they handle it instead of assuming.
+> - Tue into Wed. You need 10 hours off before the next shift, and your commute comes out of that, not out of the shift. A 14-hour night plus a long drive home both ways can leave you with maybe 6 hours of actual sleep before Wednesday. And since the 14 doesn't stretch, a late dock on a 13-hour route is how those days turn into a problem.
+
+### M. «How long till I request a new dispatcher at my new company?» (1x26yux, 05:21 UTC) — 2000 vs 3200 миль у коллеги, 5 ч разгрузки + 5 ч загрузки
+https://www.reddit.com/r/Truckers/comments/1x26yux/
+**Ветка сверена (10 комм.):** «смени работу/иди на почасовую» и «новичкам меньше миль» (u/PraiseTalos66012),
+соотношение диспетчер/траки (u/Thewildhighroller), «общайся с диспетчером» (u/Bigevilltrucker89). OP: «один день —
+5 ч на разгрузке и 5 ч на загрузке, драйв-тайма почти не осталось», диспетчер обещает лучше после ресета.
+Про detention pay и про то, как логировать ожидание у дока, — никто. → **ответ на этот комментарий OP**.
+Сверено: off duty при ожидании допустимо, только если водитель освобождён от ответственности за машину/груз
+(FMCSA guidance к 395.2); split sleeper 7/3 или 8/2 — пара периодов не съедает 14-часовое окно (395.1(g)(1)(ii)).
+Без обещаний, что компания разрешит: «спроси safety».
+
+> 10 hours at two docks in one day is where the miles went, not just the dispatcher. Two things to ask about:
+>
+> - Detention. Most reefer outfits get paid detention after about 2 free hours, and a lot of them pass some of it to the driver. If yours does, make sure both of those waits made it onto your settlement, that's money either way.
+> - How they want dock time logged. If the receiver lets you go to the bunk while they work, some companies have you log it sleeper as part of a split (7/3 or 8/2), so it doesn't burn your 14. Ask safety, not dispatch, and get the answer before your next live unload.
+>
+> Comparing weeks with your orientation buddy is fair, but compare them a few weeks in. One bad receiver can swing a week by 1000 miles.
