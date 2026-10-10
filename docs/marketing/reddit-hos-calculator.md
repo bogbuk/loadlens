@@ -664,7 +664,7 @@ pre-adverse action notice с копией отчёта; PSP для водите�
 > - If they turned you down because of something in a background report, federal law (FCRA) says they have to send you a notice with a copy of that report before the decision is final. If nothing shows up in your mail or email, it probably was just numbers on their side.
 > - Pull your own reports anyway before the next application: your DAC report from HireRight (free once a year), your PSP from FMCSA ($10), and log into the Clearinghouse to make sure nothing's sitting there. Takes an evening, and if there's an error you'd want to fix it before it costs you a second job.
 
-## Комментарии для кармы, 10.10: L, M — черновики (НЕ опубликованы)
+## Комментарии для кармы, 10.10: L, M — ОПУБЛИКОВАНЫ 10.10 (~13:05 UTC; L — pf1gj4m, M — pf1gqxy)
 
 RSS r/Truckers/new ~10:00 UTC 10.10. Карма профиля 10.10: **66** (09.10 — 54). Ветки сверены по comments-RSS.
 Пропущены: «scam calls» (1x1su3c, 56 комм., насыщено, OP отвечает всем подряд похоже на фарм), «overweight Texas»,
