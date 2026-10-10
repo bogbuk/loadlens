@@ -729,3 +729,22 @@ https://www.reddit.com/r/Truckers/comments/1x28teg/
 > At most companies the road test starts with a pre-trip, and after 10 months that's what's rustiest. Run through the air brake check at home a couple of times so you can say it out loud: leak test (no more than 4 psi drop in a minute with the brakes applied on a combination), low air warning coming on at or above 60, governor cutting out around 120 to 140.
 >
 > Paperwork too: make sure your med card is still good, it's easy to let it lapse when you're not driving, and expect them to run a Clearinghouse query before you start. If they put you in a set of doubles and you've never pulled them, just say so, they'd rather know up front.
+
+## Комментарий для кармы, 10.10 (вечер): P — черновик (НЕ опубликован)
+
+RSS ~15:30 UTC 10.10: в r/Truckers 4 новых (UAW, дизель/политика, фото — пропуск), в r/CDL — про CBP (не по теме).
+
+### P. «Ups feeder» (1x2fpdh, 13:46 UTC) — Нэшвилл, 3 года стажа, «осталось только hazmat»
+https://www.reddit.com/r/Truckers/comments/1x2fpdh/
+**Ветка сверена (12 комм.):** лист ожидания на годы, внутренний найм и стаж (u/Mydogfartsconstantly), «шансов 0»,
+«переезжай в Чикаго (CACH)». Про то, сколько реально занимает hazmat и что ещё нужно для feeder (T) — никто.
+Верхний уровень. Сверено: H — TSA security threat assessment с отпечатками (результат обычно до ~30–60 дней);
+с 07.02.2022 первичный H — ELDT-теория у провайдера из Training Provider Registry, потом knowledge test;
+T (doubles/triples) — только knowledge test.
+
+> Whatever you decide on UPS, get the hazmat done now instead of waiting for an opening. It's slower than people think:
+>
+> - Since 2022 you need the ELDT hazmat theory course first (online is fine, just make sure the provider is on FMCSA's Training Provider Registry), then the knowledge test at the DMV.
+> - Then the TSA background check with fingerprints, and that part can take a month or two before the endorsement actually shows up on your license.
+>
+> While you're at the DMV, take the doubles/triples test too, it's just a written test. Feeder is mostly pulling sets, and LTL outfits want both endorsements anyway, so you're not stuck waiting on one hub's list.
