@@ -699,3 +699,33 @@ https://www.reddit.com/r/Truckers/comments/1x26yux/
 > - How they want dock time logged. If the receiver lets you go to the bunk while they work, some companies have you log it sleeper as part of a split (7/3 or 8/2), so it doesn't burn your 14. Ask safety, not dispatch, and get the answer before your next live unload.
 >
 > Comparing weeks with your orientation buddy is fair, but compare them a few weeks in. One bad receiver can swing a week by 1000 miles.
+
+## Комментарии для кармы, 10.10 (день): N, O — черновики (НЕ опубликованы)
+
+RSS ~13:15 UTC 10.10: в r/Truckers новых постов после 07:38 UTC нет (утро в США). Пропущены: r/CDL «DUI в PA,
+CDL в NJ» (1x1ztuv, 26 комм., всё сказано), r/Truckers «CDL graduate needs more training» (1x22mpp, 15 комм., насыщено).
+
+### N. r/CDL «Classes in WA?» (1x26zzq, 05:23 UTC) — Class B + air brakes, «что делать после CLP?»
+https://www.reddit.com/r/CDL/comments/1x26zzq/
+**Ветка сверена (2 комм.):** «иди в school bus/transit — оплатят обучение» (u/BreadAvailable), «пропан Class B
+обучают» (u/DiarrheaCreamPi). Про ELDT/реестр/14 дней/ограничение по тормозам — никто. Верхний уровень.
+Сверено: ELDT (49 CFR 380 subpart F) с 07.02.2022 — первичный Class A/B, теория + вождение у провайдера из
+Training Provider Registry; 383.25(e) — CLP не меньше 14 дней до skills test; экзамен на машине без пневмотормозов →
+ограничение на air brakes.
+
+> The school bus and propane routes people mentioned are the cheapest way in. Either way, the order goes like this:
+>
+> - ELDT first. Since 2022 you can't take the skills test for a first Class B until you've done Entry-Level Driver Training (theory + behind the wheel) with a provider listed on FMCSA's Training Provider Registry. Check the school is on that list before paying anyone, and a company that trains you will be on it already.
+> - You have to hold the CLP at least 14 days before the skills test. Training usually takes longer than that anyway, but don't book the test before day 15.
+> - Test in a truck with air brakes. If the test vehicle doesn't have them, you get an air brake restriction on the license and you're back where you started.
+
+### O. r/Truckers «Xpo Road test» (1x28teg, 07:11 UTC) — 10 мес. перерыва, раньше только танкер
+https://www.reddit.com/r/Truckers/comments/1x28teg/
+**Ветка сверена (2 комм.):** u/Financial_Weight_426 — «не торопись в поворотах, следи за прицепом, танкерские
+привычки торможения». Про pre-trip/проверку тормозов и бумаги после перерыва — никто. Верхний уровень.
+Сверено: проверка пневмосистемы — утечка applied ≤4 psi/мин (комбинация), сигнал низкого давления не ниже 60 psi,
+отсечка компрессора ~120–140 psi; 391.31 — road test у работодателя; медкарта, Clearinghouse pre-employment query.
+
+> At most companies the road test starts with a pre-trip, and after 10 months that's what's rustiest. Run through the air brake check at home a couple of times so you can say it out loud: leak test (no more than 4 psi drop in a minute with the brakes applied on a combination), low air warning coming on at or above 60, governor cutting out around 120 to 140.
+>
+> Paperwork too: make sure your med card is still good, it's easy to let it lapse when you're not driving, and expect them to run a Clearinghouse query before you start. If they put you in a set of doubles and you've never pulled them, just say so, they'd rather know up front.
