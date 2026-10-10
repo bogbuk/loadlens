@@ -700,7 +700,7 @@ https://www.reddit.com/r/Truckers/comments/1x26yux/
 >
 > Comparing weeks with your orientation buddy is fair, but compare them a few weeks in. One bad receiver can swing a week by 1000 miles.
 
-## Комментарии для кармы, 10.10 (день): N, O — черновики (НЕ опубликованы)
+## Комментарии для кармы, 10.10 (день): N, O — ОПУБЛИКОВАНЫ 10.10 (N — pf1s8ni, O — pf1sknz); первые апвоуты у M и N
 
 RSS ~13:15 UTC 10.10: в r/Truckers новых постов после 07:38 UTC нет (утро в США). Пропущены: r/CDL «DUI в PA,
 CDL в NJ» (1x1ztuv, 26 комм., всё сказано), r/Truckers «CDL graduate needs more training» (1x22mpp, 15 комм., насыщено).
