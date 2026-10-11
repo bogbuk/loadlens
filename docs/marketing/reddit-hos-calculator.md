@@ -773,7 +773,7 @@ https://www.reddit.com/r/Truckers/comments/1x2pyyj/
 >
 > So drivers at a carrier with bad scores get pulled way more than drivers at a clean one, no matter how they run. And a small outfit with hardly any inspections on record can score high just for not having enough data, which is why some one-truck guys get inspected constantly. Within the same company it really does come down mostly to where, when, and how busy the scale is.
 
-## Комментарий для кармы, 11.10 (днём): R — черновик (НЕ опубликован)
+## Комментарий для кармы, 11.10 (днём): R — ОПУБЛИКОВАН 11.10 (pf87q1k)
 
 RSS ~12:00 UTC 11.10: в r/Truckers новых после 01:44 UTC нет; в r/CDL — один пост.
 
