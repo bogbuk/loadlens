@@ -648,7 +648,7 @@ Coast to Coast AM с Art Bell (с 1988, всю ночь, паранормаль�
 >
 > Small detail that helps the atmosphere: AM signals carry hundreds of miles after dark, so at night she'd pick up stations from states away, fading in and out between static and preachers, then gone as soon as the sun comes up.
 
-**Итог J (10.10, ~24ч):** J — 5 голосов (лучший из J/K), прямых ответов нет. Ниже u/Civil-Fix-672 — общий список
+**Итог J (10.10, ~24ч):** J — 5 голосов (лучший из J/K), прямых ответов нет. Под J ответом (не верхним уровнем, уточнено 11.10) u/Civil-Fix-672 — общий список
 CB-сленга (пересекается с тредом, не с J; «deadhead = empty trailer» неточно). Решили НЕ отвечать: ничего нового,
 третий комментарий в ветке после J2 — перебор. Ветку закрываем.
 
@@ -748,3 +748,9 @@ T (doubles/triples) — только knowledge test.
 > - Then the TSA background check with fingerprints, and that part can take a month or two before the endorsement actually shows up on your license.
 >
 > While you're at the DMV, take the doubles/triples test too, it's just a written test. Feeder is mostly pulling sets, and LTL outfits want both endorsements anyway, so you're not stuck waiting on one hub's list.
+
+### Отклик на 11.10
+- J/J2: OP (u/lullaylee) поблагодарила за оба (часы/бумажные логи/сленг; Art Bell и затухающие AM-станции) и ответила
+  Civil-Fix-672 в нитке J. Отвечать не стали: только благодарность, нового вопроса нет.
+- M — 5 апвоутов (лучший из 10.10); L/N/O/P — по 1+. Один OP ответил «Awesome info tyvm» (какой — не уточняли).
+- Карма 11.10: 75 всего (10.10 — 66).
