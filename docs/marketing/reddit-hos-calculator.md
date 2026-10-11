@@ -754,3 +754,21 @@ T (doubles/triples) — только knowledge test.
   Civil-Fix-672 в нитке J. Отвечать не стали: только благодарность, нового вопроса нет.
 - M — 5 апвоутов (лучший из 10.10); L/N/O/P — по 1+. Один OP ответил «Awesome info tyvm» (какой — не уточняли).
 - Карма 11.10: 75 всего (10.10 — 66).
+
+## Комментарий для кармы, 11.10: Q — черновик (НЕ опубликован)
+
+RSS ~11:50 UTC 11.10 (r/CDL отдал пусто). Пропущены: «i make 2400 weekly for amazon» (95 комм., токсично, OP спорит со всеми),
+«Gaming pc» (12 комм., инвертор 1500–3000W pure sine и ноутбук уже сказаны), «UPS Road Test — Alley Dock» (5 комм., советы
+по сетапу уже даны), фото/мемы, ремонт AC/APU.
+
+### Q. «Question for our resident DOT officer.» (1x2pyyj, 10.10 21:01 UTC) — пропуск весов → больше инспекций?
+https://www.reddit.com/r/Truckers/comments/1x2pyyj/
+**Ветка сверена (16 комм.):** пропуск открытых весов = Failure to Obey (u/forkystabbyveggie), «PrePass знает, насколько
+ты compliant» (u/AgapeAnus), «рандом правда рандом» (u/NiceGuy373), разные штаты строже. Про ISS — никто.
+Верхний уровень. Сверено: Inspection Selection System (FMCSA) — балл перевозчика 1–100 по данным SMS/CSA:
+75–100 inspect, 50–74 optional, 1–49 pass; перевозчики с малым числом инспекций получают балл «insufficient data»;
+байпас PrePass/Drivewyze тоже опирается на данные перевозчика.
+
+> The part that isn't random is the carrier, not the driver. When they pull a truck, the inspector usually looks up the DOT number in FMCSA's Inspection Selection System, which gives the carrier a score from 1 to 100 based on its CSA data. 75 and up is "inspect," 50 to 74 is "optional," under 50 is "pass." Bypass systems like PrePass lean on the same carrier data too.
+>
+> So drivers at a carrier with bad scores get pulled way more than drivers at a clean one, no matter how they run. And a small outfit with hardly any inspections on record can score high just for not having enough data, which is why some one-truck guys get inspected constantly. Within the same company it really does come down mostly to where, when, and how busy the scale is.
