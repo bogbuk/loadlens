@@ -730,7 +730,7 @@ https://www.reddit.com/r/Truckers/comments/1x28teg/
 >
 > Paperwork too: make sure your med card is still good, it's easy to let it lapse when you're not driving, and expect them to run a Clearinghouse query before you start. If they put you in a set of doubles and you've never pulled them, just say so, they'd rather know up front.
 
-## Комментарий для кармы, 10.10 (вечер): P — черновик (НЕ опубликован)
+## Комментарий для кармы, 10.10 (вечер): P — ОПУБЛИКОВАН 10.10 (pf2ea00)
 
 RSS ~15:30 UTC 10.10: в r/Truckers 4 новых (UAW, дизель/политика, фото — пропуск), в r/CDL — про CBP (не по теме).
 
