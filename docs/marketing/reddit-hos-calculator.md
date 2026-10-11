@@ -772,3 +772,19 @@ https://www.reddit.com/r/Truckers/comments/1x2pyyj/
 > The part that isn't random is the carrier, not the driver. When they pull a truck, the inspector usually looks up the DOT number in FMCSA's Inspection Selection System, which gives the carrier a score from 1 to 100 based on its CSA data. 75 and up is "inspect," 50 to 74 is "optional," under 50 is "pass." Bypass systems like PrePass lean on the same carrier data too.
 >
 > So drivers at a carrier with bad scores get pulled way more than drivers at a clean one, no matter how they run. And a small outfit with hardly any inspections on record can score high just for not having enough data, which is why some one-truck guys get inspected constantly. Within the same company it really does come down mostly to where, when, and how busy the scale is.
+
+## Комментарий для кармы, 11.10 (днём): R — черновик (НЕ опубликован)
+
+RSS ~12:00 UTC 11.10: в r/Truckers новых после 01:44 UTC нет; в r/CDL — один пост.
+
+### R. r/CDL «CDL School Only Has Manuals — What Are My Options If I Can't Master It?» (1x2yafu, 03:56 UTC)
+https://www.reddit.com/r/CDL/comments/1x2yafu/
+**Ветка сверена (15 комм.):** обороты переключения (спор 1000 vs 1500 vs 1800), сцепление не до пола/clutch brake
+(u/mxadema), «можно сдать в DMV на арендованном автомате» (u/Dry_Source666), «большинство компаний уже на автоматах».
+Никто: что ограничение E потом снимается одним экзаменом, без повторной школы. Верхний уровень.
+Сверено: экзамен на автомате → ограничение E (no manual transmission); ELDT обязателен только для первичного
+Class A/B, апгрейда и S/P/H — снятие ограничения в него не входит, нужен только skills test на механике.
+
+> Worst case isn't as bad as it sounds. If you test in an automatic you get an "E" restriction (no manual), and you can take that off later by just passing the skills test again in a manual. No new school, ELDT doesn't cover removing restrictions. So you could test in a rented automatic now, start working, and fix it once you've had real seat time.
+>
+> Before you go that way though, ask the school if they'll give you a couple extra hours just on shifting in an empty lot. Most people's clutch problems are reps, not talent, and it's cheaper than renting a truck for the test.
