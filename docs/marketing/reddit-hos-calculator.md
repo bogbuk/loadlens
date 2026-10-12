@@ -108,6 +108,11 @@
 **«Is this yours / are you selling something?»**
 > Yeah, I built it. The calculator is free and stays free. I also make a Chrome extension for dispatchers that runs the same check on load board postings, that's the paid part. Didn't want to lead with it here.
 
+**«Why would I do this when my truck tablet does this already?»** (пост 1 v2, 12.10 — не спорить, разница «сейчас» vs «до того, как взял груз»):
+> Fair question, and if your ELD already plans trips, you probably don't need this. Most ELD screens show what's left on your clocks right now. This is for the step before that: a load gets offered, you put in the miles, the appointment and how long you'll sit at the dock, and it shows whether you make it legally, where your 30 and your 10 land, and whether recap gets you there or you're looking at a 34.
+>
+> Which ELD are you running? Curious whether it plans ahead or just shows the clocks.
+
 **Нашли ошибку в расчёте:**
 > Good catch, thanks. Can you share the numbers you put in? I'll fix it and reply here when it's live.
 
