@@ -853,3 +853,16 @@ https://www.reddit.com/r/CDL/comments/1x3ho9s/
 > Good news is it's not really an "exemption" anymore. Since 2022 it's the alternative vision standard: your eye doctor fills out the 5871, then you see a regular DOT examiner within 45 days, and if you pass you get a normal med card, just good for one year max. The better eye still has to hit 20/40 with a 70-degree field and you need to tell traffic light colors.
 >
 > The catch for a new driver: if you don't have 3 years driving a CMV with that eye condition, you have to pass a road test with the employer before you can run interstate. That's the part some big carriers don't want to deal with, so smaller companies and local jobs are usually easier. When you call recruiters, ask straight up "do you hire under 391.44?" and you'll get a real answer fast.
+
+## Комментарий для кармы, 12.10 (день): W — черновик (НЕ опубликован)
+
+### W. «My first preventable just happened 😒» (1x3yeri, 10:33 UTC) — тесный разворот на гравии, помял боковой обтекатель
+https://www.reddit.com/r/Truckers/comments/1x3yeri/
+**Ветка сверена (0 комм.):** пусто — первый комментарий. OP расстроен: «2,5 года чистой истории».
+Сверено: 49 CFR 390.5 — DOT-recordable accident = смерть, травма с лечением вне места ИЛИ эвакуация ТС из-за повреждений;
+только такие идут в accident register (390.15), PSP и safety performance history (391.23). «Preventable» — внутренняя
+классификация компании; в DAC (HireRight) работодатель может внести как incident — формулировку стоит проверить.
+
+> Breathe, a side fairing in a lot isn't the record-killer it feels like right now. For DOT purposes a crash only counts if someone dies, someone gets treated away from the scene, or a vehicle gets towed. A fairing doesn't hit any of those, so it won't show up as a crash on your PSP or the carrier's CSA, and it's not something the next employer's safety history check has to report.
+>
+> "Preventable" is the company's label. They might still put it on your DAC as an incident, so in a few months pull your free DAC copy from HireRight and make sure it's described accurately. And write down what happened while it's fresh, with photos of the lot. Gravel U-turns get everybody once.
