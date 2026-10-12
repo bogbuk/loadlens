@@ -835,3 +835,21 @@ knowledge-тесты — тесты с вариантами ответа.
 > Honestly, Amazon paying for it is the best version of "free CDL." Company-sponsored training from a carrier comes with a contract where you owe them a year or so of driving or pay it back, and the first-year pay is usually lower. If Amazon covers school, you get the license with no strings and can pick where you work.
 >
 > And the classroom part is smaller than you'd think. The ELDT theory is an online course you do at your own pace, the DMV written tests are multiple choice, and practice tests online cover almost everything. The rest is hands-on: pre-trip, backing, and driving. Just check that whatever school they send you to is on FMCSA's Training Provider Registry, otherwise the training doesn't count.
+
+## Комментарий для кармы, 12.10 (день): V — черновик (НЕ опубликован)
+
+RSS ~09:15 UTC 12.10: новых текстовых постов после 08:10 нет. Догоняли вчерашние: «sitting out high diesel prices»
+(1x3kfyp — fuel surcharge уже расписан 8 комм.), r/CDL «CDL career» (1x3kzz4, 34 комм., насыщено) — пропуск.
+
+### V. r/CDL «Vision Exemption» (1x3ho9s, 11.10 19:51 UTC) — нужен MCSA-5871, возьмут ли на работу
+https://www.reddit.com/r/CDL/comments/1x3ho9s/
+**Ветка сверена (2 комм.):** «если есть медкарта — всем всё равно», «пройдёшь ли DOT physical / intrastate-only CDL».
+Что программа исключений заменена alternative vision standard и что новичку нужен road test — никто. Верхний уровень.
+Сверено: 49 CFR 391.44 (с 22.03.2022) — alternative vision standard вместо Vision Exemption Program: сначала
+офтальмолог/оптометрист заполняет MCSA-5871, потом в течение 45 дней — ME; лучший глаз ≥20/40, поле ≥70° по горизонтали,
+различение цветов светофора; медкарта максимум на 1 год; без 3 лет опыта на CMV с этим нарушением — road test у
+работодателя до межштатных рейсов.
+
+> Good news is it's not really an "exemption" anymore. Since 2022 it's the alternative vision standard: your eye doctor fills out the 5871, then you see a regular DOT examiner within 45 days, and if you pass you get a normal med card, just good for one year max. The better eye still has to hit 20/40 with a 70-degree field and you need to tell traffic light colors.
+>
+> The catch for a new driver: if you don't have 3 years driving a CMV with that eye condition, you have to pass a road test with the employer before you can run interstate. That's the part some big carriers don't want to deal with, so smaller companies and local jobs are usually easier. When you call recruiters, ask straight up "do you hire under 391.44?" and you'll get a real answer fast.
