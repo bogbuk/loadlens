@@ -891,3 +891,15 @@ OP: через границу штата ездил только на обуче
 > Run the numbers per night, not per month. Say rent and utilities come to $1,300 and you're actually home 4 nights a month: that's over $300 a night for a bed. Home time in year one usually ends up less than the recruiter said, and a lot of drivers switch companies inside that first year, so I'd give it a few months to see your real home time before signing a lease.
 >
 > One thing to ask about if the company pays per diem: it's only tax-free when you have a tax home you're away from. If there's no place you pay for, the IRS can treat you as itinerant and that per diem becomes taxable. Chipping in on rent or bills at your family's place, and keeping a record of it, is how a lot of drivers living with family handle it. Worth a quick check with a tax preparer who does truckers.
+
+## Комментарий для кармы, 12.10 (день): Y — черновик (НЕ опубликован)
+
+### Y. «Is a trucking career unrealistic under my circumstances?» (1x425uf, 13:40 UTC) — 20 работ за 10 лет, «подчистил» резюме
+
+0 комментариев. Угол — 49 CFR 391.21(b)(10)–(11): в заявке водителя ВСЕ работодатели за 3 года (+ CMV-работодатели ещё за 7 лет); проверяют через сервисы верификации, а не по Google; растянутые даты = фальсификация заявки.
+
+> Don't stretch the dates. A driver application isn't a normal resume: federal rules (49 CFR 391.21) require you to list every employer from the last 3 years, and carriers verify through employment verification services and the employers' HR, not by googling a phone number. If the dates don't match what they find, that's a falsified application, which gets you dropped or fired later even if you were hired.
+>
+> The good news: past 3 years, they only need prior driving jobs, so the older stuff mostly drops off. And short stints at warehouses or retail don't sink a CDL application. Recruiters see job-hoppers all day. What they care about is your MVR, drug test, and whether your story checks out. List all of the last 3 years honestly, and if a job ended badly, have a one-line answer ready ("wasn't a fit, learned X") instead of hiding it.
+>
+> On Swift saying "not enough driving experience": some programs want a certain number of years with a regular license. Ask them for the exact requirement in writing, because another school or carrier may not have it.
