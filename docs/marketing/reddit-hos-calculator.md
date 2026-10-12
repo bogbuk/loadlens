@@ -854,7 +854,7 @@ https://www.reddit.com/r/CDL/comments/1x3ho9s/
 >
 > The catch for a new driver: if you don't have 3 years driving a CMV with that eye condition, you have to pass a road test with the employer before you can run interstate. That's the part some big carriers don't want to deal with, so smaller companies and local jobs are usually easier. When you call recruiters, ask straight up "do you hire under 391.44?" and you'll get a real answer fast.
 
-## Комментарий для кармы, 12.10 (день): W — черновик (НЕ опубликован)
+## Комментарий для кармы, 12.10 (день): W — ОПУБЛИКОВАН (pffkqhe)
 
 ### W. «My first preventable just happened 😒» (1x3yeri, 10:33 UTC) — тесный разворот на гравии, помял боковой обтекатель
 https://www.reddit.com/r/Truckers/comments/1x3yeri/
