@@ -24,7 +24,7 @@
 
 Почему так: польза + просьба о фидбеке, честно про ограничения, вопрос провоцирует обсуждение. DAT не упоминается.
 
-### Пост 1 v2 (05.10): актуальная версия для r/Truckers
+### Пост 1 v2 (05.10): актуальная версия для r/Truckers — ОПУБЛИКОВАН 12.10, 13:19 UTC (1x41o0u)
 
 Переписан после r/CDL и r/SideProject: добавлены recap (реальный запрос из треда r/CDL), время на погрузке
 против 14 (то, что отмечают все комментаторы), раскрытие авторства в первой строке, вопрос про офлайн (два
@@ -866,3 +866,18 @@ https://www.reddit.com/r/Truckers/comments/1x3yeri/
 > Breathe, a side fairing in a lot isn't the record-killer it feels like right now. For DOT purposes a crash only counts if someone dies, someone gets treated away from the scene, or a vehicle gets towed. A fairing doesn't hit any of those, so it won't show up as a crash on your PSP or the carrier's CSA, and it's not something the next employer's safety history check has to report.
 >
 > "Preventable" is the company's label. They might still put it on your DAC as an incident, so in a few months pull your free DAC copy from HireRight and make sure it's described accurately. And write down what happened while it's fresh, with photos of the lot. Gravel U-turns get everybody once.
+
+## Пост 1 v2 ОПУБЛИКОВАН в r/Truckers 12.10, 13:19 UTC
+
+https://www.reddit.com/r/Truckers/comments/1x41o0u/ — через несколько минут виден в r/Truckers/new (не автоудалён).
+Comment karma на момент публикации не сверена (всего 81, оценка comment ~71–75). Ответ модов на modmail 06.10/09.10 — неизвестен.
+
+## S2. Ответ OP (u/Toyo_altezza) в нитке S (1x3asm1, под pfeflcn), 12.10 — черновик (НЕ опубликован)
+
+OP: через границу штата ездил только на обучении и в '24; в TX платят на $1–2/ч меньше; знакомый в Кентукки получает OT после 50 ч.
+
+> Crossing a line yourself in '24 doesn't change much for P&D. For local drivers the exemption usually hangs on the freight: if what you pick up and deliver is coming from or going out of state, your leg is part of that interstate move, so you're covered whether you cross a line or not. The 4-month thing matters more for drivers whose freight is purely in-state.
+>
+> So it's mostly math. WA and TX both have no state income tax, so there's no tax win to offset it. Rough example at $35/hr and 50 hours a week: WA is 40 × 35 + 10 × 52.50 = $1,925. TX at $33.50 straight time is 50 × 33.50 = $1,675. That's about $250 a week, around $13k a year, before cost of living. If your weeks run closer to 40 hours, the gap shrinks to just the $1–2.
+>
+> Worth asking if the Texas terminal has any after-50 premium like your Kentucky friend gets. Some companies do that on their own.
