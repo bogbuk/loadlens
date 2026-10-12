@@ -881,3 +881,13 @@ OP: через границу штата ездил только на обуче
 > So it's mostly math. WA and TX both have no state income tax, so there's no tax win to offset it. Rough example at $35/hr and 50 hours a week: WA is 40 × 35 + 10 × 52.50 = $1,925. TX at $33.50 straight time is 50 × 33.50 = $1,675. That's about $250 a week, around $13k a year, before cost of living. If your weeks run closer to 40 hours, the gap shrinks to just the $1–2.
 >
 > Worth asking if the Texas terminal has any after-50 premium like your Kentucky friend gets. Some companies do that on their own.
+
+## Комментарий для кармы, 12.10 (день): X — черновик (НЕ опубликован)
+
+### X. «Is it worth it go get an apartment while OTR?» (1x41z5p, 13:32 UTC) — живёт с семьёй, первая OTR-работа
+
+В ветке 2 коммента: «ты не будешь дома несколько раз в месяц» и «копи на дом, адрес семьи для прав». Угол — цена за ночь и tax home для per diem (Rev. Rul. 73-529 / Pub 463: без жилья, за которое платишь, водитель может считаться itinerant → per diem облагается).
+
+> Run the numbers per night, not per month. Say rent and utilities come to $1,300 and you're actually home 4 nights a month: that's over $300 a night for a bed. Home time in year one usually ends up less than the recruiter said, and a lot of drivers switch companies inside that first year, so I'd give it a few months to see your real home time before signing a lease.
+>
+> One thing to ask about if the company pays per diem: it's only tax-free when you have a tax home you're away from. If there's no place you pay for, the IRS can treat you as itinerant and that per diem becomes taxable. Chipping in on rent or bills at your family's place, and keeping a record of it, is how a lot of drivers living with family handle it. Worth a quick check with a tax preparer who does truckers.
