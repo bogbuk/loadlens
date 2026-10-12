@@ -836,7 +836,7 @@ knowledge-тесты — тесты с вариантами ответа.
 >
 > And the classroom part is smaller than you'd think. The ELDT theory is an online course you do at your own pace, the DMV written tests are multiple choice, and practice tests online cover almost everything. The rest is hands-on: pre-trip, backing, and driving. Just check that whatever school they send you to is on FMCSA's Training Provider Registry, otherwise the training doesn't count.
 
-## Комментарий для кармы, 12.10 (день): V — черновик (НЕ опубликован)
+## Комментарий для кармы, 12.10 (день): V — ОПУБЛИКОВАН 12.10 (pff4b2l)
 
 RSS ~09:15 UTC 12.10: новых текстовых постов после 08:10 нет. Догоняли вчерашние: «sitting out high diesel prices»
 (1x3kfyp — fuel surcharge уже расписан 8 комм.), r/CDL «CDL career» (1x3kzz4, 34 комм., насыщено) — пропуск.
