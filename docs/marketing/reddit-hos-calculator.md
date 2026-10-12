@@ -44,7 +44,7 @@
 >
 > Then put in the loaded miles, your average speed, and how long you'll sit at the shipper and the receiver. It lays out the trip as drive blocks, the 30 and the 10 hour breaks, and tells you up front if your cycle runs out on the road. Dock time counts against the 14, so 4 hours at a shipper shows up as 4 hours of window gone, even if your 11 looks fine.
 >
-> Recap: last week a driver in r/CDL asked "will it recap?" It didn't. Now it does. Tick "Enter hours by day", put in your on-duty hours for the last 8 days, and when you run out of hours on the trip, the plan waits for hours to come back at midnight instead of a full 34 if that's quicker.
+> Recap: a driver in r/CDL asked "will it recap?" It didn't. Now it does. Tick "Enter hours by day", put in your on-duty hours for the last 8 days, and when you run out of hours on the trip, the plan waits for hours to come back at midnight instead of a full 34 if that's quicker.
 >
 > https://loadlens.krait.studio/hos-calculator/?utm_source=reddit&utm_campaign=hos_calc&utm_content=truckers
 >
