@@ -31,6 +31,8 @@ for (const a of document.querySelectorAll("[data-lang]")) {
     document.head.appendChild(g);
     window.dataLayer = window.dataLayer || [];
     window.gtag = function () { window.dataLayer.push(arguments); };
+    // Consent mode (basic): тег грузится только после Accept, поэтому аналитика granted; рекламы нет — ads denied.
+    gtag('consent', 'default', { analytics_storage: 'granted', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
     gtag('js', new Date());
     gtag('config', 'G-0JGJW592YL');
   }
