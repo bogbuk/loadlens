@@ -892,7 +892,7 @@ OP: через границу штата ездил только на обуче
 >
 > One thing to ask about if the company pays per diem: it's only tax-free when you have a tax home you're away from. If there's no place you pay for, the IRS can treat you as itinerant and that per diem becomes taxable. Chipping in on rent or bills at your family's place, and keeping a record of it, is how a lot of drivers living with family handle it. Worth a quick check with a tax preparer who does truckers.
 
-## Комментарий для кармы, 12.10 (день): Y — черновик (НЕ опубликован)
+## Комментарий для кармы, 12.10 (день): Y — ОПУБЛИКОВАН (pfg5yyu)
 
 ### Y. «Is a trucking career unrealistic under my circumstances?» (1x425uf, 13:40 UTC) — 20 работ за 10 лет, «подчистил» резюме
 
