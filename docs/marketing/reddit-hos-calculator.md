@@ -908,3 +908,27 @@ OP: через границу штата ездил только на обуче
 > The good news: past 3 years, they only need prior driving jobs, so the older stuff mostly drops off. And short stints at warehouses or retail don't sink a CDL application. Recruiters see job-hoppers all day. What they care about is your MVR, drug test, and whether your story checks out. List all of the last 3 years honestly, and if a job ended badly, have a one-line answer ready ("wasn't a fit, learned X") instead of hiding it.
 >
 > On Swift saying "not enough driving experience": some programs want a certain number of years with a regular license. Ask them for the exact requirement in writing, because another school or carrier may not have it.
+
+## Modmail в r/Truckers: можно ли пост про расширение (черновик 12.10, НЕ отправлять раньше ~19–26.10)
+
+Зачем: заранее узнать, допустим ли отдельный пост про платный продукт, а не гадать и не рисковать аккаунтом.
+Когда: через 1–2 недели после поста 1 v2, ТОЛЬКО если GA4 показывает переходы с калькулятора
+(`utm_content=truckers`) на страницу расширения. Нет переходов — не отправлять, аудитория не та.
+Как: «Message the mods» → новое письмо (тема другая, не в ветку 06.10/09.10). Перед отправкой заменить
+`[...]` реальными цифрами, ничего не округлять вверх. На «нет» — не спорить, в r/Truckers расширение не упоминать.
+
+**Subject:** Question before posting: paid tool for owner-operators, is it allowed here?
+
+**Message:**
+
+> Hi mods,
+>
+> I'm the guy who posted the free HOS trip calculator on [дата] (thanks for letting it stay up). It's still free, no signup, and it stays that way.
+>
+> I also make a paid Chrome extension for owner-operators and small dispatchers who search DAT. It scores each posting by true rate per mile including deadhead, checks whether the driver can legally make it on hours, and flags brokers with inactive or brand-new authority. There's a 14-day free trial, then it's paid.
+>
+> I don't want to sneak that into comments or break the self-promo rule, so I'm asking first: is a post about it allowed here, maybe on a specific day or in a megathread? If the answer is no, that's fine, I'll keep it out of r/Truckers.
+>
+> Thanks.
+
+Если ответят «да, но в такой-то ветке/день» — писать туда, текст сначала сюда же черновиком.
