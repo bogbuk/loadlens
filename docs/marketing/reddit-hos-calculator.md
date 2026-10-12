@@ -804,3 +804,34 @@ https://www.reddit.com/r/Truckers/comments/1x3asm1/
 > The part that trips people up: the exemption isn't about you personally crossing a state line. It covers drivers moving freight that's in interstate commerce, and local P&D usually counts, because the freight you pick up or drop off is coming from or going to another state. It also applies if you could reasonably be sent across a line, even if you rarely are (the DOL treats that as covering you for 4 months after your last interstate trip).
 >
 > Washington is one of the few states that closes that gap: its law says MCA-covered truck drivers still have to get overtime or pay that's "reasonably equivalent." Texas has no state overtime law beyond the federal one, so the exemption just applies as-is. Same job, same company, the state law is the whole difference. Worth asking HR what the Texas pay rate is, some companies bump the hourly to make up for it.
+
+## Комментарии для кармы, 12.10 (утро): T, U — черновики (НЕ опубликованы)
+
+RSS ~08:30 UTC 12.10, ~15 текстовых постов за ночь. Пропущены (ветки сверены, всё сказано): «Hazmat Endorsement CA»
+(1x3qay8 — ELDT/TSA/порядок уже расписали 9 комм.), «How to get back into trucking» (RN, 1x3bbmg, 35 комм.),
+«companies that pay for CDL» (1x3nx62, 19 комм.), «Looking to get into trucking (TX)» (права/WIOA/собака — сказано).
+Техника по фото/ремонт, дизель/политика — пропуск. r/CDL «Advice on getting more carriers as a truck dispatcher» — НЕ трогаем
+(тема диспетчеров = риск связать аккаунт с LoadLens).
+
+### T. «33m single looking to get CDL» (1x3qjfe, 02:44 UTC) — CLP из Джорджии, только что переехал в PA
+https://www.reddit.com/r/Truckers/comments/1x3qjfe/
+**Ветка сверена (18 комм.):** платное обучение у мега (Roehl/Swift), WIOA через PA CareerLink, dry van vs flatbed,
+чистая история, A. Duie Pyle. Про то, что GA-пермит после переезда в PA не годится, — никто. Верхний уровень.
+Сверено: CLP/CDL выдаёт штат проживания (domicile); при переезде права переоформляют в новом штате (в PA — в течение
+60 дней); CLP, как правило, не переносится — knowledge-тесты сдают заново; skills test можно сдать в штате школы
+(383.79), результат уходит в штат проживания.
+
+> One thing nobody's mentioned: that GA permit probably won't carry over. Your CDL and CLP have to come from the state you live in, and PA wants new residents switched over within 60 days. Most states won't transfer a CLP, so expect to retake the knowledge tests at PennDOT for a PA permit.
+>
+> Not a big deal, the tests are the same material, but do it before you call recruiters. Some companies want the permit in hand before they'll book you for school, and showing up with a GA permit and a PA address can stall things for a week. If you end up training in another state, that's fine, the skills test can be taken there and the results get sent back to PA.
+
+### U. «Thinking about getting a CDL» (1x3w58h, 08:10 UTC) — Amazon DSP, «плохо учусь», Amazon оплачивает обучение
+https://www.reddit.com/r/Truckers/comments/1x3w58h/
+**Ветка сверена (3 комм.):** «школа — это не настоящая школа, в основном практика», «pre-trip — самое сложное».
+Про то, что оплата обучения через Amazon = нет контракта с перевозчиком (тема соседнего треда 1x3nx62), — никто.
+Верхний уровень. Сверено: ELDT-теория — онлайн в своём темпе у провайдеров из Training Provider Registry;
+knowledge-тесты — тесты с вариантами ответа.
+
+> Honestly, Amazon paying for it is the best version of "free CDL." Company-sponsored training from a carrier comes with a contract where you owe them a year or so of driving or pay it back, and the first-year pay is usually lower. If Amazon covers school, you get the license with no strings and can pick where you work.
+>
+> And the classroom part is smaller than you'd think. The ELDT theory is an online course you do at your own pace, the DMV written tests are multiple choice, and practice tests online cover almost everything. The rest is hands-on: pre-trip, backing, and driving. Just check that whatever school they send you to is on FMCSA's Training Provider Registry, otherwise the training doesn't count.
