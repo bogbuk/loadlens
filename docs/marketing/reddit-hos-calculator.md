@@ -788,3 +788,19 @@ Class A/B, апгрейда и S/P/H — снятие ограничения в 
 > Worst case isn't as bad as it sounds. If you test in an automatic you get an "E" restriction (no manual), and you can take that off later by just passing the skills test again in a manual. No new school, ELDT doesn't cover removing restrictions. So you could test in a rented automatic now, start working, and fix it once you've had real seat time.
 >
 > Before you go that way though, ask the school if they'll give you a couple extra hours just on shifting in an empty lot. Most people's clutch problems are reps, not talent, and it's cheaper than renting a truck for the test.
+
+## Комментарий для кармы, 11.10 (вечер): S — черновик (НЕ опубликован)
+
+Фоновый опрос RSS (каждые 10 мин, только текстовые посты). Пропущены фото-посты: I-85 на карте, лампы на T680, «Job listing».
+
+### S. «Overtime pay question. I might move from WA to TX» (1x3asm1, 15:17 UTC) — local P&D, почему в TX нет OT
+https://www.reddit.com/r/Truckers/comments/1x3asm1/
+**Ветка сверена (1 комм.):** «Техас за бизнес» (u/VGPreach). OP сам нашёл MCA exemption, но думает, что она только
+для OTR, пересекающих границу штата. Верхний уровень. Сверено: exemption зависит от того, что груз идёт в
+межштатной перевозке (местное плечо межштатного груза — тоже), и от «разумного ожидания» межштатных рейсов
+(DOL Fact Sheet #19 — 4 месяца); WA RCW 49.46.130(2)(f) — для водителей под MCA требуется overtime
+«reasonably equivalent»; в TX своего закона об овертайме сверх FLSA нет.
+
+> The part that trips people up: the exemption isn't about you personally crossing a state line. It covers drivers moving freight that's in interstate commerce, and local P&D usually counts, because the freight you pick up or drop off is coming from or going to another state. It also applies if you could reasonably be sent across a line, even if you rarely are (the DOL treats that as covering you for 4 months after your last interstate trip).
+>
+> Washington is one of the few states that closes that gap: its law says MCA-covered truck drivers still have to get overtime or pay that's "reasonably equivalent." Texas has no state overtime law beyond the federal one, so the exemption just applies as-is. Same job, same company, the state law is the whole difference. Worth asking HR what the Texas pay rate is, some companies bump the hourly to make up for it.
