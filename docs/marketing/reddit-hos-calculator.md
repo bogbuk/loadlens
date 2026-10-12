@@ -789,7 +789,7 @@ Class A/B, апгрейда и S/P/H — снятие ограничения в 
 >
 > Before you go that way though, ask the school if they'll give you a couple extra hours just on shifting in an empty lot. Most people's clutch problems are reps, not talent, and it's cheaper than renting a truck for the test.
 
-## Комментарий для кармы, 11.10 (вечер): S — черновик (НЕ опубликован)
+## Комментарий для кармы, 11.10 (вечер): S — ОПУБЛИКОВАН (pfeflcn)
 
 Фоновый опрос RSS (каждые 10 мин, только текстовые посты). Пропущены фото-посты: I-85 на карте, лампы на T680, «Job listing».
 
@@ -805,7 +805,7 @@ https://www.reddit.com/r/Truckers/comments/1x3asm1/
 >
 > Washington is one of the few states that closes that gap: its law says MCA-covered truck drivers still have to get overtime or pay that's "reasonably equivalent." Texas has no state overtime law beyond the federal one, so the exemption just applies as-is. Same job, same company, the state law is the whole difference. Worth asking HR what the Texas pay rate is, some companies bump the hourly to make up for it.
 
-## Комментарии для кармы, 12.10 (утро): T, U — черновики (НЕ опубликованы)
+## Комментарии для кармы, 12.10 (утро): T, U — ОПУБЛИКОВАНЫ 12.10 (T — pfetn6s, U — pfetowd)
 
 RSS ~08:30 UTC 12.10, ~15 текстовых постов за ночь. Пропущены (ветки сверены, всё сказано): «Hazmat Endorsement CA»
 (1x3qay8 — ELDT/TSA/порядок уже расписали 9 комм.), «How to get back into trucking» (RN, 1x3bbmg, 35 комм.),
