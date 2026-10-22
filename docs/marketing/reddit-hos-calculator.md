@@ -932,3 +932,13 @@ OP: через границу штата ездил только на обуче
 > Thanks.
 
 Если ответят «да, но в такой-то ветке/день» — писать туда, текст сначала сюда же черновиком.
+
+## Комментарий для кармы, 12.10 (вечер): Z — черновик (НЕ опубликован)
+
+### Z. «Stay at current CDL B job or pursue septic tech job?» (1x455k9, 15:38 UTC) — $28 с медстраховкой vs $30 без
+
+Угол — годовая математика: +$2/ч × 2080 ≈ $4,160 против marketplace-плана (KFF 2026: бенчмарк silver $625/мес для 40-летнего → ~$490 для 25-летнего); $30×2080 = $62.4k ≈ 400% FPL для одного ($62,600), субсидии почти не помогают.
+
+> Run it per year. $2 more an hour at 40 hours is about $4,200 a year before taxes. A marketplace silver plan for a 25-year-old runs roughly $400-500 a month in 2026, and at around $62k a year you're right at the line where subsidies stop helping much. So the raise can disappear into premiums before you even hit a deductible. Ask your current job what you actually pay per paycheck for insurance, that's the number you're really comparing against.
+>
+> The $35+ is where it gets interesting. Ask the septic company which licenses those are, how long they take, and who pays for them. And ask about hours: septic work is often on-call with emergency pump-outs, and if that's paid overtime it can move the math more than the base rate does.
