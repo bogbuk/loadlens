@@ -942,3 +942,17 @@ OP: через границу штата ездил только на обуче
 > Run it per year. $2 more an hour at 40 hours is about $4,200 a year before taxes. A marketplace silver plan for a 25-year-old runs roughly $400-500 a month in 2026, and at around $62k a year you're right at the line where subsidies stop helping much. So the raise can disappear into premiums before you even hit a deductible. Ask your current job what you actually pay per paycheck for insurance, that's the number you're really comparing against.
 >
 > The $35+ is where it gets interesting. Ask the septic company which licenses those are, how long they take, and who pays for them. And ask about hours: septic work is often on-call with emergency pump-outs, and if that's paid overtime it can move the math more than the base rate does.
+
+## r/SideProject: ответ в тред u/GhaisD «What did your side project replace?», 12.11 — ОПУБЛИКОВАН 12.11 (вручную; Claude in Chrome не пускает на reddit.com)
+
+Тред ~17ч, OP отвечает каждому вопросом, ссылки в комментариях норма. Верхний уровень, с ответом на оба вопроса OP. История — та же, что в посте 5 (блокнот), без новых выдуманных деталей.
+
+**Черновик комментария:**
+
+> Mine replaced a notepad full of truck driver hours math.
+>
+> US truckers run on federal Hours of Service limits: 11 hours driving, a 14 hour window, a 30 minute break, 70 hours in 8 days. The ELD in the cab shows what's left right now, but not the question you ask before taking a load: can this driver make the delivery legally, and where do the breaks land? I was working that out by hand several times a day, so I built a free calculator that lays the trip out as a timeline: https://loadlens.krait.studio/hos-calculator/?utm_source=reddit&utm_campaign=hos_calc&utm_content=sideproject_replace
+>
+> Is the old thing gone? The notepad, yes. The ELD stays, it's the legal record and nothing replaces it. The calculator just answers the "what if" it doesn't.
+>
+> If you poke at it: did the result make sense without knowing anything about trucks? That's my version of your "first minute" question.
