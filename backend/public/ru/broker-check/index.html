@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!--SEO-START-->
+  <title>Проверка брокера по MC-номеру: лицензия FMCSA | LoadLens</title>
+  <meta name="description" content="Бесплатная проверка грузового брокера по MC: статус брокерской лицензии FMCSA, её возраст и приостановки за 12 месяцев. Распознайте double brokering и мошенничество с новой лицензией до бронирования." />
+  <link rel="canonical" href="https://loadlens.krait.studio/ru/broker-check/" />
+  <link rel="alternate" hreflang="en" href="https://loadlens.krait.studio/broker-check/" />
+  <link rel="alternate" hreflang="ru" href="https://loadlens.krait.studio/ru/broker-check/" />
+  <link rel="alternate" hreflang="ro" href="https://loadlens.krait.studio/ro/broker-check/" />
+  <link rel="alternate" hreflang="x-default" href="https://loadlens.krait.studio/broker-check/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="LoadLens" />
+  <meta property="og:title" content="Проверка брокера по MC-номеру: лицензия FMCSA | LoadLens" />
+  <meta property="og:description" content="Бесплатная проверка грузового брокера по MC: статус брокерской лицензии FMCSA, её возраст и приостановки за 12 месяцев. Распознайте double brokering и мошенничество с новой лицензией до бронирования." />
+  <meta property="og:url" content="https://loadlens.krait.studio/ru/broker-check/" />
+  <meta property="og:image" content="https://loadlens.krait.studio/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="ru_RU" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta property="og:locale:alternate" content="ro_RO" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Проверка брокера по MC-номеру: лицензия FMCSA | LoadLens","url":"https://loadlens.krait.studio/ru/broker-check/","description":"Бесплатная проверка грузового брокера по MC: статус брокерской лицензии FMCSA, её возраст и приостановки за 12 месяцев. Распознайте double brokering и мошенничество с новой лицензией до бронирования.","applicationCategory":"BusinessApplication","operatingSystem":"Any","browserRequirements":"Requires JavaScript","inLanguage":"ru","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}},{"@type":"FAQPage","inLanguage":"ru","mainEntity":[{"@type":"Question","name":"Как проверить MC-номер грузового брокера?","acceptedAnswer":{"@type":"Answer","text":"Введите MC-номер в поле выше. Мы ищем его в реестре лицензий FMCSA и в публичной истории лицензии брокера. Полную запись, включая страховку и адрес, смотрите в FMCSA SAFER."}},{"@type":"Question","name":"Что значит «только лицензия перевозчика»?","acceptedAnswer":{"@type":"Answer","text":"Компания может возить грузы как перевозчик, но не имеет действующей лицензии брокера, чтобы их перепродавать. Перевозчик, который постит грузы и отдаёт их другим без брокерской лицензии, может заниматься double brokering."}},{"@type":"Question","name":"Чем опасна новая брокерская лицензия?","acceptedAnswer":{"@type":"Answer","text":"Многие мошеннические схемы используют свежую или купленную лицензию. Мы помечаем лицензии моложе 180 дней, а моложе 90 дней — как высокий риск. Новый брокер — не обязательно мошенник, поэтому проверьте контакты и попросите рекомендации."}},{"@type":"Question","name":"Что такое приостановка или отзыв лицензии?","acceptedAnswer":{"@type":"Answer","text":"FMCSA приостанавливает или отзывает лицензию, например, когда у брокера истекает гарантийный бонд или трастовый фонд на 75 000 долларов. Мы считаем такие события за последние 12 месяцев. Одно быстро исправленное событие встречается часто, несколько — тревожный знак."}},{"@type":"Question","name":"Видно ли здесь, вовремя ли платит брокер?","acceptedAnswer":{"@type":"Answer","text":"Нет. Эта страница показывает только данные о лицензии. Расширение LoadLens показывает кредитный рейтинг DAT и срок оплаты рядом с каждым грузом, а Pro добавляет отзывы других перевозчиков о брокере."}}]}]}</script>
+  <!--SEO-END-->
+  <link rel="icon" href="/icon.png" />
+  <!-- Каждый язык — свой URL (/, /ru/, /ro/), страницы RU/RO собирает scripts/build-landing.js.
+       На EN-странице уводим на языковую версию: ?lang= (старые ссылки) → сохранённый выбор → язык
+       браузера. Бот видит en-US без localStorage и остаётся на /. Тело прячем, чтобы EN не мигал. -->
+  <script>
+    (function () {
+      if (document.documentElement.lang !== "en") return;
+      var L = ["ru", "ro"], q = new URLSearchParams(location.search).get("lang"), s = null;
+      try { s = localStorage.getItem("ll_lang"); } catch (e) {}
+      var n = (navigator.language || "").slice(0, 2).toLowerCase();
+      var lang = q === "en" || L.indexOf(q) >= 0 ? q : s === "en" || L.indexOf(s) >= 0 ? s : n;
+      if (L.indexOf(lang) < 0) return;
+      document.documentElement.className = "i18n-pending";
+      // Только известные страницы: ServeStatic отдаёт EN-главную на любой путь, иначе /ru/<неизвестный> зациклится.
+      var P = ["/", "/hos-calculator/", "/broker-check/"], p = location.pathname;
+      location.replace("/" + lang + (P.indexOf(p) >= 0 ? p : "/") + location.search + location.hash);
+    })();
+  </script>
+  <link rel="stylesheet" href="/css/site.css" />
+  <style>
+    .calc-head { padding: 48px 0 8px; }
+    .calc-head h1 { margin-bottom: 12px; }
+    .calc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; padding: 24px 0 56px; align-items: start; }
+    @media (max-width: 860px) { .calc { grid-template-columns: minmax(0, 1fr); } }
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; box-shadow: var(--shadow); }
+    .panel h2 { font-size: 20px; margin-bottom: 14px; }
+    .field > label { display: block; font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+    .ask { display: flex; gap: 8px; flex-wrap: wrap; }
+    .ask .pre { display: inline-flex; align-items: center; font-weight: 700; color: var(--mut); }
+    .ask input { flex: 1 1 140px; min-width: 0; min-height: 44px; padding: 8px 12px; font: inherit; font-size: 18px; color: var(--ink);
+                 background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+    .ask .btn { min-height: 44px; cursor: pointer; font: inherit; font-weight: 700; }
+    /* Десктоп: форма и чек-лист слева, результат справа. Телефон: форма → результат → чек-лист,
+       чтобы результат был сразу под кнопкой. */
+    .p-form { grid-column: 1; grid-row: 1; }
+    .p-res { grid-column: 2; grid-row: 1 / span 2; }
+    .p-before { grid-column: 1; grid-row: 2; }
+    @media (max-width: 860px) { .p-form, .p-res, .p-before { grid-column: auto; grid-row: auto; } }
+    .p-before h2 { font-size: 17px; margin-bottom: 8px; }
+    .p-before ol { margin: 0; padding-left: 20px; font-size: 15px; }
+    .p-before li { margin-bottom: 6px; }
+    .verdict { font-size: 18px; font-weight: 700; padding: 12px 14px; border-radius: 10px; margin-bottom: 14px; }
+    .verdict.good { background: var(--green-bg); color: var(--green); }
+    .verdict.warn, .verdict.unknown { background: var(--amber-bg); color: var(--amber); }
+    .verdict.risk { background: var(--red-bg); color: var(--red); }
+    .facts { margin: 0 0 12px; }
+    .facts div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+    .facts dt { color: var(--mut); }
+    .facts dd { margin: 0; font-weight: 700; text-align: right; }
+    .flags { margin: 0 0 12px; padding-left: 20px; color: var(--red); font-size: 15px; }
+    .flags li.med { color: var(--amber); }
+    .msg { font-size: 15px; }
+    #result[hidden], #empty[hidden], #res-body[hidden], .flags[hidden], #msg[hidden] { display: none; }
+    .cta { text-align: center; }
+    .cta .ctas { justify-content: center; }
+    .faq h3 { margin-top: 20px; }
+    .disc { font-size: 14px; color: var(--mut); margin-top: 28px; }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="logo" data-local href="/ru/"><img src="/icon.png" alt="" /><span>Load<b>Lens</b></span></a>
+      <div class="langs" role="group" aria-label="Language">
+        <a href="/broker-check/" hreflang="en" lang="en" data-lang="en">EN</a>
+        <a href="/ru/broker-check/" hreflang="ru" lang="ru" data-lang="ru" aria-current="page">RU</a>
+        <a href="/ro/broker-check/" hreflang="ro" lang="ro" data-lang="ro">RO</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="calc-head">
+      <div class="wrap">
+        <h1 data-i18n="h.title">Проверка брокера по MC-номеру</h1>
+        <p class="lead" data-i18n="h.lead">Введите MC брокера до бронирования груза. Вы увидите статус его брокерской лицензии в FMCSA, как давно она выдана и были ли приостановки или отзывы за последние 12 месяцев. Бесплатно, без регистрации.</p>
+      </div>
+    </section>
+
+    <div class="wrap calc">
+      <div class="panel p-form">
+        <form id="check" novalidate>
+          <div class="field"><label for="mc" data-i18n="in.mc">MC-номер брокера</label>
+            <div class="ask">
+              <span class="pre">MC</span>
+              <input class="ym-disable-keys" type="text" id="mc" name="mc" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="123456" />
+              <button class="btn primary" type="submit" id="go" data-i18n="in.go">Проверить</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel p-res ym-hide-content" aria-live="polite">
+        <h2 data-i18n="r.title">Результат</h2>
+        <p class="mut" id="empty" data-i18n="r.empty">Введите MC-номер, чтобы увидеть запись брокера в FMCSA.</p>
+        <div id="result" hidden>
+          <p class="msg" id="msg" hidden></p>
+          <div id="res-body" hidden>
+            <p class="verdict" id="verdict"></p>
+            <ul class="flags" id="flags" hidden></ul>
+            <dl class="facts">
+              <div><dt data-i18n="r.status">Брокерская лицензия</dt><dd id="f-status"></dd></div>
+              <div><dt data-i18n="r.since">Лицензия брокера выдана</dt><dd id="f-since"></dd></div>
+              <div><dt data-i18n="r.incidents">Приостановки и отзывы за 12 месяцев</dt><dd id="f-incidents"></dd></div>
+            </dl>
+            <p class="mut small" id="checked"></p>
+          </div>
+          <p><a id="safer" href="https://safer.fmcsa.dot.gov/" target="_blank" rel="noopener" data-i18n="r.safer">Полная запись в FMCSA SAFER →</a></p>
+        </div>
+      </div>
+
+      <div class="panel p-before">
+        <h2 data-i18n="b.t">Перед грузом от незнакомого брокера</h2>
+        <ol>
+          <li data-i18n="b.1">Перезвоните по телефону из записи FMCSA, а не по номеру из постинга.</li>
+          <li data-i18n="b.2">Проверьте, что домен почты совпадает с сайтом компании брокера. Бесплатная почта — тревожный знак.</li>
+          <li data-i18n="b.3">Ставка сильно выше рынка от незнакомого брокера — частая приманка.</li>
+          <li data-i18n="b.4">Никогда не платите за то, чтобы получить груз, и подтверждайте смену платёжных реквизитов по телефону.</li>
+        </ol>
+      </div>
+    </div>
+
+    <section class="alt cta">
+      <div class="wrap">
+        <h2 data-i18n="cta.t">LoadLens делает эту проверку на каждом грузе в DAT One</h2>
+        <p class="lead" style="margin: 0 auto" data-i18n="cta.p">Расширение ставит рядом с каждым постингом чип брокера с этой проверкой FMCSA, кредитным рейтингом DAT и сроком оплаты, а также реальный $/миля с учётом пустого пробега и проверку HOS. Бесплатный тариф, без карты.</p>
+        <div class="ctas">
+          <a class="btn primary" data-cws="broker_check" href="https://chromewebstore.google.com/detail/chemnjopdclcmcckgfbmabielhobmknk?utm_source=broker_check" target="_blank" rel="noopener" data-i18n="cta.install">Установить в Chrome бесплатно</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq">
+      <div class="wrap">
+        <h2 data-i18n="faq.title">Частые вопросы</h2>
+        <h3 data-i18n="faq.q1">Как проверить MC-номер грузового брокера?</h3>
+        <p data-i18n="faq.a1">Введите MC-номер в поле выше. Мы ищем его в реестре лицензий FMCSA и в публичной истории лицензии брокера. Полную запись, включая страховку и адрес, смотрите в FMCSA SAFER.</p>
+        <h3 data-i18n="faq.q2">Что значит «только лицензия перевозчика»?</h3>
+        <p data-i18n="faq.a2">Компания может возить грузы как перевозчик, но не имеет действующей лицензии брокера, чтобы их перепродавать. Перевозчик, который постит грузы и отдаёт их другим без брокерской лицензии, может заниматься double brokering.</p>
+        <h3 data-i18n="faq.q3">Чем опасна новая брокерская лицензия?</h3>
+        <p data-i18n="faq.a3">Многие мошеннические схемы используют свежую или купленную лицензию. Мы помечаем лицензии моложе 180 дней, а моложе 90 дней — как высокий риск. Новый брокер — не обязательно мошенник, поэтому проверьте контакты и попросите рекомендации.</p>
+        <h3 data-i18n="faq.q4">Что такое приостановка или отзыв лицензии?</h3>
+        <p data-i18n="faq.a4">FMCSA приостанавливает или отзывает лицензию, например, когда у брокера истекает гарантийный бонд или трастовый фонд на 75 000 долларов. Мы считаем такие события за последние 12 месяцев. Одно быстро исправленное событие встречается часто, несколько — тревожный знак.</p>
+        <h3 data-i18n="faq.q5">Видно ли здесь, вовремя ли платит брокер?</h3>
+        <p data-i18n="faq.a5">Нет. Эта страница показывает только данные о лицензии. Расширение LoadLens показывает кредитный рейтинг DAT и срок оплаты рядом с каждым грузом, а Pro добавляет отзывы других перевозчиков о брокере.</p>
+        <p class="disc" data-i18n="disc">Данные берутся из публичных наборов FMCSA, которые обновляются ежедневно, и кэшируются у нас до 12 часов. Чистая запись не доказывает честность брокера, а флаг не доказывает мошенничество. Это не юридическая и не финансовая консультация.</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="consent" id="consent" role="dialog" aria-label="Cookies" hidden>
+    <p><span data-i18n="ck.text">Мы используем куки Яндекс Метрики и Google Analytics, чтобы понимать, как посетители пользуются этой страницей, включая запись сессий (Метрика). Пока вы не согласитесь, ничего не загружается.</span>
+      <a href="/privacy.html#website" data-i18n="ck.more">Подробнее</a></p>
+    <div class="btns">
+      <button type="button" class="btn ghost" id="ck-no" data-i18n="ck.no">Отказаться</button>
+      <button type="button" class="btn primary" id="ck-yes" data-i18n="ck.yes">Принять</button>
+    </div>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      <span data-i18n="ft.legal">© 2026 LoadLens by Krait Studio (Богдан Букатару, Молдова). Не связан с DAT Solutions и Truckstop.</span>
+      <nav>
+        <a href="mailto:hello@krait.studio?subject=%D0%92%D0%BE%D0%BF%D1%80%D0%BE%D1%81%20%D0%BF%D0%BE%20LoadLens" data-mail="question">hello@krait.studio</a>
+        <a href="/privacy.html" data-i18n="pv.link">Политика конфиденциальности (English)</a>
+        <a href="/terms.html" data-i18n="ft.terms">Условия использования (English)</a>
+        <a href="/refund.html" data-i18n="ft.refund">Возврат средств (English)</a>
+        <a href="/stats.html" data-i18n="ft.stats">Статистика по направлениям</a>
+        <a data-local href="/ru/hos-calculator/" data-i18n="ft.hos">HOS-калькулятор</a>
+        <a data-local href="/ru/broker-check/" data-i18n="ft.broker">Проверка брокера</a>
+        <a href="#" class="linkbtn" id="ck-open" data-i18n="ck.settings">Настройки cookies</a>
+      </nav>
+    </div>
+  </footer>
+
+  <!--STRINGS-START--><script type="application/json" id="ll-strings">{"js.loading":"Проверяем записи FMCSA для MC {mc}…","js.err.invalid":"Введите MC-номер: только цифры, например 123456.","js.err.rate":"Слишком много проверок из вашей сети. Попробуйте через минуту.","js.err.net":"Сейчас не удалось получить запись FMCSA. Попробуйте через минуту или откройте SAFER ниже.","js.verdict.good":"MC {mc}: в записях FMCSA тревожных признаков нет","js.verdict.warn":"MC {mc}: будьте осторожны","js.verdict.risk":"MC {mc}: высокий риск, проверьте до бронирования","js.verdict.unknown":"MC {mc}: данные FMCSA сейчас недоступны. Попробуйте позже или откройте SAFER ниже.","js.flag.inactive":"Брокерская лицензия неактивна: этот MC не может работать брокером.","js.flag.carrier":"Только лицензия перевозчика, брокерской нет: возможен double brokering.","js.flag.notfound":"Этого MC нет в реестре лицензий FMCSA. Уточните номер у брокера.","js.flag.mismatch":"Этого MC нет в реестре лицензий, но есть брокерская история. Наборы данных FMCSA могут расходиться, проверьте SAFER.","js.flag.new":"Новая брокерская лицензия: всего {d}.","js.flag.incidents":"Приостановок или отзывов за 12 месяцев: {n}.","js.status.active":"Активна","js.status.inactive":"Неактивна","js.status.carrier_only":"Нет (только перевозчик)","js.status.not_found":"Нет в реестре","js.since":"{date} ({age})","js.unknown":"Нет данных","js.checked":"Данные FMCSA для MC {mc} на {when}."}</script><!--STRINGS-END-->
+  <script src="/js/scoring.js"></script>
+  <script src="/js/broker-page.js"></script>
+  <script src="/js/site.js"></script>
+</body>
+</html>

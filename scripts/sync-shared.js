@@ -33,9 +33,10 @@ const BACKEND_SHARED = path.join(ROOT, "backend", "shared");
 fs.mkdirSync(BACKEND_SHARED, { recursive: true });
 fs.writeFileSync(path.join(BACKEND_SHARED, "markets.seed.json"), seed);
 
-// Модули, которые грузят страницы сайта (backend/public/js/): HOS-калькулятор лендинга.
+// Модули, которые грузят страницы сайта (backend/public/js/): HOS-калькулятор и проверка брокера
+// (scoring.js — те же пороги Fraud Shield, что у бейджа 🛡 расширения).
 const PUBLIC_JS = path.join(ROOT, "backend", "public", "js");
-const SITE_FILES = ["hos-trip.js"];
+const SITE_FILES = ["hos-trip.js", "scoring.js"];
 fs.mkdirSync(PUBLIC_JS, { recursive: true });
 for (const f of SITE_FILES) {
   fs.writeFileSync(path.join(PUBLIC_JS, f), BANNER + fs.readFileSync(path.join(SHARED, f), "utf8"));

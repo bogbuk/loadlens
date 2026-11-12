@@ -39,8 +39,8 @@
       if (L.indexOf(lang) < 0) return;
       document.documentElement.className = "i18n-pending";
       // Только известные страницы: ServeStatic отдаёт EN-главную на любой путь, иначе /ru/<неизвестный> зациклится.
-      var P = ["/", "/hos-calculator/"], p = location.pathname;
-      location.replace("/" + lang + (P.indexOf(p) >= 0 ? p : "/") + location.hash);
+      var P = ["/", "/hos-calculator/", "/broker-check/"], p = location.pathname;
+      location.replace("/" + lang + (P.indexOf(p) >= 0 ? p : "/") + location.search + location.hash);
     })();
   </script>
   <link rel="stylesheet" href="/css/site.css" />
@@ -174,7 +174,8 @@
             <p><a data-local href="/ru/hos-calculator/" data-i18n="f2.link">Попробуйте бесплатный HOS-калькулятор →</a></p></div>
           <div class="card"><div class="ico">✔</div>
             <h3 data-i18n="f3.t">Проверьте брокера до рейса</h3>
-            <p data-i18n="f3.p">Кредитный рейтинг DAT и срок оплаты в одном бейдже. В Pro ещё и отзывы других перевозчиков: оплатил, тянул с оплатой, сорвал груз, двойной брокеридж.</p></div>
+            <p data-i18n="f3.p">Кредитный рейтинг DAT и срок оплаты в одном бейдже. В Pro ещё и отзывы других перевозчиков: оплатил, тянул с оплатой, сорвал груз, двойной брокеридж.</p>
+            <p><a data-local href="/ru/broker-check/" data-i18n="f3.link">Проверьте любого брокера по MC-номеру →</a></p></div>
           <div class="card"><div class="ico">✉</div>
             <h3 data-i18n="f4.t">Письмо брокеру в один клик</h3>
             <p data-i18n="f4.p">Черновик в Gmail с направлением, милями, датой погрузки и контр-оффером выше вашей точки безубыточности. Вы читаете и сами нажимаете «Отправить».</p></div>
@@ -302,6 +303,7 @@
         <a href="/refund.html" data-i18n="ft.refund">Возврат средств (English)</a>
         <a href="/stats.html" data-i18n="ft.stats">Статистика по направлениям</a>
         <a data-local href="/ru/hos-calculator/" data-i18n="ft.hos">HOS-калькулятор</a>
+        <a data-local href="/ru/broker-check/" data-i18n="ft.broker">Проверка брокера</a>
         <a href="#" class="linkbtn" id="ck-open" data-i18n="ck.settings">Настройки cookies</a>
       </nav>
     </div>

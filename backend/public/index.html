@@ -39,8 +39,8 @@
       if (L.indexOf(lang) < 0) return;
       document.documentElement.className = "i18n-pending";
       // Только известные страницы: ServeStatic отдаёт EN-главную на любой путь, иначе /ru/<неизвестный> зациклится.
-      var P = ["/", "/hos-calculator/"], p = location.pathname;
-      location.replace("/" + lang + (P.indexOf(p) >= 0 ? p : "/") + location.hash);
+      var P = ["/", "/hos-calculator/", "/broker-check/"], p = location.pathname;
+      location.replace("/" + lang + (P.indexOf(p) >= 0 ? p : "/") + location.search + location.hash);
     })();
   </script>
   <link rel="stylesheet" href="/css/site.css" />
@@ -174,7 +174,8 @@
             <p><a data-local href="/hos-calculator/" data-i18n="f2.link">Try the free HOS calculator →</a></p></div>
           <div class="card"><div class="ico">✔</div>
             <h3 data-i18n="f3.t">Know the broker before you haul</h3>
-            <p data-i18n="f3.p">DAT credit score and days to pay on one chip. Pro adds what other carriers report: paid, slow, flaked, double-brokered.</p></div>
+            <p data-i18n="f3.p">DAT credit score and days to pay on one chip. Pro adds what other carriers report: paid, slow, flaked, double-brokered.</p>
+            <p><a data-local href="/broker-check/" data-i18n="f3.link">Check any broker by MC number →</a></p></div>
           <div class="card"><div class="ico">✉</div>
             <h3 data-i18n="f4.t">Email the broker in one click</h3>
             <p data-i18n="f4.p">A Gmail draft with lane, miles, pickup date and a counter-offer above your break-even. You read it and press Send.</p></div>
@@ -302,6 +303,7 @@
         <a href="/refund.html" data-i18n="ft.refund">Refunds</a>
         <a href="/stats.html" data-i18n="ft.stats">Lane stats</a>
         <a data-local href="/hos-calculator/" data-i18n="ft.hos">HOS calculator</a>
+        <a data-local href="/broker-check/" data-i18n="ft.broker">Broker check</a>
         <a href="#" class="linkbtn" id="ck-open" data-i18n="ck.settings">Cookie settings</a>
       </nav>
     </div>

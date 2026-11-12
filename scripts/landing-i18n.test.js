@@ -97,7 +97,7 @@ test("robots.txt указывает на sitemap и закрывает admin/api
 test("общие стили и редирект по языку: site.css в <head>, редирект сохраняет путь известной страницы", () => {
   const head = html.split("</head>")[0];
   assert.match(head, /<link rel="stylesheet" href="\/css\/site\.css" \/>/);
-  assert.ok(head.includes('location.replace("/" + lang + (P.indexOf(p) >= 0 ? p : "/") + location.hash)'));
+  assert.ok(head.includes('location.replace("/" + lang + (P.indexOf(p) >= 0 ? p : "/") + location.search + location.hash)'));
   assert.ok(!/\.consent \{/.test(head), "стили баннера должны жить в site.css");
 });
 
@@ -248,4 +248,109 @@ test("checkout.html: noindex, вне sitemap, без Метрики, Paddle.js �
   const sitemap = fs.readFileSync(path.join(PUB, "sitemap.xml"), "utf8");
   assert.doesNotMatch(sitemap, /checkout/);
   assert.doesNotMatch(html, /checkout\.html/);
+});
+
+test("редирект по языку сохраняет query (?mc=, utm)", () => {
+  for (const pg of PAGES) {
+    const src = fs.readFileSync(path.join(PUB, pg.src), "utf8");
+    const code = src.match(/<script>\s*(\(function \(\) \{\s*if \(document\.documentElement\.lang !== "en"\)[\s\S]*?\}\)\(\);)\s*<\/script>/)[1];
+    let to = null;
+    vm.runInNewContext(code, {
+      document: { documentElement: { lang: "en", className: "" } },
+      location: { pathname: "/broker-check/", search: "?mc=123456", hash: "", replace: (u) => { to = u; } },
+      URLSearchParams, localStorage: { getItem: () => "ru" }, navigator: { language: "ru-RU" },
+    });
+    assert.strictEqual(to, "/ru/broker-check/?mc=123456", pg.src);
+  }
+});
+
+// ---- Проверка брокера ----
+const BROKER = PAGES.find((p) => p.path === "/broker-check/");
+const brokerHtml = fs.readFileSync(path.join(PUB, "broker-check", "index.html"), "utf8");
+const BROKER_I18N = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "landing", "broker-check.i18n.json"), "utf8"));
+const brokerKeys = new Set([...brokerHtml.matchAll(/data-i18n="([^"]+)"/g)].map((m) => m[1]));
+const brokerPageJs = fs.readFileSync(path.join(PUB, "js", "broker-page.js"), "utf8");
+const brokerJsKeys = [...new Set([...brokerPageJs.matchAll(/S\["(js\.[^"]+)"\]/g)].map((m) => m[1]))];
+
+test("проверка брокера в PAGES как инструмент", () => {
+  assert.ok(BROKER);
+  assert.strictEqual(BROKER.ld, "tool");
+});
+
+for (const lang of ["ru", "ro"]) {
+  test(`брокер ${lang}: переведён каждый ключ разметки; своих лишних ключей нет; js.*/meta.* как в EN`, () => {
+    const d = { ...I18N[lang], ...BROKER_I18N[lang] };
+    assert.deepStrictEqual([...brokerKeys].filter((k) => !(d[k] || "").trim()), []);
+    assert.deepStrictEqual(Object.keys(BROKER_I18N[lang]).filter((k) => !brokerKeys.has(k) && !/^(js|meta)\./.test(k)), []);
+    const scriptKeys = (o) => Object.keys(o).filter((k) => /^(js|meta)\./.test(k)).sort();
+    assert.deepStrictEqual(scriptKeys(BROKER_I18N[lang]), scriptKeys(BROKER_I18N.en));
+  });
+}
+
+test("брокер: EN-словарь — только meta.*/js.*; есть каждая строка, которую читает broker-page.js", () => {
+  assert.deepStrictEqual(Object.keys(BROKER_I18N.en).filter((k) => !/^(js|meta)\./.test(k)), []);
+  // ключи, собираемые из кода: вердикт по уровню shieldBadge и статус лицензии
+  const dynamic = ["good", "warn", "risk", "unknown"].map((l) => "js.verdict." + l)
+    .concat(["active", "inactive", "carrier_only", "not_found"].map((s) => "js.status." + s));
+  for (const k of [...brokerJsKeys, ...dynamic]) assert.ok((BROKER_I18N.en[k] || "").trim(), `нет ${k}`);
+  assert.match(brokerPageJs, /S\["js\.verdict\." \+ badge\.level\]/);
+  assert.match(brokerPageJs, /S\["js\.status\." \+ a\.status\]/);
+});
+
+test("брокер: вердикт и флаги — из LLSCORE (общий код с бейджем 🛡), каждому флагу лицензии есть текст", () => {
+  const LLSCORE = require("../shared/scoring.js");
+  const levels = new Set();
+  const codes = new Set();
+  const cases = [
+    { status: "active", ageDays: 2000, incidents12m: 0, grantedAt: "2020-01-01" },
+    { status: "active", ageDays: 200, incidents12m: 1, grantedAt: "2026-04-01" },
+    { status: "active", ageDays: 30, incidents12m: 0, grantedAt: "2026-10-01" },
+    { status: "inactive", ageDays: null, incidents12m: null, grantedAt: null },
+    { status: "carrier_only", ageDays: null, incidents12m: null, grantedAt: null },
+    { status: "not_found", ageDays: null, incidents12m: null, grantedAt: null },
+    { status: "not_found", ageDays: 900, incidents12m: 0, grantedAt: "2024-01-01" },
+    { status: null, ageDays: null, incidents12m: null, grantedAt: null },
+  ];
+  for (const a of cases) {
+    const shield = { mc: "1", authority: a, repost: null };
+    levels.add(LLSCORE.shieldBadge(shield).level);
+    for (const f of LLSCORE.redFlags({ brokerMc: "1" }, { shield })) codes.add(f.code);
+  }
+  assert.deepStrictEqual([...levels].sort(), ["good", "risk", "unknown", "warn"]);
+  for (const c of codes) assert.match(brokerPageJs, new RegExp(`\\b${c}:`), `нет текста для флага ${c}`);
+  assert.match(brokerHtml, /<script src="\/js\/scoring\.js"><\/script>\s*<script src="\/js\/broker-page\.js"><\/script>\s*<script src="\/js\/site\.js"><\/script>\s*<\/body>/);
+  assert.ok(fs.readFileSync(path.join(PUB, "js", "scoring.js"), "utf8").includes(fs.readFileSync(path.join(__dirname, "..", "shared", "scoring.js"), "utf8")),
+    "public/js/scoring.js устарел: npm run sync:shared");
+});
+
+for (const lang of Object.keys(LANGS)) {
+  test(`брокер ${lang}: canonical, FAQPage из 5 вопросов, строки для JS, переключатель на версии страницы`, () => {
+    const page = built[path.join(urlOf(lang, BROKER).slice(1), "index.html")];
+    assert.ok(page.includes(`<link rel="canonical" href="${BASE + urlOf(lang, BROKER)}" />`));
+    const ld = JSON.parse(page.match(/<script type="application\/ld\+json">(.*?)<\/script>/)[1]);
+    const faq = ld["@graph"].find((x) => x["@type"] === "FAQPage");
+    assert.strictEqual(faq.mainEntity.length, 5);
+    for (const q of faq.mainEntity) assert.ok(q.name && q.acceptedAnswer.text);
+    const strings = JSON.parse(page.match(/<script type="application\/json" id="ll-strings">(.*?)<\/script>/)[1]);
+    for (const k of Object.keys(BROKER_I18N.en).filter((k) => k.startsWith("js."))) assert.ok(strings[k], `${lang}: нет ${k}`);
+    for (const l of Object.keys(LANGS)) assert.ok(page.includes(`href="${urlOf(l, BROKER)}" hreflang="${l}"`));
+    if (lang !== "en") assert.ok(page.includes(`<title>${BROKER_I18N[lang]["meta.title"]}</title>`));
+  });
+}
+
+test("брокер: кнопка установки с utm_source=broker_check, ввод скрыт от Webvisor, запрос — в открытый shield", () => {
+  const hrefs = [...brokerHtml.matchAll(/<a [^>]*data-cws="broker_check"[^>]*href="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepStrictEqual(hrefs, ["https://chromewebstore.google.com/detail/chemnjopdclcmcckgfbmabielhobmknk?utm_source=broker_check"]);
+  assert.match(brokerHtml, /<input class="ym-disable-keys" type="text" id="mc"/);
+  assert.match(brokerHtml, /<div class="panel p-res ym-hide-content" aria-live="polite">/);
+  assert.match(brokerPageJs, /fetch\("\/api\/v1\/brokers\/" \+ encodeURIComponent\(mc\) \+ "\/shield"/);
+  assert.doesNotMatch(brokerPageJs, /Authorization|localStorage/, "страница открыта всем: без токена и хранения");
+});
+
+test("ссылки на проверку брокера: карточка брокера и футер главной, футер калькулятора; privacy описывает отправку MC", () => {
+  assert.match(html, /<a data-local href="\/broker-check\/" data-i18n="f3\.link">/);
+  for (const src of [html, calcHtml, brokerHtml]) assert.match(src, /<a data-local href="\/broker-check\/" data-i18n="ft\.broker">/);
+  assert.match(built[path.join("ro", "hos-calculator", "index.html")], /data-local href="\/ro\/broker-check\/"/);
+  const privacy = fs.readFileSync(path.join(PUB, "privacy.html"), "utf8");
+  assert.match(privacy, /The broker check sends the MC number you enter to our server/);
 });

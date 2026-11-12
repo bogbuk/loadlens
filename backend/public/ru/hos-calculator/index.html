@@ -39,8 +39,8 @@
       if (L.indexOf(lang) < 0) return;
       document.documentElement.className = "i18n-pending";
       // Только известные страницы: ServeStatic отдаёт EN-главную на любой путь, иначе /ru/<неизвестный> зациклится.
-      var P = ["/", "/hos-calculator/"], p = location.pathname;
-      location.replace("/" + lang + (P.indexOf(p) >= 0 ? p : "/") + location.hash);
+      var P = ["/", "/hos-calculator/", "/broker-check/"], p = location.pathname;
+      location.replace("/" + lang + (P.indexOf(p) >= 0 ? p : "/") + location.search + location.hash);
     })();
   </script>
   <link rel="stylesheet" href="/css/site.css" />
@@ -262,6 +262,7 @@
         <a href="/refund.html" data-i18n="ft.refund">Возврат средств (English)</a>
         <a href="/stats.html" data-i18n="ft.stats">Статистика по направлениям</a>
         <a data-local href="/ru/hos-calculator/" data-i18n="ft.hos">HOS-калькулятор</a>
+        <a data-local href="/ru/broker-check/" data-i18n="ft.broker">Проверка брокера</a>
         <a href="#" class="linkbtn" id="ck-open" data-i18n="ck.settings">Настройки cookies</a>
       </nav>
     </div>

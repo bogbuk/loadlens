@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!--SEO-START-->
+  <title>Verificare broker după numărul MC: licența FMCSA | LoadLens</title>
+  <meta name="description" content="Verificare gratuită a brokerului de marfă după MC: statutul licenței de broker FMCSA, vechimea ei și suspendările din ultimele 12 luni. Recunoaște double brokering și frauda cu licențe noi înainte să rezervi." />
+  <link rel="canonical" href="https://loadlens.krait.studio/ro/broker-check/" />
+  <link rel="alternate" hreflang="en" href="https://loadlens.krait.studio/broker-check/" />
+  <link rel="alternate" hreflang="ru" href="https://loadlens.krait.studio/ru/broker-check/" />
+  <link rel="alternate" hreflang="ro" href="https://loadlens.krait.studio/ro/broker-check/" />
+  <link rel="alternate" hreflang="x-default" href="https://loadlens.krait.studio/broker-check/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="LoadLens" />
+  <meta property="og:title" content="Verificare broker după numărul MC: licența FMCSA | LoadLens" />
+  <meta property="og:description" content="Verificare gratuită a brokerului de marfă după MC: statutul licenței de broker FMCSA, vechimea ei și suspendările din ultimele 12 luni. Recunoaște double brokering și frauda cu licențe noi înainte să rezervi." />
+  <meta property="og:url" content="https://loadlens.krait.studio/ro/broker-check/" />
+  <meta property="og:image" content="https://loadlens.krait.studio/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="ro_RO" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta property="og:locale:alternate" content="ru_RU" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Verificare broker după numărul MC: licența FMCSA | LoadLens","url":"https://loadlens.krait.studio/ro/broker-check/","description":"Verificare gratuită a brokerului de marfă după MC: statutul licenței de broker FMCSA, vechimea ei și suspendările din ultimele 12 luni. Recunoaște double brokering și frauda cu licențe noi înainte să rezervi.","applicationCategory":"BusinessApplication","operatingSystem":"Any","browserRequirements":"Requires JavaScript","inLanguage":"ro","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}},{"@type":"FAQPage","inLanguage":"ro","mainEntity":[{"@type":"Question","name":"Cum verific numărul MC al unui broker de marfă?","acceptedAnswer":{"@type":"Answer","text":"Scrie numărul MC în câmpul de mai sus. Îl căutăm în registrul de licențe FMCSA și în istoricul public al licenței de broker. Pentru înregistrarea completă, inclusiv asigurarea și adresa, deschide brokerul în FMCSA SAFER."}},{"@type":"Question","name":"Ce înseamnă doar licență de transportator?","acceptedAnswer":{"@type":"Answer","text":"Compania poate transporta marfă ca transportator, dar nu are licență activă de broker ca să intermedieze curse. Un transportator care publică curse și le dă altora fără licență de broker poate face double brokering."}},{"@type":"Question","name":"De ce e riscantă o licență de broker nouă?","acceptedAnswer":{"@type":"Answer","text":"Multe scheme de fraudă folosesc o licență proaspătă sau cumpărată. Marcăm licențele mai noi de 180 de zile, iar pe cele mai noi de 90 de zile ca risc ridicat. Un broker nou nu e neapărat un escroc, așa că verifică datele de contact și cere referințe."}},{"@type":"Question","name":"Ce este o suspendare sau o revocare?","acceptedAnswer":{"@type":"Answer","text":"FMCSA suspendă sau revocă licența, de exemplu, când expiră garanția de 75.000 de dolari a brokerului sau fondul fiduciar. Numărăm aceste evenimente din ultimele 12 luni. Un singur eveniment rezolvat repede e frecvent, mai multe sunt un semnal de alarmă."}},{"@type":"Question","name":"Arată pagina dacă brokerul plătește la timp?","acceptedAnswer":{"@type":"Answer","text":"Nu. Pagina arată doar datele despre licență. Extensia LoadLens arată scorul de credit DAT și termenul de plată lângă fiecare cursă, iar Pro adaugă ce raportează alți transportatori despre broker."}}]}]}</script>
+  <!--SEO-END-->
+  <link rel="icon" href="/icon.png" />
+  <!-- Каждый язык — свой URL (/, /ru/, /ro/), страницы RU/RO собирает scripts/build-landing.js.
+       На EN-странице уводим на языковую версию: ?lang= (старые ссылки) → сохранённый выбор → язык
+       браузера. Бот видит en-US без localStorage и остаётся на /. Тело прячем, чтобы EN не мигал. -->
+  <script>
+    (function () {
+      if (document.documentElement.lang !== "en") return;
+      var L = ["ru", "ro"], q = new URLSearchParams(location.search).get("lang"), s = null;
+      try { s = localStorage.getItem("ll_lang"); } catch (e) {}
+      var n = (navigator.language || "").slice(0, 2).toLowerCase();
+      var lang = q === "en" || L.indexOf(q) >= 0 ? q : s === "en" || L.indexOf(s) >= 0 ? s : n;
+      if (L.indexOf(lang) < 0) return;
+      document.documentElement.className = "i18n-pending";
+      // Только известные страницы: ServeStatic отдаёт EN-главную на любой путь, иначе /ru/<неизвестный> зациклится.
+      var P = ["/", "/hos-calculator/", "/broker-check/"], p = location.pathname;
+      location.replace("/" + lang + (P.indexOf(p) >= 0 ? p : "/") + location.search + location.hash);
+    })();
+  </script>
+  <link rel="stylesheet" href="/css/site.css" />
+  <style>
+    .calc-head { padding: 48px 0 8px; }
+    .calc-head h1 { margin-bottom: 12px; }
+    .calc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; padding: 24px 0 56px; align-items: start; }
+    @media (max-width: 860px) { .calc { grid-template-columns: minmax(0, 1fr); } }
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; box-shadow: var(--shadow); }
+    .panel h2 { font-size: 20px; margin-bottom: 14px; }
+    .field > label { display: block; font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+    .ask { display: flex; gap: 8px; flex-wrap: wrap; }
+    .ask .pre { display: inline-flex; align-items: center; font-weight: 700; color: var(--mut); }
+    .ask input { flex: 1 1 140px; min-width: 0; min-height: 44px; padding: 8px 12px; font: inherit; font-size: 18px; color: var(--ink);
+                 background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+    .ask .btn { min-height: 44px; cursor: pointer; font: inherit; font-weight: 700; }
+    /* Десктоп: форма и чек-лист слева, результат справа. Телефон: форма → результат → чек-лист,
+       чтобы результат был сразу под кнопкой. */
+    .p-form { grid-column: 1; grid-row: 1; }
+    .p-res { grid-column: 2; grid-row: 1 / span 2; }
+    .p-before { grid-column: 1; grid-row: 2; }
+    @media (max-width: 860px) { .p-form, .p-res, .p-before { grid-column: auto; grid-row: auto; } }
+    .p-before h2 { font-size: 17px; margin-bottom: 8px; }
+    .p-before ol { margin: 0; padding-left: 20px; font-size: 15px; }
+    .p-before li { margin-bottom: 6px; }
+    .verdict { font-size: 18px; font-weight: 700; padding: 12px 14px; border-radius: 10px; margin-bottom: 14px; }
+    .verdict.good { background: var(--green-bg); color: var(--green); }
+    .verdict.warn, .verdict.unknown { background: var(--amber-bg); color: var(--amber); }
+    .verdict.risk { background: var(--red-bg); color: var(--red); }
+    .facts { margin: 0 0 12px; }
+    .facts div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+    .facts dt { color: var(--mut); }
+    .facts dd { margin: 0; font-weight: 700; text-align: right; }
+    .flags { margin: 0 0 12px; padding-left: 20px; color: var(--red); font-size: 15px; }
+    .flags li.med { color: var(--amber); }
+    .msg { font-size: 15px; }
+    #result[hidden], #empty[hidden], #res-body[hidden], .flags[hidden], #msg[hidden] { display: none; }
+    .cta { text-align: center; }
+    .cta .ctas { justify-content: center; }
+    .faq h3 { margin-top: 20px; }
+    .disc { font-size: 14px; color: var(--mut); margin-top: 28px; }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="logo" data-local href="/ro/"><img src="/icon.png" alt="" /><span>Load<b>Lens</b></span></a>
+      <div class="langs" role="group" aria-label="Language">
+        <a href="/broker-check/" hreflang="en" lang="en" data-lang="en">EN</a>
+        <a href="/ru/broker-check/" hreflang="ru" lang="ru" data-lang="ru">RU</a>
+        <a href="/ro/broker-check/" hreflang="ro" lang="ro" data-lang="ro" aria-current="page">RO</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="calc-head">
+      <div class="wrap">
+        <h1 data-i18n="h.title">Verificare broker după numărul MC</h1>
+        <p class="lead" data-i18n="h.lead">Introdu MC-ul brokerului înainte să rezervi cursa. Vezi statutul licenței de broker în FMCSA, de când o are și dacă a avut suspendări sau revocări în ultimele 12 luni. Gratuit, fără înregistrare.</p>
+      </div>
+    </section>
+
+    <div class="wrap calc">
+      <div class="panel p-form">
+        <form id="check" novalidate>
+          <div class="field"><label for="mc" data-i18n="in.mc">Numărul MC al brokerului</label>
+            <div class="ask">
+              <span class="pre">MC</span>
+              <input class="ym-disable-keys" type="text" id="mc" name="mc" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="123456" />
+              <button class="btn primary" type="submit" id="go" data-i18n="in.go">Verifică</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel p-res ym-hide-content" aria-live="polite">
+        <h2 data-i18n="r.title">Rezultat</h2>
+        <p class="mut" id="empty" data-i18n="r.empty">Introdu un număr MC ca să vezi înregistrarea brokerului în FMCSA.</p>
+        <div id="result" hidden>
+          <p class="msg" id="msg" hidden></p>
+          <div id="res-body" hidden>
+            <p class="verdict" id="verdict"></p>
+            <ul class="flags" id="flags" hidden></ul>
+            <dl class="facts">
+              <div><dt data-i18n="r.status">Licența de broker</dt><dd id="f-status"></dd></div>
+              <div><dt data-i18n="r.since">Licență de broker din</dt><dd id="f-since"></dd></div>
+              <div><dt data-i18n="r.incidents">Suspendări sau revocări în ultimele 12 luni</dt><dd id="f-incidents"></dd></div>
+            </dl>
+            <p class="mut small" id="checked"></p>
+          </div>
+          <p><a id="safer" href="https://safer.fmcsa.dot.gov/" target="_blank" rel="noopener" data-i18n="r.safer">Înregistrarea completă în FMCSA SAFER →</a></p>
+        </div>
+      </div>
+
+      <div class="panel p-before">
+        <h2 data-i18n="b.t">Înainte de o cursă de la un broker necunoscut</h2>
+        <ol>
+          <li data-i18n="b.1">Sună înapoi la telefonul din înregistrarea FMCSA, nu la cel din anunț.</li>
+          <li data-i18n="b.2">Verifică dacă domeniul emailului coincide cu site-ul companiei. Adresele de email gratuite sunt un semnal de alarmă.</li>
+          <li data-i18n="b.3">Un tarif mult peste piață de la un broker pe care nu-l cunoști e o momeală frecventă.</li>
+          <li data-i18n="b.4">Nu plăti niciodată ca să primești o cursă și confirmă la telefon orice schimbare a datelor de plată.</li>
+        </ol>
+      </div>
+    </div>
+
+    <section class="alt cta">
+      <div class="wrap">
+        <h2 data-i18n="cta.t">LoadLens face această verificare la fiecare cursă din DAT One</h2>
+        <p class="lead" style="margin: 0 auto" data-i18n="cta.p">Extensia pune lângă fiecare anunț un chip al brokerului cu această verificare FMCSA, scorul de credit DAT și termenul de plată, plus $/milă real după deadhead și verificarea HOS. Plan gratuit, fără card.</p>
+        <div class="ctas">
+          <a class="btn primary" data-cws="broker_check" href="https://chromewebstore.google.com/detail/chemnjopdclcmcckgfbmabielhobmknk?utm_source=broker_check" target="_blank" rel="noopener" data-i18n="cta.install">Adaugă în Chrome, gratuit</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq">
+      <div class="wrap">
+        <h2 data-i18n="faq.title">Întrebări frecvente</h2>
+        <h3 data-i18n="faq.q1">Cum verific numărul MC al unui broker de marfă?</h3>
+        <p data-i18n="faq.a1">Scrie numărul MC în câmpul de mai sus. Îl căutăm în registrul de licențe FMCSA și în istoricul public al licenței de broker. Pentru înregistrarea completă, inclusiv asigurarea și adresa, deschide brokerul în FMCSA SAFER.</p>
+        <h3 data-i18n="faq.q2">Ce înseamnă doar licență de transportator?</h3>
+        <p data-i18n="faq.a2">Compania poate transporta marfă ca transportator, dar nu are licență activă de broker ca să intermedieze curse. Un transportator care publică curse și le dă altora fără licență de broker poate face double brokering.</p>
+        <h3 data-i18n="faq.q3">De ce e riscantă o licență de broker nouă?</h3>
+        <p data-i18n="faq.a3">Multe scheme de fraudă folosesc o licență proaspătă sau cumpărată. Marcăm licențele mai noi de 180 de zile, iar pe cele mai noi de 90 de zile ca risc ridicat. Un broker nou nu e neapărat un escroc, așa că verifică datele de contact și cere referințe.</p>
+        <h3 data-i18n="faq.q4">Ce este o suspendare sau o revocare?</h3>
+        <p data-i18n="faq.a4">FMCSA suspendă sau revocă licența, de exemplu, când expiră garanția de 75.000 de dolari a brokerului sau fondul fiduciar. Numărăm aceste evenimente din ultimele 12 luni. Un singur eveniment rezolvat repede e frecvent, mai multe sunt un semnal de alarmă.</p>
+        <h3 data-i18n="faq.q5">Arată pagina dacă brokerul plătește la timp?</h3>
+        <p data-i18n="faq.a5">Nu. Pagina arată doar datele despre licență. Extensia LoadLens arată scorul de credit DAT și termenul de plată lângă fiecare cursă, iar Pro adaugă ce raportează alți transportatori despre broker.</p>
+        <p class="disc" data-i18n="disc">Datele vin din seturile publice FMCSA, actualizate zilnic, și le păstrăm în cache până la 12 ore. O înregistrare curată nu dovedește că brokerul e cinstit, iar un semnal nu dovedește frauda. Nu este consultanță juridică sau financiară.</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="consent" id="consent" role="dialog" aria-label="Cookies" hidden>
+    <p><span data-i18n="ck.text">Folosim cookie-uri Yandex Metrica și Google Analytics ca să vedem cum e folosită pagina, inclusiv înregistrarea sesiunilor (Metrica). Nu se încarcă nimic până nu accepți.</span>
+      <a href="/privacy.html#website" data-i18n="ck.more">Detalii</a></p>
+    <div class="btns">
+      <button type="button" class="btn ghost" id="ck-no" data-i18n="ck.no">Refuz</button>
+      <button type="button" class="btn primary" id="ck-yes" data-i18n="ck.yes">Accept</button>
+    </div>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      <span data-i18n="ft.legal">© 2026 LoadLens by Krait Studio (Bogdan Bucataru, Moldova). Nu este afiliat cu DAT Solutions sau Truckstop.</span>
+      <nav>
+        <a href="mailto:hello@krait.studio?subject=%C3%8Entrebare%20despre%20LoadLens" data-mail="question">hello@krait.studio</a>
+        <a href="/privacy.html" data-i18n="pv.link">Politica de confidențialitate (English)</a>
+        <a href="/terms.html" data-i18n="ft.terms">Termeni și condiții (English)</a>
+        <a href="/refund.html" data-i18n="ft.refund">Rambursări (English)</a>
+        <a href="/stats.html" data-i18n="ft.stats">Statistici pe rute</a>
+        <a data-local href="/ro/hos-calculator/" data-i18n="ft.hos">Calculator HOS</a>
+        <a data-local href="/ro/broker-check/" data-i18n="ft.broker">Verificare broker</a>
+        <a href="#" class="linkbtn" id="ck-open" data-i18n="ck.settings">Setări cookie</a>
+      </nav>
+    </div>
+  </footer>
+
+  <!--STRINGS-START--><script type="application/json" id="ll-strings">{"js.loading":"Verificăm înregistrările FMCSA pentru MC {mc}…","js.err.invalid":"Introdu un număr MC: doar cifre, de exemplu 123456.","js.err.rate":"Prea multe verificări din rețeaua ta. Încearcă peste un minut.","js.err.net":"Nu am putut obține acum înregistrarea FMCSA. Încearcă peste un minut sau deschide SAFER mai jos.","js.verdict.good":"MC {mc}: niciun semnal de alarmă în înregistrările FMCSA","js.verdict.warn":"MC {mc}: atenție","js.verdict.risk":"MC {mc}: risc ridicat, verifică înainte să rezervi","js.verdict.unknown":"MC {mc}: datele FMCSA nu sunt disponibile acum. Încearcă mai târziu sau deschide SAFER mai jos.","js.flag.inactive":"Licența de broker este inactivă: acest MC nu poate intermedia curse.","js.flag.carrier":"Doar licență de transportator, fără licență de broker: posibil double brokering.","js.flag.notfound":"Acest MC nu este în registrul de licențe FMCSA. Verifică numărul cu brokerul.","js.flag.mismatch":"Acest MC lipsește din registrul de licențe, dar are istoric de broker. Seturile de date FMCSA pot diferi, verifică SAFER.","js.flag.new":"Licență de broker nouă: doar {d}.","js.flag.incidents":"Suspendări sau revocări în ultimele 12 luni: {n}.","js.status.active":"Activă","js.status.inactive":"Inactivă","js.status.carrier_only":"Nu (doar transportator)","js.status.not_found":"Nu e în registru","js.since":"{date} ({age})","js.unknown":"Fără date","js.checked":"Datele FMCSA pentru MC {mc} la {when}."}</script><!--STRINGS-END-->
+  <script src="/js/scoring.js"></script>
+  <script src="/js/broker-page.js"></script>
+  <script src="/js/site.js"></script>
+</body>
+</html>

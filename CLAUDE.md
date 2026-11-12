@@ -73,7 +73,8 @@ backend/public/             статика (ServeStatic): index.html — лен�
                             + SEO-блок <head> (canonical/hreflang/og/JSON-LD) ГЕНЕРИТ `npm run build:landing` из index.html +
                             landing/i18n.json (руками не править; устаревание ловит scripts/landing-i18n.test.js).
                             robots.txt, og.png; hos-calculator/ — бесплатный HOS-калькулятор (EN-исходник, RU/RO генерит build:landing;
-                            расчёт — shared/hos-trip.js → public/js/ через sync:shared); css/site.css + js/site.js — общие
+                            расчёт — shared/hos-trip.js → public/js/ через sync:shared); broker-check/ — бесплатная проверка брокера по MC
+                            (открытый GET /brokers/:mc/shield; вердикт/флаги — LLSCORE из public/js/scoring.js, копия sync:shared, ?mc= в URL); css/site.css + js/site.js — общие
                             стили/скрипт страниц (согласие, Метрика); stats.html — дашборд lane'ов, privacy.html, admin.html (noindex)
 shared/                     КАНОН: load.model.js, scoring.js, planner.js, email-template.js, markets.seed.json, hos-calculator.js, hos-trip.js (HOS-калькулятор лендинга)
 ```
